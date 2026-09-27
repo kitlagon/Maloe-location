@@ -118,6 +118,15 @@
   </div>
 
   <div class="panel">
+    <h2>Pièce d'identité du client</h2>
+    <label class="photo-input-btn">
+      Prendre une photo de la pièce d'identité
+      <input type="file" id="id-photo-input" accept="image/*" capture="environment" multiple>
+    </label>
+    <div class="photo-grid" id="id-photo-grid"></div>
+  </div>
+
+  <div class="panel">
     <h2>Photos horodatées</h2>
     <label class="photo-input-btn">
       Prendre / ajouter des photos
@@ -158,34 +167,41 @@
     return '<label><input type="checkbox" value="' + name + '" id="kit-' + i + '"> ' + name + '</label>';
   }).join("");
 
-  var photos = [];
-  var photoInput = document.getElementById("photo-input");
-  var photoGrid = document.getElementById("photo-grid");
+  function makePhotoCapture(inputId, gridId){
+    var list = [];
+    var input = document.getElementById(inputId);
+    var grid = document.getElementById(gridId);
 
-  photoInput.addEventListener("change", function () {
-    Array.prototype.forEach.call(photoInput.files, function (file) {
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        photos.push(e.target.result);
-        renderPhotos();
-      };
-      reader.readAsDataURL(file);
+    function render(){
+      grid.innerHTML = list.map(function (src, i) {
+        return '<div class="photo-thumb"><img src="' + src + '"><button type="button" data-idx="' + i + '">×</button></div>';
+      }).join("");
+    }
+
+    input.addEventListener("change", function () {
+      Array.prototype.forEach.call(input.files, function (file) {
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          list.push(e.target.result);
+          render();
+        };
+        reader.readAsDataURL(file);
+      });
+      input.value = "";
     });
-    photoInput.value = "";
-  });
 
-  function renderPhotos(){
-    photoGrid.innerHTML = photos.map(function (src, i) {
-      return '<div class="photo-thumb"><img src="' + src + '"><button type="button" data-idx="' + i + '">×</button></div>';
-    }).join("");
+    grid.addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-idx]");
+      if (!btn) return;
+      list.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+      render();
+    });
+
+    return { getList: function () { return list; } };
   }
 
-  photoGrid.addEventListener("click", function (e) {
-    var btn = e.target.closest("button[data-idx]");
-    if (!btn) return;
-    photos.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
-    renderPhotos();
-  });
+  var idPhotoCapture = makePhotoCapture("id-photo-input", "id-photo-grid");
+  var photoCapture = makePhotoCapture("photo-input", "photo-grid");
 
   var canvas = document.getElementById("sig-pad");
   var ctx = canvas.getContext("2d");
@@ -256,12 +272,16 @@
 
     var sigData = canvas.toDataURL("image/png");
     var now = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+    var idPhotos = idPhotoCapture.getList();
+    var photos = photoCapture.getList();
 
     var html = '<h1>Kit Lagon — État des lieux (' + type + ')</h1>' +
       '<p class="pv-meta">Horodatage : ' + now + '</p>' +
       '<div class="pv-section"><h3>Client</h3><p>' + nom + '</p></div>' +
       '<div class="pv-section"><h3>Kits concernés</h3><p>' + kits.join(", ") + '</p></div>' +
       (remarques ? '<div class="pv-section"><h3>État / remarques</h3><p>' + remarques + '</p></div>' : '') +
+      (idPhotos.length ? '<div class="pv-section"><h3>Pièce d\'identité</h3><div class="pv-photos">' +
+        idPhotos.map(function (src) { return '<img src="' + src + '">'; }).join("") + '</div></div>' : '') +
       (photos.length ? '<div class="pv-section"><h3>Photos horodatées</h3><div class="pv-photos">' +
         photos.map(function (src) { return '<img src="' + src + '">'; }).join("") + '</div></div>' : '') +
       '<div class="pv-section pv-sig"><h3>Signature du client</h3><img src="' + sigData + '"></div>';
