@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Votre panier — Kit Lagon</title>
-<meta name="description" content="Récapitulatif de votre réservation Kit Lagon.">
+<title>Votre panier — Maloé Location</title>
+<meta name="description" content="Récapitulatif de votre réservation Maloé Location.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -79,7 +79,7 @@
         <path d="M4 15c2.5 2 5 2 7.5 0s5-2 7.5 0 5 2 7.5 0" stroke="#1B8A82" stroke-width="1.6" fill="none"/>
         <path d="M4 19c2.5 2 5 2 7.5 0s5-2 7.5 0 5 2 7.5 0" stroke="#E8622E" stroke-width="1.4" fill="none" opacity="0.8"/>
       </svg>
-      Kit Lagon
+      Maloé Location
     </a>
     <a class="back-link" href="index.html">← Continuer mes achats</a>
   </div>
@@ -233,7 +233,7 @@
         var slots = availableSlotsFor(date);
         if (slots.length === 0){
           var subject = encodeURIComponent("Créneau — aucune disponibilité");
-          var body = encodeURIComponent("Bonjour Kit Lagon,\n\nAucun créneau n'est disponible le " + formatDate(date) + ". Avez-vous une autre possibilité ?\n\nMerci !");
+          var body = encodeURIComponent("Bonjour Maloé Location,\n\nAucun créneau n'est disponible le " + formatDate(date) + ". Avez-vous une autre possibilité ?\n\nMerci !");
           return '<p class="caution-note" style="margin:0;">Aucun créneau disponible ce jour — <a href="mailto:contact@kitlagon.re?subject=' + subject + '&body=' + body + '">nous contacter</a></p>';
         }
         var current = resolveSlot(date, which);
@@ -337,7 +337,7 @@
             '<div class="field"><label for="client-email">E-mail</label><input type="email" id="client-email" placeholder="vous@exemple.com"></div>' +
             '<div class="field" style="margin-bottom:0;"><label for="client-message">Message (optionnel)</label><textarea id="client-message" rows="3" placeholder="Précisions, horaire souhaité..."></textarea></div>' +
             '<button class="btn btn-primary send-btn" id="send-btn">Envoyer la demande de réservation</button>' +
-            '<p class="form-note">Ouvre votre messagerie avec un e-mail pré-rempli vers Kit Lagon. La réservation en ligne avec paiement arrivera dans une prochaine version.</p>' +
+            '<p class="form-note">Ouvre votre messagerie avec un e-mail pré-rempli vers Maloé Location. La réservation en ligne avec paiement arrivera dans une prochaine version.</p>' +
           '</div>';
 
         content.querySelectorAll("[data-remove]").forEach(function (btn) {
@@ -382,7 +382,7 @@
           });
 
           var bodyParts = [
-            "Bonjour Kit Lagon,",
+            "Bonjour Maloé Location,",
             "",
             "Je souhaite réserver :",
             mailLines.join("\n"),
@@ -396,7 +396,7 @@
             message ? ("Message : " + message) : ""
           ].filter(Boolean);
 
-          var subject = encodeURIComponent("Demande de réservation Kit Lagon");
+          var subject = encodeURIComponent("Demande de réservation Maloé Location");
           var body = encodeURIComponent(bodyParts.join("\n"));
           window.location.href = "mailto:contact@kitlagon.re?subject=" + subject + "&body=" + body;
         });
