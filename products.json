@@ -96,26 +96,26 @@
       "id": "palmes",
       "name": "Palmes",
       "sizes": [
-        "Taille 1",
-        "Taille 2",
-        "Taille 3"
+        "35/38",
+        "38/41",
+        "41/44",
+        "44/47"
       ],
       "stock": {
-        "Taille 1": 1,
-        "Taille 2": 2,
-        "Taille 3": 2
+        "35/38": 2,
+        "38/41": 2,
+        "41/44": 3,
+        "44/47": 1
       }
     },
     {
       "id": "masque-tuba",
       "name": "Masque + tuba",
       "sizes": [
-        "Enfant",
-        "Adulte"
+        "Taille unique"
       ],
       "stock": {
-        "Enfant": 1,
-        "Adulte": 4
+        "Taille unique": 2
       }
     },
     {
@@ -142,13 +142,13 @@
       "id": "glaciere-mat",
       "name": "Glacière",
       "sizes": null,
-      "stock": 3
+      "stock": 2
     },
     {
       "id": "parasol-mat",
       "name": "Parasol",
       "sizes": null,
-      "stock": 3
+      "stock": 2
     }
   ],
   "groups": [
