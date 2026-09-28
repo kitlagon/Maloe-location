@@ -29,8 +29,8 @@
   .skip-link:focus{left:12px;top:12px;background:var(--sand);padding:8px 14px;border-radius:6px;z-index:20;}
 
   header{position:sticky;top:0;z-index:10;background:var(--sand-light);border-bottom:1px solid var(--line);}
-  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
-  .logo{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:600;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;}
+  .logo{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:600;display:flex;align-items:center;gap:18px;text-decoration:none;color:var(--ink);}
   .logo-mark{width:26px;height:26px;flex:none;}
   .logo-img{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;}
   nav ul{list-style:none;display:flex;gap:26px;margin:0;padding:0;}
@@ -45,7 +45,10 @@
     background-color:var(--lagoon-deep);
     background-size:cover;background-position:center;background-repeat:no-repeat;
   }
-  .hero .wrap{display:grid;grid-template-columns:1.2fr 0.8fr;gap:28px;align-items:center;}
+  .hero .wrap{display:grid;grid-template-columns:1.55fr 0.75fr;gap:28px;align-items:center;}
+  .hero-left-row{display:flex;align-items:center;gap:32px;}
+  .hero-left-row > div{min-width:0;}
+  .hero-logo{width:260px;height:auto;flex:none;filter:drop-shadow(0 8px 20px rgba(0,0,0,0.35));}
   .hero-eyebrow{font-size:0.82rem;color:var(--sand);opacity:0.95;margin-bottom:10px;text-shadow:0 1px 6px rgba(0,0,0,0.5);}
   .hero h1{font-size:clamp(1.5rem,2.6vw,2.1rem);line-height:1.12;color:white;max-width:16ch;text-shadow:0 2px 10px rgba(0,0,0,0.55);}
   .hero p{font-size:0.95rem;max-width:44ch;color:rgba(255,255,255,0.95);margin-top:10px;text-shadow:0 1px 8px rgba(0,0,0,0.5);}
@@ -165,8 +168,14 @@
   footer p{color:var(--ink-soft);font-size:0.84rem;margin:4px 0;}
   footer a.mail{color:var(--lagoon-deep);text-decoration:underline;}
 
+  @media (max-width:1000px){
+    .hero-logo{width:190px;}
+    .hero-left-row{gap:22px;}
+  }
   @media (max-width:860px){
     .hero .wrap{grid-template-columns:1fr;}
+    .hero-left-row{flex-direction:column;align-items:flex-start;}
+    .hero-logo{width:170px;align-self:center;}
     .product-grid{grid-template-columns:1fr 1fr;}
     .info-grid{grid-template-columns:1fr;}
     .date-row{grid-template-columns:1fr;}
@@ -204,13 +213,16 @@
 <main id="main">
   <section class="hero" id="hero">
     <div class="wrap">
-      <div>
-        <p class="hero-eyebrow">Saint-Gilles-les-Bains · La Réunion</p>
-        <h1 id="hero-title">Le lagon vous attend, pas besoin de tout apporter</h1>
-        <p id="hero-subtitle">Glacière, parasol, kit snorkeling ou caméra 360° étanche : choisissez vos dates et votre matériel, récupérez-le sur un créneau fixe près de la plage.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#dates">Réserver</a>
-          <a class="btn btn-ghost" href="#catalogue">Voir les kits</a>
+      <div class="hero-left-row">
+        <img class="hero-logo" src="images/logo-hero.webp" alt="Maloé Location">
+        <div>
+          <p class="hero-eyebrow">Saint-Gilles-les-Bains · La Réunion</p>
+          <h1 id="hero-title">Le lagon vous attend, pas besoin de tout apporter</h1>
+          <p id="hero-subtitle">Glacière, parasol, kit snorkeling ou caméra 360° étanche : choisissez vos dates et votre matériel, récupérez-le sur un créneau fixe près de la plage.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#dates">Réserver</a>
+            <a class="btn btn-ghost" href="#catalogue">Voir les kits</a>
+          </div>
         </div>
       </div>
       <div class="hero-steps">
