@@ -691,12 +691,10 @@
     params.set("cart", JSON.stringify(lines));
     if (retrait) params.set("retrait", retrait);
     if (retour) params.set("retour", retour);
+    if (selectedSlotRetrait) params.set("slotRetrait", selectedSlotRetrait);
+    if (selectedSlotRetour) params.set("slotRetour", selectedSlotRetour);
     window.location.href = "panier.html?" + params.toString();
   }
-
-  document.getElementById("nav-cart-btn").addEventListener("click", goToCart);
-  document.getElementById("cart-bar-btn").addEventListener("click", goToCart);
-
 
   document.getElementById("nav-cart-btn").addEventListener("click", goToCart);
   document.getElementById("cart-bar-btn").addEventListener("click", goToCart);
