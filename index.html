@@ -424,10 +424,17 @@
     var h = Math.floor(mins / 60), m = mins % 60;
     return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
   }
-  function generateSlots(timeSlots){
+  var DAY_NAMES_FR_SLOTS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+  function dayNameFor(dateStr){
+    var d = new Date(dateStr + "T12:00");
+    return DAY_NAMES_FR_SLOTS[d.getDay()];
+  }
+  function generateSlotsForDate(timeSlots, dateStr){
     var slots = [];
     var interval = (timeSlots && timeSlots.interval) || 15;
-    (timeSlots && timeSlots.windows || []).forEach(function (w) {
+    var byDay = (timeSlots && timeSlots.byDay) || {};
+    var windows = byDay[dayNameFor(dateStr)] || [];
+    windows.forEach(function (w) {
       var cur = toMinutes(w.start);
       var end = toMinutes(w.end);
       while (cur < end){
@@ -442,7 +449,7 @@
   }
   function availableSlotsFor(date){
     if (!date) return [];
-    return generateSlots(catalogue.timeSlots || {}).filter(function (t) { return !isSlotTaken(date, t); });
+    return generateSlotsForDate(catalogue.timeSlots || {}, date).filter(function (t) { return !isSlotTaken(date, t); });
   }
 
   function getDays(){
