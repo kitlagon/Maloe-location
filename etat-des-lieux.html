@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --lagoon-deep:#0B4F4A; --lagoon-bright:#1B8A82; --sand:#F1E6CE; --sand-light:#FAF5E9;
@@ -148,7 +149,7 @@
     </div>
   </div>
 
-  <button class="btn btn-primary" id="generate-btn">Générer le document</button>
+  <button class="btn btn-primary" id="generate-btn">Générer le PDF</button>
   <p class="error-msg" id="error-msg"></p>
 </div>
 
@@ -256,7 +257,7 @@
     hasSignature = false;
   });
 
-  document.getElementById("generate-btn").addEventListener("click", function () {
+  document.getElementById("generate-btn").addEventListener("click", async function () {
     var errorEl = document.getElementById("error-msg");
     var nom = document.getElementById("nom-client").value.trim();
     var type = document.querySelector('input[name="type"]:checked').value;
@@ -267,30 +268,74 @@
     }).filter(Boolean);
 
     if (!nom || kits.length === 0 || !hasSignature){
-      errorEl.textContent = "Merci de renseigner le nom du client, au moins un kit, et de faire signer le client avant de générer le document.";
+      errorEl.textContent = "Merci de renseigner le nom du client, au moins un kit, et de faire signer le client avant de générer le PDF.";
       errorEl.style.display = "block";
       return;
     }
     errorEl.style.display = "none";
 
     var sigData = canvas.toDataURL("image/png");
-    var now = new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
+    var now = new Date();
+    var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
     var idPhotos = idPhotoCapture.getList();
     var photos = photoCapture.getList();
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({ unit: "mm", format: "a4" });
+    var margin = 16, pageW = 210, pageH = 297, y = 20;
 
-    var html = '<h1>Maloé Location — État des lieux (' + type + ')</h1>' +
-      '<p class="pv-meta">Horodatage : ' + now + '</p>' +
-      '<div class="pv-section"><h3>Client</h3><p>' + nom + '</p></div>' +
-      '<div class="pv-section"><h3>Kits concernés</h3><p>' + kits.join(", ") + '</p></div>' +
-      (remarques ? '<div class="pv-section"><h3>État / remarques</h3><p>' + remarques + '</p></div>' : '') +
-      (idPhotos.length ? '<div class="pv-section"><h3>Pièce d\'identité</h3><div class="pv-photos">' +
-        idPhotos.map(function (src) { return '<img src="' + src + '">'; }).join("") + '</div></div>' : '') +
-      (photos.length ? '<div class="pv-section"><h3>Photos horodatées</h3><div class="pv-photos">' +
-        photos.map(function (src) { return '<img src="' + src + '">'; }).join("") + '</div></div>' : '') +
-      '<div class="pv-section pv-sig"><h3>Signature du client</h3><img src="' + sigData + '"></div>';
+    function ensureSpace(h){
+      if (y + h > pageH - 15) { pdf.addPage(); y = 20; }
+    }
+    function title(txt){
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.setTextColor(11,79,74);
+      pdf.text(txt, margin, y); y += 8;
+    }
+    function section(txt){
+      ensureSpace(12); pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(11,79,74);
+      pdf.text(txt, margin, y); pdf.setDrawColor(210,210,210); pdf.line(margin, y+2, pageW-margin, y+2); y += 9;
+    }
+    function textBlock(txt){
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(30,30,30);
+      var lines = pdf.splitTextToSize(txt, pageW - margin*2);
+      ensureSpace(lines.length * 5 + 3); pdf.text(lines, margin, y); y += lines.length * 5 + 3;
+    }
+    function addPhotos(titleText, list){
+      if (!list.length) return;
+      section(titleText);
+      var size = 52, gap = 6, x = margin;
+      list.forEach(function(src, i){
+        if (x + size > pageW - margin) { x = margin; y += size + gap; }
+        ensureSpace(size + 5);
+        try { pdf.addImage(src, "JPEG", x, y, size, size, undefined, "MEDIUM"); } catch(e) { try { pdf.addImage(src, "PNG", x, y, size, size, undefined, "MEDIUM"); } catch(_){} }
+        x += size + gap;
+        if ((i+1) % 3 === 0) { x = margin; y += size + gap; }
+      });
+      if (list.length % 3 !== 0) y += size + gap;
+    }
 
-    document.getElementById("print-view").innerHTML = html;
-    window.print();
+    title("Maloé Location — État des lieux");
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(232,98,46);
+    pdf.text(type === "Remise" ? "REMISE DU MATÉRIEL" : "RETOUR DU MATÉRIEL", margin, y); y += 7;
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(80,80,80);
+    pdf.text("Horodatage : " + dateLabel, margin, y); y += 10;
+
+    section("Client"); textBlock(nom);
+    section("Kits concernés"); textBlock(kits.join(", "));
+    if (remarques) { section("État / remarques"); textBlock(remarques); }
+    addPhotos("Pièce d'identité", idPhotos);
+    addPhotos("Photos du matériel", photos);
+
+    section("Signature du client");
+    ensureSpace(55);
+    try { pdf.addImage(sigData, "PNG", margin, y, 85, 48); } catch(e) {}
+    y += 55;
+
+    pdf.setFont("helvetica", "italic"); pdf.setFontSize(8); pdf.setTextColor(100,100,100);
+    pdf.text("Document généré électroniquement par Maloé Location", margin, pageH - 10);
+
+    var safeName = nom.replace(/[^a-z0-9À-ÿ]+/gi, "_").replace(/^_|_$/g, "");
+    var dateFile = now.toISOString().slice(0,10);
+    pdf.save("Etat_des_lieux_" + safeName + "_" + type + "_" + dateFile + ".pdf");
   });
 </script>
 
