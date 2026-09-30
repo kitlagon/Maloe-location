@@ -2,7 +2,14 @@
   "photoVersion": 1,
   "heroTitle": "Le lagon vous attend, pas besoin de tout apporter",
   "heroSubtitle": "Glacière, parasol, kit snorkeling ou caméra 360° étanche : choisissez vos dates et votre matériel, récupérez-le sur un créneau fixe près de la plage.",
-  "promoCodes": [],
+  "promoCodes": [
+    {
+      "code": "TEST",
+      "discount": 1,
+      "from": "",
+      "to": ""
+    }
+  ],
   "closedDates": [],
   "timeSlots": {
     "interval": 15,
