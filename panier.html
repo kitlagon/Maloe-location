@@ -132,7 +132,8 @@
     var slots = [];
     var interval = (timeSlots && timeSlots.interval) || 15;
     var byDay = (timeSlots && timeSlots.byDay) || {};
-    var windows = byDay[dayNameFor(dateStr)] || [];
+    var overrides = (timeSlots && timeSlots.dateOverrides) || {};
+    var windows = overrides.hasOwnProperty(dateStr) ? overrides[dateStr] : (byDay[dayNameFor(dateStr)] || []);
     windows.forEach(function (w) {
       var cur = toMinutes(w.start);
       var end = toMinutes(w.end);
@@ -164,6 +165,8 @@
       var params = new URLSearchParams(window.location.search);
       var retrait = params.get("retrait") || "";
       var retour = params.get("retour") || "";
+      var incomingSlotRetrait = params.get("slotRetrait") || "";
+      var incomingSlotRetour = params.get("slotRetour") || "";
 
       var lines = [];
       try {
@@ -187,6 +190,8 @@
         if (lines.length) newParams.set("cart", JSON.stringify(lines));
         if (retrait) newParams.set("retrait", retrait);
         if (retour) newParams.set("retour", retour);
+        if (selectedRetraitSlot) newParams.set("slotRetrait", selectedRetraitSlot);
+        if (selectedRetourSlot) newParams.set("slotRetour", selectedRetourSlot);
         window.location.search = newParams.toString();
       }
 
@@ -197,8 +202,8 @@
       }
 
       var appliedPromo = null;
-      var selectedRetraitSlot = "";
-      var selectedRetourSlot = "";
+      var selectedRetraitSlot = incomingSlotRetrait;
+      var selectedRetourSlot = incomingSlotRetour;
 
       function resolveSlot(date, which){
         if (!date) return "";

@@ -18,7 +18,7 @@
   .wrap{max-width:760px;margin:0 auto;padding:24px 20px 100px;}
   header{border-bottom:1px solid var(--line);}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;max-width:760px;margin:0 auto;}
-  .logo{display:flex;align-items:center;gap:8px;font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;color:var(--ink);}
+  .logo{display:flex;align-items:center;gap:18px;font-family:'Fraunces',serif;font-size:1.1rem;font-weight:600;color:var(--ink);}
   .logo-img{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none;}
   .back-link{font-size:0.85rem;color:var(--ink-soft);text-decoration:none;}
   h1{font-size:1.4rem;}
@@ -505,6 +505,131 @@
   var slotPickerDate = "";
   var slotsEditorDay = "lundi";
 
+  var slotsOverrideDate = "";
+
+  function readDateOverride(){
+    if (!slotsOverrideDate) return;
+    if (!catalogue.timeSlots.dateOverrides) catalogue.timeSlots.dateOverrides = {};
+    if (!catalogue.timeSlots.dateOverrides.hasOwnProperty(slotsOverrideDate)) return;
+    var windows = [];
+    document.querySelectorAll("#override-windows .promo-row[data-owi]").forEach(function (rowEl) {
+      windows.push({
+        start: rowEl.querySelector(".slot-window-start").value,
+        end: rowEl.querySelector(".slot-window-end").value
+      });
+    });
+    catalogue.timeSlots.dateOverrides[slotsOverrideDate] = windows;
+  }
+
+  function renderDateOverrideEditor(){
+    if (!catalogue.timeSlots.dateOverrides) catalogue.timeSlots.dateOverrides = {};
+    var overrides = catalogue.timeSlots.dateOverrides;
+    var hasOverride = overrides.hasOwnProperty(slotsOverrideDate);
+
+    var html = '<div class="panel"><h2>Exception pour une date précise</h2>' +
+      '<p class="help" style="margin-top:0;margin-bottom:14px;">Modifiez les horaires d\'une seule date (ex : le 5/10/2026) sans toucher aux horaires habituels du lundi.</p>' +
+      '<div class="field" style="max-width:220px;"><label>Date à personnaliser</label><input type="date" id="override-date-input" value="' + slotsOverrideDate + '"></div>';
+
+    if (slotsOverrideDate){
+      if (hasOverride){
+        html += '<div id="override-windows">';
+        (overrides[slotsOverrideDate] || []).forEach(function (w, wi) {
+          html += '<div class="promo-row" style="grid-template-columns:1fr 1fr auto;" data-owi="' + wi + '">' +
+            '<input type="time" class="slot-window-start" value="' + w.start + '">' +
+            '<input type="time" class="slot-window-end" value="' + w.end + '">' +
+            '<button type="button" class="btn btn-secondary btn-small" data-remove-override-window="' + wi + '">Suppr.</button>' +
+            '</div>';
+        });
+        if (!(overrides[slotsOverrideDate] || []).length){
+          html += '<p class="help" style="margin-top:0;margin-bottom:10px;">Aucune plage — le site ne proposera aucun créneau ce jour-là.</p>';
+        }
+        html += '</div>' +
+          '<button type="button" class="btn btn-secondary btn-small" id="add-override-window-btn">+ Ajouter une plage pour cette date</button> ' +
+          '<button type="button" class="btn btn-secondary btn-small" id="remove-override-btn">Revenir aux horaires habituels de ce jour</button>';
+      } else {
+        html += '<button type="button" class="btn btn-secondary btn-small" id="create-override-btn">Personnaliser les horaires du ' + slotsOverrideDate + '</button>';
+      }
+    }
+
+    var overrideDates = Object.keys(overrides).sort();
+    if (overrideDates.length){
+      html += '<div class="field" style="margin-top:14px;"><label>Dates avec des horaires personnalisés</label>' +
+        overrideDates.map(function (d) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.86rem;">' +
+            '<span>' + d + ' (' + overrides[d].length + ' plage' + (overrides[d].length > 1 ? "s" : "") + ')</span>' +
+            '<span><button type="button" class="btn btn-secondary btn-small" data-edit-override="' + d + '">Modifier</button> ' +
+            '<button type="button" class="btn btn-secondary btn-small" data-delete-override="' + d + '">Supprimer</button></span>' +
+            '</div>';
+        }).join("") +
+        '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function wireDateOverrideEditor(){
+    var dateInput = document.getElementById("override-date-input");
+    if (!dateInput) return;
+    dateInput.addEventListener("change", function () {
+      readDateOverride();
+      slotsOverrideDate = dateInput.value;
+      renderSlotsEditor();
+    });
+
+    var createBtn = document.getElementById("create-override-btn");
+    if (createBtn){
+      createBtn.addEventListener("click", function () {
+        readSlotsEditor();
+        var dayName = DAY_NAMES_FR[(new Date(slotsOverrideDate + "T12:00").getDay() + 6) % 7];
+        var base = (catalogue.timeSlots.byDay[dayName] || []).map(function (w) { return { start: w.start, end: w.end }; });
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate] = base;
+        renderSlotsEditor();
+      });
+    }
+
+    var addOverrideWindowBtn = document.getElementById("add-override-window-btn");
+    if (addOverrideWindowBtn){
+      addOverrideWindowBtn.addEventListener("click", function () {
+        readDateOverride();
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate].push({ start: "09:00", end: "09:30" });
+        renderSlotsEditor();
+      });
+    }
+
+    document.querySelectorAll("[data-remove-override-window]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readDateOverride();
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate].splice(parseInt(btn.getAttribute("data-remove-override-window"), 10), 1);
+        renderSlotsEditor();
+      });
+    });
+
+    var removeOverrideBtn = document.getElementById("remove-override-btn");
+    if (removeOverrideBtn){
+      removeOverrideBtn.addEventListener("click", function () {
+        delete catalogue.timeSlots.dateOverrides[slotsOverrideDate];
+        renderSlotsEditor();
+      });
+    }
+
+    document.querySelectorAll("[data-edit-override]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readDateOverride();
+        slotsOverrideDate = btn.getAttribute("data-edit-override");
+        renderSlotsEditor();
+      });
+    });
+    document.querySelectorAll("[data-delete-override]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = btn.getAttribute("data-delete-override");
+        delete catalogue.timeSlots.dateOverrides[d];
+        if (slotsOverrideDate === d) slotsOverrideDate = "";
+        renderSlotsEditor();
+      });
+    });
+  }
+
   function renderSlotsEditor(){
     var root = document.getElementById("slots-editor");
     if (!catalogue.timeSlots) catalogue.timeSlots = { interval: 15, byDay: {} };
@@ -546,6 +671,8 @@
     html += '<div class="field" style="margin-top:14px;max-width:200px;"><label>Intervalle entre deux créneaux (minutes)</label><input type="number" step="5" min="5" id="slot-interval-input" value="' + (catalogue.timeSlots.interval || 15) + '"></div>' +
       '</div>';
 
+    html += renderDateOverrideEditor();
+
     html += '<div class="panel"><h2>Créneaux déjà pris</h2>' +
       '<p class="help" style="margin-top:0;margin-bottom:14px;">Dès que vous confirmez une réservation reçue par e-mail, bloquez son créneau ici pour qu\'il ne soit plus proposé aux autres clients.</p>' +
       '<div class="date-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">' +
@@ -568,6 +695,7 @@
     }
     html += '</div>';
     root.innerHTML = html;
+    wireDateOverrideEditor();
 
     root.querySelectorAll("[data-select-day]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -647,6 +775,7 @@
     catalogue.timeSlots.byDay[slotsEditorDay] = windows;
     var intervalInput = document.getElementById("slot-interval-input");
     if (intervalInput) catalogue.timeSlots.interval = parseInt(intervalInput.value, 10) || 15;
+    readDateOverride();
   }
 
   function renderStockEditor(){

@@ -432,7 +432,8 @@
     var slots = [];
     var interval = (timeSlots && timeSlots.interval) || 15;
     var byDay = (timeSlots && timeSlots.byDay) || {};
-    var windows = byDay[dayNameFor(dateStr)] || [];
+    var overrides = (timeSlots && timeSlots.dateOverrides) || {};
+    var windows = overrides.hasOwnProperty(dateStr) ? overrides[dateStr] : (byDay[dayNameFor(dateStr)] || []);
     windows.forEach(function (w) {
       var cur = toMinutes(w.start);
       var end = toMinutes(w.end);
