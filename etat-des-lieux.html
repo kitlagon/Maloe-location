@@ -101,10 +101,25 @@
   </div>
 
   <div class="panel">
-    <h2>Client</h2>
+    <h2>Réservation / Client</h2>
+    <div class="field">
+      <label for="reservation-select">Réservation</label>
+      <select id="reservation-select" style="width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.94rem;background:white;color:var(--ink);">
+        <option value="">— Sélectionner une réservation —</option>
+      </select>
+    </div>
+    <div id="reservation-info" style="display:none;background:var(--sand-light);border-radius:10px;padding:12px;font-size:0.86rem;margin-bottom:14px;"></div>
     <div class="field">
       <label for="nom-client">Nom du client</label>
-      <input type="text" id="nom-client" placeholder="Nom et prénom">
+      <input type="text" id="nom-client" placeholder="Nom et prénom" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="telephone-client">Téléphone</label>
+      <input type="tel" id="telephone-client" placeholder="06 12 34 56 78" autocomplete="tel" inputmode="tel">
+    </div>
+    <div class="field">
+      <label for="email-client">E-mail</label>
+      <input type="email" id="email-client" placeholder="client@exemple.com" autocomplete="email">
     </div>
   </div>
 
@@ -161,6 +176,51 @@
     "Masque + tuba", "Masque Easybreath seul", "Palmes seules",
     "Caméra 360° + accessoires aquatiques", "Kit PMT + caméra", "Palmes + Easybreath + caméra"
   ];
+
+  var selectedReservation = null;
+  var reservationSelect = document.getElementById("reservation-select");
+  var reservationInfo = document.getElementById("reservation-info");
+  var reservations = JSON.parse(localStorage.getItem("maloe_reservations") || "[]");
+
+  function formatReservationDate(iso){
+    if (!iso) return "—";
+    try { return new Date(iso).toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"}); } catch(e){ return iso; }
+  }
+
+  reservations.forEach(function(r){
+    var option = document.createElement("option");
+    option.value = r.id;
+    option.textContent = r.id + " — " + ((r.client && r.client.nom) || "Client") + " — " + formatReservationDate(r.retrait);
+    reservationSelect.appendChild(option);
+  });
+
+  function applyReservation(r){
+    selectedReservation = r || null;
+    if (!r){
+      reservationInfo.style.display = "none";
+      return;
+    }
+    document.getElementById("nom-client").value = (r.client && r.client.nom) || "";
+    document.getElementById("telephone-client").value = (r.client && r.client.telephone) || "";
+    document.getElementById("email-client").value = (r.client && r.client.email) || "";
+    var items = (r.lines || []).map(function(line){ return line.id + " × " + line.qty; }).join("<br>");
+    reservationInfo.innerHTML = "<strong>" + r.id + "</strong><br>" +
+      "Retrait : " + formatReservationDate(r.retrait) + (r.slotRetrait ? " à " + r.slotRetrait : "") + "<br>" +
+      "Retour : " + formatReservationDate(r.retour) + (r.slotRetour ? " à " + r.slotRetour : "") +
+      (items ? "<br><br><strong>Matériel réservé</strong><br>" + items : "");
+    reservationInfo.style.display = "block";
+  }
+
+  reservationSelect.addEventListener("change", function(){
+    var id = this.value;
+    applyReservation(reservations.filter(function(r){ return r.id === id; })[0] || null);
+  });
+
+  var requestedReservationId = new URLSearchParams(window.location.search).get("reservation");
+  if (requestedReservationId){
+    reservationSelect.value = requestedReservationId;
+    applyReservation(reservations.filter(function(r){ return r.id === requestedReservationId; })[0] || null);
+  }
 
   document.getElementById("timestamp").textContent =
     "Horodatage : " + new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
@@ -260,6 +320,8 @@
   document.getElementById("generate-btn").addEventListener("click", async function () {
     var errorEl = document.getElementById("error-msg");
     var nom = document.getElementById("nom-client").value.trim();
+    var telephone = document.getElementById("telephone-client").value.trim();
+    var email = document.getElementById("email-client").value.trim();
     var type = document.querySelector('input[name="type"]:checked').value;
     var remarques = document.getElementById("remarques").value.trim();
     var kits = KIT_NAMES.map(function (name, i) {
@@ -267,8 +329,8 @@
       return qty > 0 ? (qty > 1 ? qty + "× " + name : name) : null;
     }).filter(Boolean);
 
-    if (!nom || kits.length === 0 || !hasSignature){
-      errorEl.textContent = "Merci de renseigner le nom du client, au moins un kit, et de faire signer le client avant de générer le PDF.";
+    if (!nom || !telephone || kits.length === 0 || !hasSignature){
+      errorEl.textContent = "Merci de renseigner le nom, le téléphone du client, au moins un kit, et de faire signer le client avant de générer le PDF.";
       errorEl.style.display = "block";
       return;
     }
@@ -317,9 +379,11 @@
     pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(232,98,46);
     pdf.text(type === "Remise" ? "REMISE DU MATÉRIEL" : "RETOUR DU MATÉRIEL", margin, y); y += 7;
     pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(80,80,80);
+    pdf.text("N° réservation : " + (selectedReservation ? selectedReservation.id : "Sans réservation"), margin, y); y += 5;
     pdf.text("Horodatage : " + dateLabel, margin, y); y += 10;
 
-    section("Client"); textBlock(nom);
+    section("Client");
+    textBlock("Nom : " + nom + "\nTéléphone : " + (telephone || "—") + "\nE-mail : " + (email || "—"));
     section("Kits concernés"); textBlock(kits.join(", "));
     if (remarques) { section("État / remarques"); textBlock(remarques); }
     addPhotos("Pièce d'identité", idPhotos);
