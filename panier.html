@@ -157,9 +157,11 @@
       function isSlotTaken(date, time){
         return takenSlots.some(function (t) { return t.date === date && t.time === time; });
       }
-      function availableSlotsFor(date){
+      function availableSlotsFor(date, afterTime){
         if (!date) return [];
-        return generateSlotsForDate(timeSlots, date).filter(function (t) { return !isSlotTaken(date, t); });
+        var slots = generateSlotsForDate(timeSlots, date).filter(function (t) { return !isSlotTaken(date, t); });
+        if (afterTime) slots = slots.filter(function (t) { return t > afterTime; });
+        return slots;
       }
 
       var params = new URLSearchParams(window.location.search);
@@ -207,7 +209,8 @@
 
       function resolveSlot(date, which){
         if (!date) return "";
-        var slots = availableSlotsFor(date);
+        var afterTime = (which === "retour" && retrait && date === retrait) ? selectedRetraitSlot : null;
+        var slots = availableSlotsFor(date, afterTime);
         var current = which === "retrait" ? selectedRetraitSlot : selectedRetourSlot;
         if (slots.indexOf(current) === -1) current = slots[0] || "";
         if (which === "retrait") selectedRetraitSlot = current; else selectedRetourSlot = current;
@@ -232,11 +235,13 @@
 
       function slotSelectHtml(id, date, which){
         if (!date) return '<p class="help" style="font-size:0.82rem;color:var(--ink-soft);margin:0;">Choisissez cette date sur la page précédente.</p>';
-        var slots = availableSlotsFor(date);
+        var afterTime = (which === "retour" && retrait && date === retrait) ? selectedRetraitSlot : null;
+        var slots = availableSlotsFor(date, afterTime);
         if (slots.length === 0){
           var subject = encodeURIComponent("Créneau — aucune disponibilité");
-          var body = encodeURIComponent("Bonjour Maloé Location,\n\nAucun créneau n'est disponible le " + formatDate(date) + ". Avez-vous une autre possibilité ?\n\nMerci !");
-          return '<p class="caution-note" style="margin:0;">Aucun créneau disponible ce jour — <a href="mailto:contact@kitlagon.re?subject=' + subject + '&body=' + body + '">nous contacter</a></p>';
+          var reason = afterTime ? ("aucun créneau de retour n'est disponible après " + afterTime + " le " + formatDate(date)) : ("aucun créneau n'est disponible le " + formatDate(date));
+          var body = encodeURIComponent("Bonjour Maloé Location,\n\nPour ma réservation, " + reason + ". Avez-vous une autre possibilité ?\n\nMerci !");
+          return '<p class="caution-note" style="margin:0;">' + (afterTime ? "Aucun créneau de retour après " + afterTime + " ce jour-là" : "Aucun créneau disponible ce jour") + ' — <a href="mailto:contact@kitlagon.re?subject=' + subject + '&body=' + body + '">nous contacter</a></p>';
         }
         var current = resolveSlot(date, which);
         return '<select id="' + id + '">' + slots.map(function (t) {
@@ -372,51 +377,8 @@
 
         document.getElementById("send-btn").addEventListener("click", function () {
           var nom = document.getElementById("client-nom").value.trim();
-          var telephone = document.getElementById("client-telephone").value.trim();
           var email = document.getElementById("client-email").value.trim();
           var message = document.getElementById("client-message").value.trim();
-
-          if (!nom || !telephone || !email){
-            alert("Merci de renseigner votre nom, votre numéro de téléphone et votre e-mail.");
-            return;
-          }
-
-          function generateReservationId(){
-            var d = new Date();
-            var date = d.getFullYear().toString() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
-            var key = "maloe_reservation_seq_" + date;
-            var seq = (parseInt(localStorage.getItem(key) || "0", 10) || 0) + 1;
-            localStorage.setItem(key, String(seq));
-            return "ML-" + date + "-" + String(seq).padStart(3, "0");
-          }
-
-          var reservationId = generateReservationId();
-          var clientKey = (email || telephone).toLowerCase().replace(/\\s+/g, "");
-          var reservation = {
-            id: reservationId,
-            clientKey: clientKey,
-            client: { nom: nom, telephone: telephone, email: email },
-            retrait: retrait,
-            retour: retour,
-            slotRetrait: selectedRetraitSlot,
-            slotRetour: selectedRetourSlot,
-            days: days,
-            lines: lines,
-            promo: appliedPromo ? { code: appliedPromo.code, discount: appliedPromo.discount } : null,
-            total: finalTotal,
-            caution: totalCaution,
-            message: message,
-            createdAt: new Date().toISOString(),
-            etatsDesLieux: []
-          };
-          var reservations = JSON.parse(localStorage.getItem("maloe_reservations") || "[]");
-          reservations.unshift(reservation);
-          localStorage.setItem("maloe_reservations", JSON.stringify(reservations.slice(0, 100)));
-          var clients = JSON.parse(localStorage.getItem("maloe_clients") || "[]");
-          var existingClient = clients.filter(function(c){ return c.key === clientKey; })[0];
-          if (existingClient){ existingClient.nom = nom; existingClient.telephone = telephone; existingClient.email = email; existingClient.updatedAt = new Date().toISOString(); }
-          else { clients.unshift({ key: clientKey, nom: nom, telephone: telephone, email: email, createdAt: new Date().toISOString() }); }
-          localStorage.setItem("maloe_clients", JSON.stringify(clients.slice(0, 100)));
 
           var mailLines = lines.map(function (line) {
             var item = findItem(line.id);
@@ -436,14 +398,12 @@
             "Date de retrait : " + (retrait || "à préciser") + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
             "Date de retour : " + (retour || "à préciser") + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
             "",
-            "N° réservation : " + reservationId,
             "Nom : " + (nom || "à préciser"),
-            "Téléphone : " + (telephone || "à préciser"),
             "E-mail : " + (email || "à préciser"),
             message ? ("Message : " + message) : ""
           ].filter(Boolean);
 
-          var subject = encodeURIComponent("Réservation " + reservationId + " — Maloé Location");
+          var subject = encodeURIComponent("Demande de réservation Maloé Location");
           var body = encodeURIComponent(bodyParts.join("\n"));
           window.location.href = "mailto:contact@kitlagon.re?subject=" + subject + "&body=" + body;
         });
