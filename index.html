@@ -447,9 +447,11 @@
   function isSlotTaken(date, time){
     return (catalogue.takenSlots || []).some(function (t) { return t.date === date && t.time === time; });
   }
-  function availableSlotsFor(date){
+  function availableSlotsFor(date, afterTime){
     if (!date) return [];
-    return generateSlotsForDate(catalogue.timeSlots || {}, date).filter(function (t) { return !isSlotTaken(date, t); });
+    var slots = generateSlotsForDate(catalogue.timeSlots || {}, date).filter(function (t) { return !isSlotTaken(date, t); });
+    if (afterTime) slots = slots.filter(function (t) { return t > afterTime; });
+    return slots;
   }
 
   function getDays(){
@@ -771,11 +773,12 @@
       ? retraitSlots.map(function (t) { return '<option value="' + t + '"' + (t === selectedSlotRetrait ? " selected" : "") + '>' + t + '</option>'; }).join("")
       : '<option value="">' + (selRetrait ? "Aucun créneau libre" : "Choisissez d'abord une date") + '</option>';
 
-    var retourSlots = availableSlotsFor(selRetour);
+    var sameDay = selRetrait && selRetour && selRetrait === selRetour;
+    var retourSlots = availableSlotsFor(selRetour, sameDay ? selectedSlotRetrait : null);
     if (retourSlots.indexOf(selectedSlotRetour) === -1) selectedSlotRetour = retourSlots[0] || "";
     slotRetourEl.innerHTML = retourSlots.length
       ? retourSlots.map(function (t) { return '<option value="' + t + '"' + (t === selectedSlotRetour ? " selected" : "") + '>' + t + '</option>'; }).join("")
-      : '<option value="">' + (selRetour ? "Aucun créneau libre" : "Choisissez d'abord une date") + '</option>';
+      : '<option value="">' + (selRetour ? (sameDay ? "Aucun créneau après " + selectedSlotRetrait : "Aucun créneau libre") : "Choisissez d'abord une date") + '</option>';
   }
 
   function updateSelection(){
@@ -791,6 +794,7 @@
 
   document.getElementById("slot-retrait").addEventListener("change", function () {
     selectedSlotRetrait = this.value;
+    renderSlotSelects();
     renderCatalogue();
     renderCartBar();
   });

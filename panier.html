@@ -233,20 +233,15 @@
         return diffDays >= 0 ? diffDays + 1 : null;
       }
 
-      function slotSelectHtml(id, date, which){
-        if (!date) return '<p class="help" style="font-size:0.82rem;color:var(--ink-soft);margin:0;">Choisissez cette date sur la page précédente.</p>';
+      function slotDisplayHtml(date, which){
+        if (!date) return '<p class="help" style="font-size:0.82rem;color:var(--ink-soft);margin:0;">Non choisi</p>';
         var afterTime = (which === "retour" && retrait && date === retrait) ? selectedRetraitSlot : null;
         var slots = availableSlotsFor(date, afterTime);
-        if (slots.length === 0){
-          var subject = encodeURIComponent("Créneau — aucune disponibilité");
-          var reason = afterTime ? ("aucun créneau de retour n'est disponible après " + afterTime + " le " + formatDate(date)) : ("aucun créneau n'est disponible le " + formatDate(date));
-          var body = encodeURIComponent("Bonjour Maloé Location,\n\nPour ma réservation, " + reason + ". Avez-vous une autre possibilité ?\n\nMerci !");
-          return '<p class="caution-note" style="margin:0;">' + (afterTime ? "Aucun créneau de retour après " + afterTime + " ce jour-là" : "Aucun créneau disponible ce jour") + ' — <a href="mailto:contact@kitlagon.re?subject=' + subject + '&body=' + body + '">nous contacter</a></p>';
-        }
         var current = resolveSlot(date, which);
-        return '<select id="' + id + '">' + slots.map(function (t) {
-          return '<option value="' + t + '"' + (t === current ? " selected" : "") + '>' + t + '</option>';
-        }).join("") + '</select>';
+        if (!current || slots.length === 0){
+          return '<p class="caution-note" style="margin:0;">Ce créneau n\'est plus disponible — modifiez-le sur la page précédente.</p>';
+        }
+        return '<p style="margin:0;font-weight:500;">' + current + '</p>';
       }
 
       function findValidPromo(codeInput){
@@ -320,8 +315,9 @@
 
         var slotsHtml = '<div class="contact-panel">' +
           '<h3>Créneaux horaires</h3>' +
-          '<div class="field"><label>Créneau de retrait</label>' + slotSelectHtml("slot-retrait", retrait, "retrait") + '</div>' +
-          '<div class="field" style="margin-bottom:0;"><label>Créneau de retour</label>' + slotSelectHtml("slot-retour", retour, "retour") + '</div>' +
+          '<div class="field"><label>Créneau de retrait</label>' + slotDisplayHtml(retrait, "retrait") + '</div>' +
+          '<div class="field" style="margin-bottom:0;"><label>Créneau de retour</label>' + slotDisplayHtml(retour, "retour") + '</div>' +
+          '<p class="form-note" style="margin-top:10px;"><a href="index.html#dates">Modifier les dates ou créneaux</a></p>' +
           '</div>';
 
         content.innerHTML =
@@ -369,11 +365,6 @@
         if (promoRemoveBtn){
           promoRemoveBtn.addEventListener("click", function () { appliedPromo = null; render(); });
         }
-
-        var slotRetraitEl = document.getElementById("slot-retrait");
-        if (slotRetraitEl) slotRetraitEl.addEventListener("change", function () { selectedRetraitSlot = this.value; render(); });
-        var slotRetourEl = document.getElementById("slot-retour");
-        if (slotRetourEl) slotRetourEl.addEventListener("change", function () { selectedRetourSlot = this.value; render(); });
 
         document.getElementById("send-btn").addEventListener("click", function () {
           var nom = document.getElementById("client-nom").value.trim();
