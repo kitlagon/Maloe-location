@@ -522,6 +522,7 @@
           var pending = pendingQty[item.id] || 1;
           var canIncreasePending = !canAdd(item, {}, pending + 1, usage);
           var canAddPending = !canAdd(item, {}, pending, usage);
+          var canIncrementCart = !canAdd(item, {}, 1, usage);
           html += '<div class="qty-block">' +
             '<div class="qty-control">' +
               '<button type="button" data-pending-action="dec" data-product="' + item.id + '">−</button>' +
@@ -529,7 +530,13 @@
               '<button type="button" data-pending-action="inc" data-product="' + item.id + '"' + (canIncreasePending ? '' : ' disabled') + '>+</button>' +
             '</div>' +
             '<button type="button" class="add-btn" data-commit-simple="' + item.id + '"' + (canAddPending ? '' : ' disabled') + '>Ajouter au panier</button>' +
-            (inCartQty > 0 ? '<div class="in-cart-note">' + inCartQty + ' déjà dans le panier</div>' : '') +
+            (inCartQty > 0 ? '<div class="size-cart-lines"><div class="size-cart-line">' +
+              '<span>' + inCartQty + ' dans le panier</span>' +
+              '<div class="qty-control">' +
+                '<button type="button" data-action="dec" data-product="' + item.id + '" data-sizes="{}">−</button>' +
+                '<span>' + inCartQty + '</span>' +
+                '<button type="button" data-action="inc" data-product="' + item.id + '" data-sizes="{}"' + (canIncrementCart ? '' : ' disabled') + '>+</button>' +
+              '</div></div></div>' : '') +
           '</div>';
           if (!canAddPending){
             var blockedNone = canAdd(item, {}, pending, usage);
