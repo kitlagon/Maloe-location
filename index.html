@@ -123,10 +123,8 @@
   .product-price .total-line{font-size:0.78rem;color:var(--lagoon-deep);font-weight:500;margin-top:2px;}
   .product-caution{font-size:0.76rem;color:var(--coral);}
   .qty-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;}
-  .qty-block{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
-  .qty-block .add-btn{width:100%;text-align:center;}
   .in-cart-note{font-size:0.76rem;color:var(--lagoon-bright);}
-  .size-picker .add-btn{width:100%;text-align:center;}
+  .product-card .add-btn{width:100%;text-align:center;}
   .qty-control{display:flex;align-items:center;border:1px solid var(--line);border-radius:100px;overflow:hidden;}
   .qty-control button{background:none;border:none;width:30px;height:30px;font-size:1.05rem;cursor:pointer;color:var(--ink);}
   .qty-control span{min-width:20px;text-align:center;font-size:0.88rem;}
@@ -339,7 +337,6 @@
 <script>
   var catalogue = { components: [], groups: [] };
   var cart = {}; // clé = cartKey(productId, sizes) -> qty
-  var pendingQty = {}; // productId -> quantité choisie avant validation (articles sans taille)
 
   function findComponent(id){
     return catalogue.components.filter(function (c) { return c.id === id; })[0] || null;
@@ -519,28 +516,19 @@
 
         if (sizedComponents.length === 0){
           var inCartQty = cart[cartKey(item.id, {})] || 0;
-          var pending = pendingQty[item.id] || 1;
-          var canIncreasePending = !canAdd(item, {}, pending + 1, usage);
-          var canAddPending = !canAdd(item, {}, pending, usage);
-          var canIncrementCart = !canAdd(item, {}, 1, usage);
-          html += '<div class="qty-block">' +
-            '<div class="qty-control">' +
-              '<button type="button" data-pending-action="dec" data-product="' + item.id + '">−</button>' +
-              '<span>' + pending + '</span>' +
-              '<button type="button" data-pending-action="inc" data-product="' + item.id + '"' + (canIncreasePending ? '' : ' disabled') + '>+</button>' +
-            '</div>' +
-            '<button type="button" class="add-btn" data-commit-simple="' + item.id + '"' + (canAddPending ? '' : ' disabled') + '>Ajouter au panier</button>' +
-            (inCartQty > 0 ? '<div class="size-cart-lines"><div class="size-cart-line">' +
+          var blockedSimple = canAdd(item, {}, 1, usage);
+          html += '<div class="qty-row"><button type="button" class="add-btn" data-action="inc" data-product="' + item.id + '" data-sizes="{}"' + (blockedSimple ? ' disabled' : '') + '>Ajouter au panier</button></div>';
+          if (blockedSimple){
+            html += '<div class="product-caution" style="color:var(--coral);">Stock complet (' + componentLabel(blockedSimple.componentId, blockedSimple.size) + ') — <a href="' + contactMailto(item.name) + '">nous contacter</a></div>';
+          }
+          if (inCartQty > 0){
+            html += '<div class="size-cart-lines"><div class="size-cart-line">' +
               '<span>' + inCartQty + ' dans le panier</span>' +
               '<div class="qty-control">' +
                 '<button type="button" data-action="dec" data-product="' + item.id + '" data-sizes="{}">−</button>' +
                 '<span>' + inCartQty + '</span>' +
-                '<button type="button" data-action="inc" data-product="' + item.id + '" data-sizes="{}"' + (canIncrementCart ? '' : ' disabled') + '>+</button>' +
-              '</div></div></div>' : '') +
-          '</div>';
-          if (!canAddPending){
-            var blockedNone = canAdd(item, {}, pending, usage);
-            html += '<div class="product-caution" style="color:var(--coral);">Stock complet (' + componentLabel(blockedNone.componentId, blockedNone.size) + ') — <a href="' + contactMailto(item.name) + '">nous contacter</a></div>';
+                '<button type="button" data-action="inc" data-product="' + item.id + '" data-sizes="{}"' + (blockedSimple ? ' disabled' : '') + '>+</button>' +
+              '</div></div></div>';
           }
         } else {
           html += '<div class="size-picker" data-product="' + item.id + '">';
@@ -604,25 +592,6 @@
   }
 
   document.getElementById("catalogue-groups").addEventListener("click", function (e) {
-    var pendingBtn = e.target.closest("[data-pending-action]");
-    if (pendingBtn && !pendingBtn.disabled){
-      var ppid = pendingBtn.getAttribute("data-product");
-      var pAction = pendingBtn.getAttribute("data-pending-action");
-      var current = pendingQty[ppid] || 1;
-      pendingQty[ppid] = Math.max(1, current + (pAction === "inc" ? 1 : -1));
-      renderCatalogue();
-      return;
-    }
-
-    var commitBtn = e.target.closest("[data-commit-simple]");
-    if (commitBtn && !commitBtn.disabled){
-      var cpid = commitBtn.getAttribute("data-commit-simple");
-      var cpending = pendingQty[cpid] || 1;
-      changeQty(cpid, {}, cpending);
-      pendingQty[cpid] = 1;
-      return;
-    }
-
     var stepBtn = e.target.closest("[data-action]");
     if (stepBtn && !stepBtn.disabled){
       var productId = stepBtn.getAttribute("data-product");
