@@ -126,9 +126,9 @@
         "Taille 3"
       ],
       "stock": {
-        "Taille 1": null,
-        "Taille 2": 8,
-        "Taille 3": null
+        "Taille 1": 2,
+        "Taille 2": 3,
+        "Taille 3": 3
       }
     },
     {
