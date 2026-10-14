@@ -183,7 +183,7 @@
       "items": [
         {
           "id": "glaciere",
-          "name": "Sac à dos glacière + pain de glace",
+          "name": "Sac à dos glacière + pains de glace",
           "desc": "Rando, plage, pique-nique : le sac à dos glacière 20 L et ses 2 pains de glace qui garde tout au frais.",
           "prices": [
             7,
@@ -202,7 +202,7 @@
         {
           "id": "parasol",
           "name": "Parasol + pied",
-          "desc": "Soleil au rendez-vous ? Gardez la fraîcheur avec le parasol 2 place 160 à protection UPF 50+ et son pied à vis.",
+          "desc": "Soleil au rendez-vous ? Gardez la fraîcheur avec le parasol 2 places à protection UPF 50+ et son pied à vis.",
           "prices": [
             6,
             4.5,
