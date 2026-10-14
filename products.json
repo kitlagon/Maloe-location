@@ -272,7 +272,7 @@
         {
           "id": "masque-tuba",
           "name": "Masque + tuba",
-          "desc": "Masque, tuba, et le lagon à vos pieds !",
+          "desc": "Masque, tuba, et c'est partie pour la plongée !",
           "prices": [
             10,
             8,
@@ -290,7 +290,7 @@
         {
           "id": "easybreath",
           "name": "Masque Easybreath",
-          "desc": "Respirez, regardez, explorez : le masque Easybreath, pour plonger dans le lagon !",
+          "desc": "Respirez, regardez, explorez : le masque Easybreath, pour explorer le lagon !",
           "prices": [
             10,
             8,
