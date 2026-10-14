@@ -179,7 +179,7 @@
   "groups": [
     {
       "group": "Pack plage",
-      "note": "sans réservation d'emplacement",
+      "note": "",
       "items": [
         {
           "id": "glaciere",
