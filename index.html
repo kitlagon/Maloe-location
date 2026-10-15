@@ -812,14 +812,31 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       catalogue = data;
+
+      // Restaurer le panier, les dates et les créneaux transmis par la page panier.
+      var pageParams = new URLSearchParams(window.location.search);
+      try {
+        var savedCart = JSON.parse(pageParams.get("cart") || "[]");
+        savedCart.forEach(function (line) {
+          if (line && line.id && findProduct(line.id) && line.qty > 0) {
+            cart[cartKey(line.id, line.sizes || {})] = line.qty;
+          }
+        });
+      } catch (e) {}
+      selRetrait = pageParams.get("retrait") || null;
+      selRetour = pageParams.get("retour") || null;
+      selectedSlotRetrait = pageParams.get("slotRetrait") || "";
+      selectedSlotRetour = pageParams.get("slotRetour") || "";
+      if (selRetrait) {
+        calMonth = new Date(selRetrait + "T12:00:00");
+        calMonth.setDate(1);
+      }
+
       var heroEl = document.getElementById("hero");
       heroEl.style.backgroundImage = "url('images/hero.jpg?v=" + (catalogue.photoVersion || 1) + "')";
       if (catalogue.heroTitle) document.getElementById("hero-title").textContent = catalogue.heroTitle;
       if (catalogue.heroSubtitle) document.getElementById("hero-subtitle").textContent = catalogue.heroSubtitle;
-      renderSlotSelects();
-      renderCatalogue();
-      renderCartBar();
-      renderCalendar();
+      updateSelection();
     })
     .catch(function () {
       document.getElementById("catalogue-groups").innerHTML = '<p style="color:var(--coral);">Impossible de charger les kits pour le moment.</p>';
