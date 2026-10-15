@@ -320,7 +320,7 @@
           '<h3>Créneaux horaires</h3>' +
           '<div class="field"><label>Créneau de retrait</label>' + slotDisplayHtml(retrait, "retrait") + '</div>' +
           '<div class="field" style="margin-bottom:0;"><label>Créneau de retour</label>' + slotDisplayHtml(retour, "retour") + '</div>' +
-          '<p class="form-note" style="margin-top:10px;"><a href="index.html#dates">Modifier les dates ou créneaux</a></p>' +
+          '<p class="form-note" style="margin-top:10px;"><a href="index.html#dates" id="edit-dates-link">Modifier les dates ou créneaux</a></p>' +
           '</div>';
 
         content.innerHTML =
@@ -345,6 +345,20 @@
             '<button class="btn btn-primary send-btn" id="send-btn">Envoyer la demande de réservation</button>' +
             '<p class="form-note">Ouvre votre messagerie avec un e-mail pré-rempli vers Maloé Location. La réservation en ligne avec paiement arrivera dans une prochaine version.</p>' +
           '</div>';
+
+        var editDatesLink = document.getElementById("edit-dates-link");
+        if (editDatesLink){
+          editDatesLink.addEventListener("click", function (e) {
+            e.preventDefault();
+            var params = new URLSearchParams();
+            params.set("cart", JSON.stringify(lines));
+            if (retrait) params.set("retrait", retrait);
+            if (retour) params.set("retour", retour);
+            if (selectedRetraitSlot) params.set("slotRetrait", selectedRetraitSlot);
+            if (selectedRetourSlot) params.set("slotRetour", selectedRetourSlot);
+            window.location.href = "index.html?" + params.toString() + "#dates";
+          });
+        }
 
         content.querySelectorAll("[data-remove]").forEach(function (btn) {
           btn.addEventListener("click", function () { removeLine(parseInt(btn.getAttribute("data-remove"), 10)); });
