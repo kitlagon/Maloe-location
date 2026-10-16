@@ -466,7 +466,7 @@
     var retourSlot = document.getElementById("slot-retour").value;
     // Règle spéciale : retrait après 17 h, retour le lendemain jusqu'à 18 h inclus = 1 jour.
     if (diffDays === 1 && retraitSlot && retourSlot &&
-        toMinutes(retraitSlot) > 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
+        toMinutes(retraitSlot) >= 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
       return 1;
     }
     return diffDays + 1;
