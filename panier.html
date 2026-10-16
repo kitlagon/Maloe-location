@@ -224,16 +224,23 @@
         if (!retrait || !retour) return null;
         var retraitSlot = resolveSlot(retrait, "retrait");
         var retourSlot = resolveSlot(retour, "retour");
+        var d1 = new Date(retrait);
+        var d2 = new Date(retour);
+        var diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) return null;
+
+        // Règle spéciale : retrait après 17 h, retour le lendemain jusqu'à 18 h inclus = 1 jour.
+        if (diffDays === 1 && retraitSlot && retourSlot &&
+            toMinutes(retraitSlot) > 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
+          return 1;
+        }
         if (retraitSlot && retourSlot){
           var start = new Date(retrait + "T" + retraitSlot);
           var end = new Date(retour + "T" + retourSlot);
           var diffHours = (end - start) / (1000 * 60 * 60);
           return diffHours > 0 ? Math.max(1, Math.ceil(diffHours / 24)) : null;
         }
-        var d1 = new Date(retrait);
-        var d2 = new Date(retour);
-        var diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 ? diffDays + 1 : null;
+        return diffDays + 1;
       }
 
       function slotDisplayHtml(date, which){
