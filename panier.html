@@ -144,6 +144,8 @@
         slots.push(fromMinutes(cur));
         cur += interval;
       }
+      // L'heure de fermeture à 18 h est aussi un créneau autorisé.
+      if (end === 18 * 60 && slots.indexOf("18:00") === -1) slots.push("18:00");
     });
     return slots;
   }
