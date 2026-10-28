@@ -43,9 +43,8 @@ jobs:
             exit 1
           fi
 
-          # On n'utilise les clés récupérées qu'après comparaison avec les empreintes approuvées.
-          ssh-keyscan -H -T 10 -p 22 "$OVH_SFTP_HOST" > "$RUNNER_TEMP/ovh_known_hosts" 2>/dev/null
-          test -s "$RUNNER_TEMP/ovh_known_hosts"
+          # Utiliser exactement les clés qui viennent d'être vérifiées, sans refaire un scan.
+          cp "$RUNNER_TEMP/ovh_hostkeys" "$RUNNER_TEMP/ovh_known_hosts"
           echo "Vérification des empreintes réussie."
 
       - name: Transférer les fichiers vers le dossier www sans supprimer les fichiers existants
