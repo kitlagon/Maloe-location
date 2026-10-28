@@ -1,4 +1,4 @@
-name: Vérifier le serveur SFTP OVH (sans transfert)
+name: Déployer Maloe Location sur OVH (SFTP sécurisé)
 
 on:
   workflow_dispatch:
@@ -7,30 +7,62 @@ permissions:
   contents: read
 
 jobs:
-  verify-sftp-host:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Installer les outils SSH
-        run: sudo apt-get update && sudo apt-get install -y openssh-client
+      - name: Récupérer le site depuis GitHub
+        uses: actions/checkout@v4
 
-      - name: Afficher les empreintes du serveur OVH
+      - name: Installer les outils SFTP
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-client lftp
+
+      - name: Vérifier les empreintes SSH avant tout transfert
         env:
           OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+          EXPECTED_RSA: ${{ secrets.OVH_SFTP_RSA_FINGERPRINT }}
+          EXPECTED_ED25519: ${{ secrets.OVH_SFTP_ED25519_FINGERPRINT }}
         run: |
           set -eu
-          if [ -z "${OVH_SFTP_HOST:-}" ]; then
-            echo "Le secret OVH_SFTP_HOST est absent."
-            exit 1
-          fi
-          echo "Serveur testé : $OVH_SFTP_HOST:22"
-          echo "Récupération des clés publiques présentées par le serveur (aucun fichier ne sera envoyé)."
-          ssh-keyscan -T 10 -p 22 "$OVH_SFTP_HOST" 2>/dev/null > hostkeys.txt
-          if [ ! -s hostkeys.txt ]; then
-            echo "Aucune clé reçue. Vérifie le nom du serveur et la disponibilité du SFTP."
-            exit 1
-          fi
+          : "${OVH_SFTP_HOST:?Secret OVH_SFTP_HOST manquant}"
+          : "${EXPECTED_RSA:?Secret OVH_SFTP_RSA_FINGERPRINT manquant}"
+          : "${EXPECTED_ED25519:?Secret OVH_SFTP_ED25519_FINGERPRINT manquant}"
+
+          ssh-keyscan -T 10 -p 22 "$OVH_SFTP_HOST" > "$RUNNER_TEMP/ovh_hostkeys" 2>/dev/null
+          test -s "$RUNNER_TEMP/ovh_hostkeys"
+
+          ACTUAL_RSA=$(ssh-keygen -lf "$RUNNER_TEMP/ovh_hostkeys" | awk '$4=="(RSA)" {print $2; exit}')
+          ACTUAL_ED25519=$(ssh-keygen -lf "$RUNNER_TEMP/ovh_hostkeys" | awk '$4=="(ED25519)" {print $2; exit}')
+
           echo "Empreintes observées :"
-          ssh-keygen -lf hostkeys.txt
-          echo ""
-          echo "IMPORTANT : ces empreintes sont observées, mais ne sont pas encore authentifiées auprès d'OVH."
-          echo "Aucun identifiant/mot de passe n'a été utilisé et aucun fichier n'a été transféré.";
+          ssh-keygen -lf "$RUNNER_TEMP/ovh_hostkeys"
+
+          if [ "$ACTUAL_RSA" != "$EXPECTED_RSA" ] || [ "$ACTUAL_ED25519" != "$EXPECTED_ED25519" ]; then
+            echo "::error::Les empreintes du serveur ne correspondent pas aux empreintes approuvées. Aucun fichier n'a été transféré."
+            exit 1
+          fi
+
+          # On n'utilise les clés récupérées qu'après comparaison avec les empreintes approuvées.
+          ssh-keyscan -H -T 10 -p 22 "$OVH_SFTP_HOST" > "$RUNNER_TEMP/ovh_known_hosts" 2>/dev/null
+          test -s "$RUNNER_TEMP/ovh_known_hosts"
+          echo "Vérification des empreintes réussie."
+
+      - name: Transférer les fichiers vers le dossier www sans supprimer les fichiers existants
+        env:
+          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+          OVH_SFTP_USER: ${{ secrets.OVH_SFTP_USER }}
+          OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+        run: |
+          set -eu
+          : "${OVH_SFTP_USER:?Secret OVH_SFTP_USER manquant}"
+          : "${OVH_SFTP_PASSWORD:?Secret OVH_SFTP_PASSWORD manquant}"
+
+          export LFTP_PASSWORD="$OVH_SFTP_PASSWORD"
+          lftp -u "$OVH_SFTP_USER" "sftp://$OVH_SFTP_HOST:22" -e "
+            set cmd:fail-exit yes;
+            set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/ovh_known_hosts\";
+            cd www;
+            mirror -R --verbose --exclude-glob .git* --exclude-glob .github* --exclude-glob README.md --exclude-glob *.md . .;
+            bye
+          "
