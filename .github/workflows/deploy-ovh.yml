@@ -1,0 +1,63 @@
+
+name: Deploy Maloe Location to OVH
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SFTP password helper
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Upload website to OVH
+        env:
+          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+          OVH_SFTP_USER: ${{ secrets.OVH_SFTP_USER }}
+          OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+        run: |
+          set -eu
+
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 22 "$OVH_SFTP_HOST" >> ~/.ssh/known_hosts
+
+          export SSHPASS="$OVH_SFTP_PASSWORD"
+
+          sshpass -e sftp \
+            -oBatchMode=no \
+            -oPreferredAuthentications=password \
+            -oPubkeyAuthentication=no \
+            -P 22 \
+            -b - "$OVH_SFTP_USER@$OVH_SFTP_HOST" <<'SFTP'
+          cd www
+          -mkdir images
+          -mkdir images/kits
+          put index.html
+          put panier.html
+          put admin.html
+          put cgv.html
+          put etat-des-lieux.html
+          put mentions-legales.html
+          put products.json
+          put supabase.js
+          put images/hero.jpg images/hero.jpg
+          put images/logo-hero.webp images/logo-hero.webp
+          put images/logo.jpg images/logo.jpg
+          put images/kits/easybreath.jpg images/kits/easybreath.jpg
+          put images/kits/glaciere.jpg images/kits/glaciere.jpg
+          put images/kits/masque-tuba.jpg images/kits/masque-tuba.jpg
+          put images/kits/palme-easy.jpg images/kits/palme-easy.jpg
+          put images/kits/palmes.jpg images/kits/palmes.jpg
+          put images/kits/parasol.jpg images/kits/parasol.jpg
+          put images/kits/pmt.jpg images/kits/pmt.jpg
+          SFTP
