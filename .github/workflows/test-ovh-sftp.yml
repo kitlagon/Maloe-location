@@ -36,7 +36,7 @@ jobs:
           set -eu
           : "${OVH_SFTP_USER:?Le secret OVH_SFTP_USER est manquant}"
           : "${OVH_SFTP_PASSWORD:?Le secret OVH_SFTP_PASSWORD est manquant}"
-         lftp -u "$OVH_SFTP_USER,$OVH_SFTP_PASSWORD" "sftp://$OVH_SFTP_HOST:22" -e "
+          lftp -u "$OVH_SFTP_USER,$OVH_SFTP_PASSWORD" "sftp://$OVH_SFTP_HOST:22" -e "
             set cmd:fail-exit yes;
             set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/ovh_known_hosts\";
             pwd;
