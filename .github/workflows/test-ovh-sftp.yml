@@ -1,0 +1,54 @@
+name: Tester la connexion SFTP OVH (sans transfert)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-sftp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer les outils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-client lftp
+
+      - name: Vérifier la disponibilité du serveur et afficher les empreintes
+        env:
+          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+        run: |
+          set -eu
+          : "${OVH_SFTP_HOST:?Le secret OVH_SFTP_HOST est manquant}"
+          ssh-keyscan -T 10 -p 22 "$OVH_SFTP_HOST" > "$RUNNER_TEMP/ovh_hostkeys" 2>/dev/null
+          test -s "$RUNNER_TEMP/ovh_hostkeys"
+          echo "Empreintes présentées par le serveur (à comparer à une source officielle OVH) :"
+          ssh-keygen -lf "$RUNNER_TEMP/ovh_hostkeys"
+          cp "$RUNNER_TEMP/ovh_hostkeys" "$RUNNER_TEMP/ovh_known_hosts"
+
+      - name: Tester l'authentification et l'accès au dossier www (lecture seule)
+        env:
+          OVH_SFTP_HOST: ${{ secrets.OVH_SFTP_HOST }}
+          OVH_SFTP_USER: ${{ secrets.OVH_SFTP_USER }}
+          OVH_SFTP_PASSWORD: ${{ secrets.OVH_SFTP_PASSWORD }}
+        run: |
+          set -eu
+          : "${OVH_SFTP_USER:?Le secret OVH_SFTP_USER est manquant}"
+          : "${OVH_SFTP_PASSWORD:?Le secret OVH_SFTP_PASSWORD est manquant}"
+          export LFTP_PASSWORD="$OVH_SFTP_PASSWORD"
+          lftp -u "$OVH_SFTP_USER" "sftp://$OVH_SFTP_HOST:22" -e "
+            set cmd:fail-exit yes;
+            set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/ovh_known_hosts\";
+            pwd;
+            cd www;
+            pwd;
+            ls;
+            bye
+          "
+          echo "Test terminé : aucune opération d'envoi, de modification ou de suppression n'a été effectuée."
+
+# Sécurité : ce test récupère les clés présentées par le serveur pour cette exécution.
+# Il vérifie la connectivité et l'authentification, mais ne prouve pas à lui seul
+# que ces empreintes sont celles officiellement publiées par OVH. Ne pas utiliser
+# ce test comme validation d'identité pour un déploiement.
