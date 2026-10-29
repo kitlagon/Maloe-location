@@ -13,7 +13,7 @@ jobs:
       - name: Installer les outils
         run: |
           sudo apt-get update
-          sudo apt-get install -y openssh-client lftp
+          sudo apt-get install -y openssh-client sshpass
 
       - name: Vérifier la disponibilité du serveur et afficher les empreintes
         env:
@@ -36,15 +36,10 @@ jobs:
           set -eu
           : "${OVH_SFTP_USER:?Le secret OVH_SFTP_USER est manquant}"
           : "${OVH_SFTP_PASSWORD:?Le secret OVH_SFTP_PASSWORD est manquant}"
-          lftp -u "$OVH_SFTP_USER,$OVH_SFTP_PASSWORD" "sftp://$OVH_SFTP_HOST:22" -e "
-            set cmd:fail-exit yes;
-            set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/ovh_known_hosts\";
-            pwd;
-            cd www;
-            pwd;
-            ls;
-            bye
-          "
+          printf 'pwd\ncd www\npwd\nls\n' | SSHPASS="$OVH_SFTP_PASSWORD" sshpass -e sftp -b - \
+            -oStrictHostKeyChecking=yes \
+            -oUserKnownHostsFile="$RUNNER_TEMP/ovh_known_hosts" \
+            -P 22 "$OVH_SFTP_USER@$OVH_SFTP_HOST"
           echo "Test terminé : aucune opération d'envoi, de modification ou de suppression n'a été effectuée."
 
 # Sécurité : ce test récupère les clés présentées par le serveur pour cette exécution.
