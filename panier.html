@@ -68,6 +68,38 @@
 
   .empty-state{padding:60px 0;text-align:center;color:var(--ink-soft);}
   .empty-state a{color:var(--coral);text-decoration:underline;}
+
+  /* Nouvelle présentation du panier : claire, moderne et responsive */
+  .wrap{max-width:900px;padding:0 22px}
+  main{padding:38px 0 72px}
+  h1{font-size:2rem;color:var(--lagoon-deep)}
+  .subtitle{margin-bottom:24px}
+  .dates-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px rgba(19,36,32,.04)}
+  .dates-summary div{padding:4px 8px}
+  .dates-summary div strong{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+  .contact-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:22px;box-shadow:0 5px 20px rgba(19,36,32,.04)}
+  .contact-panel h3{font-size:1.18rem;color:var(--lagoon-deep)}
+  .cart-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin:12px 0;box-shadow:0 3px 14px rgba(19,36,32,.035)}
+  .cart-item-name{font-size:1rem;color:var(--lagoon-deep)}
+  .cart-item-price{font-size:1.05rem;font-weight:600}
+  .cart-total{padding:18px 4px;font-size:1.12rem}
+  .caution-note{color:var(--ink-soft);background:var(--sand-light);border-radius:10px;padding:10px 12px}
+  .field input,.field textarea{padding:13px 14px;border-radius:10px;border-color:#d8ded9}
+  .field input:focus,.field textarea:focus{outline:2px solid rgba(27,138,130,.22);border-color:var(--lagoon-bright)}
+  .btn{transition:transform .15s ease,opacity .15s ease}
+  .btn-primary{background:var(--lagoon-deep)}
+  .btn-primary:disabled{opacity:.55;cursor:not-allowed}
+  .payment-info{font-size:.86rem;color:var(--ink-soft);background:var(--sand-light);padding:13px 15px;border-radius:10px;margin:12px 0}
+  @media(max-width:600px){
+    .wrap{padding:0 16px}
+    main{padding:26px 0 48px}
+    h1{font-size:1.65rem}
+    .dates-summary{grid-template-columns:1fr 1fr;padding:14px;gap:8px}
+    .dates-summary div:last-child{grid-column:1/-1}
+    .contact-panel{padding:18px}
+    .cart-item{align-items:flex-start}
+  }
+
 </style>
 </head>
 <body>
@@ -340,25 +372,27 @@
 
         content.innerHTML =
           '<h1>Votre panier</h1>' +
-          '<p class="subtitle">Vérifiez votre sélection avant d\u2019envoyer votre demande.</p>' +
+          '<p class="subtitle">Vérifiez votre matériel, vos dates et le montant de votre location avant de passer au paiement.</p>' +
           datesSummary +
           slotsHtml +
           itemsHtml +
           '<div class="cart-total"><span>Sous-total' + (tierIndex === null ? ' (estimation)' : '') + '</span><span>' + subtotal + ' €</span></div>' +
           promoLineHtml +
           (appliedPromo ? '<div class="cart-total"><span>Total</span><span>' + finalTotal + ' €</span></div>' : '') +
-          '<p class="caution-note">+ ' + totalCaution + ' € de caution (pré-autorisation par carte à la remise)</p>' +
+          '<p class="caution-note">Caution à prévoir au retrait : ' + totalCaution + ' €. Elle sera demandée séparément, par chèque ou autre moyen accepté. Elle n’est pas incluse dans le paiement en ligne.</p>' +
           '<div class="contact-panel">' +
             '<h3>Code promo</h3>' +
             promoBlockHtml +
           '</div>' +
           '<div class="contact-panel">' +
             '<h3>Vos coordonnées</h3>' +
-            '<div class="field"><label for="client-nom">Nom</label><input type="text" id="client-nom" placeholder="Votre nom"></div>' +
-            '<div class="field"><label for="client-email">E-mail</label><input type="email" id="client-email" placeholder="vous@exemple.com"></div>' +
-            '<div class="field" style="margin-bottom:0;"><label for="client-message">Message (optionnel)</label><textarea id="client-message" rows="3" placeholder="Précisions, horaire souhaité..."></textarea></div>' +
-            '<button class="btn btn-primary send-btn" id="send-btn">Envoyer la demande de réservation</button>' +
-            '<p class="form-note">Ouvre votre messagerie avec un e-mail pré-rempli vers Maloé Location. La réservation en ligne avec paiement arrivera dans une prochaine version.</p>' +
+            '<div class="field"><label for="client-nom">Nom et prénom *</label><input type="text" id="client-nom" placeholder="Votre nom et prénom" autocomplete="name" required></div>' +
+            '<div class="field"><label for="client-email">Adresse e-mail *</label><input type="email" id="client-email" placeholder="vous@exemple.com" autocomplete="email" required></div>' +
+            '<div class="field"><label for="client-phone">Téléphone *</label><input type="tel" id="client-phone" placeholder="Votre numéro de téléphone" autocomplete="tel" required></div>' +
+            '<div class="field" style="margin-bottom:0;"><label for="client-message">Message (optionnel)</label><textarea id="client-message" rows="3" placeholder="Une précision concernant votre réservation..."></textarea></div>' +
+            '<div class="payment-info">Après la mise en service du paiement sécurisé Stancer, vous pourrez régler votre location par carte bancaire. Votre réservation sera confirmée automatiquement après validation effective du paiement.</div>' +
+            '<button class="btn btn-primary send-btn" id="send-btn" type="button" disabled>Paiement en ligne bientôt disponible</button>' +
+            '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
 
         var editDatesLink = document.getElementById("edit-dates-link");
@@ -398,38 +432,7 @@
           promoRemoveBtn.addEventListener("click", function () { appliedPromo = null; render(); });
         }
 
-        document.getElementById("send-btn").addEventListener("click", function () {
-          var nom = document.getElementById("client-nom").value.trim();
-          var email = document.getElementById("client-email").value.trim();
-          var message = document.getElementById("client-message").value.trim();
 
-          var mailLines = lines.map(function (line) {
-            var item = findItem(line.id);
-            var qty = line.qty;
-            var unit = tierIndex === null ? item.prices[2] : item.prices[tierIndex];
-            var sizeNote = (line.sizes && Object.keys(line.sizes).length) ? " (" + Object.values(line.sizes).join(", ") + ")" : "";
-            return "- " + item.name + sizeNote + " x" + qty + " (" + unit + " €/jour, caution " + item.caution + " €)";
-          });
-
-          var bodyParts = [
-            "Bonjour Maloé Location,",
-            "",
-            "Je souhaite réserver :",
-            mailLines.join("\n"),
-            "",
-            appliedPromo ? ("Code promo : " + appliedPromo.code + " (-" + Math.round(appliedPromo.discount * 100) + "%)") : "",
-            "Date de retrait : " + (retrait || "à préciser") + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
-            "Date de retour : " + (retour || "à préciser") + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
-            "",
-            "Nom : " + (nom || "à préciser"),
-            "E-mail : " + (email || "à préciser"),
-            message ? ("Message : " + message) : ""
-          ].filter(Boolean);
-
-          var subject = encodeURIComponent("Demande de réservation Maloé Location");
-          var body = encodeURIComponent(bodyParts.join("\n"));
-          window.location.href = "mailto:contact@kitlagon.re?subject=" + subject + "&body=" + body;
-        });
       }
 
       render();
