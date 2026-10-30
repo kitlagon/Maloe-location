@@ -47,6 +47,20 @@
     display:flex;justify-content:space-between;align-items:center;
     padding:16px 0;border-bottom:1px solid var(--line);gap:14px;
   }
+  .cart-item-main{display:flex;align-items:center;gap:14px;min-width:0;flex:1;}
+  .cart-item-thumb{width:88px;height:76px;object-fit:cover;border-radius:10px;background:var(--sand);flex:none;}
+  .cart-item-info{min-width:0;flex:1;}
+  .cart-item-actions{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap;}
+  .cart-qty-control{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:100px;overflow:hidden;background:#fff;}
+  .cart-qty-control button{width:30px;height:29px;border:0;background:transparent;font:inherit;font-size:1.1rem;cursor:pointer;color:var(--lagoon-deep);}
+  .cart-qty-control span{min-width:26px;text-align:center;font-size:.88rem;font-weight:600;}
+  .cart-item-remove{margin:0;}
+  @media(max-width:480px){
+    .cart-item-thumb{width:68px;height:68px;}
+    .cart-item{gap:8px;padding:13px;}
+    .cart-item-main{gap:10px;}
+    .cart-item-price{font-size:.95rem;}
+  }
   .cart-item-name{font-weight:500;font-size:0.96rem;}
   .cart-item-meta{color:var(--ink-soft);font-size:0.82rem;margin-top:3px;}
   .cart-item-price{text-align:right;white-space:nowrap;font-size:0.94rem;}
@@ -229,8 +243,7 @@
         return t;
       }
 
-      function removeLine(index){
-        lines.splice(index, 1);
+      function saveCartAndReload(){
         var newParams = new URLSearchParams();
         if (lines.length) newParams.set("cart", JSON.stringify(lines));
         if (retrait) newParams.set("retrait", retrait);
@@ -238,6 +251,19 @@
         if (selectedRetraitSlot) newParams.set("slotRetrait", selectedRetraitSlot);
         if (selectedRetourSlot) newParams.set("slotRetour", selectedRetourSlot);
         window.location.search = newParams.toString();
+      }
+
+      function changeLineQty(index, delta){
+        var line = lines[index];
+        if (!line) return;
+        line.qty += delta;
+        if (line.qty <= 0) lines.splice(index, 1);
+        saveCartAndReload();
+      }
+
+      function removeLine(index){
+        lines.splice(index, 1);
+        saveCartAndReload();
       }
 
       function formatDate(iso){
@@ -334,10 +360,20 @@
             ? "Quantité : " + qty + sizeText + " · dès " + unit + " €/jour (choisissez vos dates pour le tarif exact)"
             : "Quantité : " + qty + sizeText + " · " + unit + " €/jour × " + days + " jour" + (days > 1 ? "s" : "");
 
+          var imagePath = 'images/kits/' + item.id + '.jpg?v=' + (data.photoVersion || 1);
           itemsHtml += '<div class="cart-item">' +
-            '<div><div class="cart-item-name">' + item.name + '</div>' +
-            '<div class="cart-item-meta">' + metaText + '</div>' +
-            '<button type="button" class="cart-item-remove" data-remove="' + idx + '">Retirer</button></div>' +
+            '<div class="cart-item-main">' +
+              '<img class="cart-item-thumb" src="' + imagePath + '" alt="' + item.name + '" onerror="this.style.display=\'none\'">' +
+              '<div class="cart-item-info"><div class="cart-item-name">' + item.name + '</div>' +
+              '<div class="cart-item-meta">' + metaText + '</div>' +
+              '<div class="cart-item-actions">' +
+                '<div class="cart-qty-control" aria-label="Modifier la quantité">' +
+                  '<button type="button" data-qty="-1" data-index="' + idx + '" aria-label="Diminuer la quantité">−</button>' +
+                  '<span>' + qty + '</span>' +
+                  '<button type="button" data-qty="1" data-index="' + idx + '" aria-label="Augmenter la quantité">+</button>' +
+                '</div>' +
+                '<button type="button" class="cart-item-remove" data-remove="' + idx + '">Supprimer</button>' +
+              '</div></div></div>' +
             '<div class="cart-item-price">' + itemLineTotal + ' €</div>' +
             '</div>';
         });
@@ -409,6 +445,11 @@
           });
         }
 
+        content.querySelectorAll("[data-qty]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            changeLineQty(parseInt(btn.getAttribute("data-index"), 10), parseInt(btn.getAttribute("data-qty"), 10));
+          });
+        });
         content.querySelectorAll("[data-remove]").forEach(function (btn) {
           btn.addEventListener("click", function () { removeLine(parseInt(btn.getAttribute("data-remove"), 10)); });
         });
