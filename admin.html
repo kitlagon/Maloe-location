@@ -114,22 +114,9 @@
   <h1>Gestion des produits</h1>
   <p class="subtitle">Photos, tarifs, codes promo et jours fermés — sans toucher au code. Les changements sont publiés directement sur le site.</p>
 
-  <div class="panel" id="auth-panel">
-    <h2>Connexion</h2>
-    <div class="field">
-      <label for="gh-token">Jeton d'accès personnel GitHub</label>
-      <input type="password" id="gh-token" placeholder="ghp_... ou github_pat_...">
-    </div>
-    <button class="btn btn-primary" id="load-btn">Charger les produits</button>
-    <p class="help">
-      Ce jeton reste uniquement dans cette page (il n'est jamais enregistré) — vous devrez le recoller à chaque visite.<br>
-      Pour en créer un : GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens →
-      limitez-le au dépôt <strong>kit-lagon</strong>, avec la permission <strong>Contents: Read and write</strong> uniquement.
-    </p>
-    <p class="status" id="auth-status"></p>
-  </div>
 
-  <div class="panel" id="supabase-admin"><h2>Produits et stocks — Supabase</h2><p class="help">Tarifs, cautions et stocks sont gérés ici. Les photos et réglages de page restent gérés plus bas via GitHub.</p><div id="sb-login"><div class="field"><label>Adresse e-mail administrateur</label><input id="sb-email" type="email"></div><div class="field"><label>Mot de passe</label><input id="sb-password" type="password"></div><button class="btn btn-primary" id="sb-login-btn">Se connecter à Supabase</button></div><div id="sb-catalogue" style="display:none"><h3>Catalogue produits</h3><div id="sb-products"></div><h3>Stocks matériels</h3><div id="sb-materials"></div><button class="btn btn-primary" id="sb-save">Enregistrer les produits et stocks</button><button class="btn btn-secondary" id="sb-logout">Déconnexion Supabase</button></div><p class="status" id="sb-status"></p></div><div id="hero-text-editor"></div>
+
+  <div class="panel" id="supabase-admin"><h2>Produits et stocks — Supabase</h2><p class="help">Connectez-vous une seule fois avec votre compte administrateur. Les tarifs, stocks, photos et réglages sont ensuite accessibles avec cette connexion.</p><div id="sb-login"><div class="field"><label>Adresse e-mail administrateur</label><input id="sb-email" type="email"></div><div class="field"><label>Mot de passe</label><input id="sb-password" type="password"></div><button class="btn btn-primary" id="sb-login-btn">Se connecter</button></div><div id="sb-catalogue" style="display:none"><h3>Catalogue produits</h3><div id="sb-products"></div><h3>Stocks matériels</h3><div id="sb-materials"></div><button class="btn btn-primary" id="sb-save">Enregistrer les produits et stocks</button><button class="btn btn-secondary" id="sb-logout">Se déconnecter</button></div><p class="status" id="sb-status"></p></div><div id="hero-text-editor"></div>
   <div id="hero-photo-editor"></div>
   <div id="promo-editor"></div>
   <div id="closed-editor"></div>
@@ -151,7 +138,6 @@
   var REPO_BRANCH = "main";
   var FILE_PATH = "products.json";
 
-  var token = "";
   var currentSha = null;
   var catalogue = { components: [], groups: [] };
 
@@ -180,11 +166,9 @@
       .replace(/(^-|-$)/g, "");
   }
 
-  function apiHeaders(){
-    return {
-      "Authorization": "Bearer " + token,
-      "Accept": "application/vnd.github+json"
-    };
+  async function githubAdminRequest(path, method, content, sha){
+    if (!window.maloeAdminRequest) throw new Error("Connexion administrateur non initialisée.");
+    return window.maloeAdminRequest({path:path,method:method||"GET",content:content||"",sha:sha||""});
   }
 
   function rawImgUrl(path){
@@ -192,87 +176,767 @@
   }
 
   function uploadImage(path, file){
-    return new Promise(function (resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function () {
-        var base64 = reader.result.split(",")[1];
-        var getUrl = "https://api.github.com/repos/" + REPO_OWNER + "/" + REPO_NAME + "/contents/" + path + "?ref=" + REPO_BRANCH;
-        fetch(getUrl, { headers: apiHeaders() })
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .catch(function () { return null; })
-          .then(function (existing) {
-            var putUrl = "https://api.github.com/repos/" + REPO_OWNER + "/" + REPO_NAME + "/contents/" + path;
-            var body = { message: "Mise à jour photo via admin", content: base64, branch: REPO_BRANCH };
-            if (existing && existing.sha) body.sha = existing.sha;
-            return fetch(putUrl, {
-              method: "PUT",
-              headers: Object.assign({ "Content-Type": "application/json" }, apiHeaders()),
-              body: JSON.stringify(body)
-            });
-          })
-          .then(function (r) {
-            if (!r.ok) return r.json().then(function (e) { throw new Error(e.message || ("HTTP " + r.status)); });
-            resolve();
-          })
-          .catch(reject);
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(){
+        var base64=reader.result.split(",")[1];
+        githubAdminRequest(path,"PUT",base64,"").then(resolve).catch(reject);
       };
-      reader.onerror = reject;
+      reader.onerror=reject;
       reader.readAsDataURL(file);
     });
   }
 
   function saveCatalogue(onSuccess, onError){
-    var content = b64EncodeUnicode(JSON.stringify(catalogue, null, 2));
-    var url = "https://api.github.com/repos/" + REPO_OWNER + "/" + REPO_NAME + "/contents/" + FILE_PATH;
-    fetch(url, {
-      method: "PUT",
-      headers: Object.assign({ "Content-Type": "application/json" }, apiHeaders()),
-      body: JSON.stringify({
-        message: "Mise à jour produits via admin",
-        content: content,
-        sha: currentSha,
-        branch: REPO_BRANCH
-      })
-    })
-      .then(function (r) {
-        if (!r.ok) return r.json().then(function (e) { throw new Error(e.message || ("HTTP " + r.status)); });
-        return r.json();
-      })
-      .then(function (data) {
-        currentSha = data.content.sha;
-        if (onSuccess) onSuccess();
-      })
-      .catch(function (err) {
-        if (onError) onError(err);
-      });
+    var content=b64EncodeUnicode(JSON.stringify(catalogue,null,2));
+    githubAdminRequest(FILE_PATH,"PUT",content,currentSha)
+      .then(function(data){currentSha=data.content.sha;if(onSuccess)onSuccess();})
+      .catch(function(err){if(onError)onError(err);});
   }
 
-  document.getElementById("load-btn").addEventListener("click", function () {
-    token = document.getElementById("gh-token").value.trim();
-    var statusEl = document.getElementById("auth-status");
-    if (!token){
-      showStatus(statusEl, "Merci de coller votre jeton d'accès.", false);
-      return;
-    }
-    var url = "https://api.github.com/repos/" + REPO_OWNER + "/" + REPO_NAME + "/contents/" + FILE_PATH + "?ref=" + REPO_BRANCH;
-    fetch(url, { headers: apiHeaders() })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        currentSha = data.sha;
-        catalogue = JSON.parse(b64DecodeUnicode(data.content));
-        showStatus(statusEl, "Produits chargés.", true);
-        renderEditor();
-        document.getElementById("editor").style.display = "block";
-        document.getElementById("sticky-save").style.display = "flex";
-      })
-      .catch(function (err) {
-        showStatus(statusEl, "Échec du chargement (" + err.message + "). Vérifiez le jeton et ses permissions.", false);
+  function componentLabel(comp, item){
+    var req = (item.components || []).filter(function (c) { return c.id === comp.id; })[0];
+    return req ? comp.name + (req.needsSize ? " (tailles)" : "") : null;
+  }
+
+  function renderHeroTextEditor(){
+    var root = document.getElementById("hero-text-editor");
+    root.innerHTML = '<div class="panel"><h2>Texte d\'accueil (bandeau du haut)</h2>' +
+      '<div class="field"><label>Titre</label><input type="text" id="hero-title-input" value="' + (catalogue.heroTitle || "").replace(/"/g, "&quot;") + '"></div>' +
+      '<div class="field" style="margin-bottom:0;"><label>Sous-titre</label><textarea id="hero-subtitle-input" rows="2">' + (catalogue.heroSubtitle || "") + '</textarea></div>' +
+      '</div>';
+  }
+
+  function renderHeroPhotoEditor(){
+    var root = document.getElementById("hero-photo-editor");
+    root.innerHTML = '<div class="panel"><h2>Photo de fond (bandeau du haut)</h2>' +
+      '<div class="photo-row">' +
+        '<img class="photo-preview" id="hero-preview" src="' + rawImgUrl("images/hero.jpg") + '" onerror="this.style.opacity=0.3">' +
+        '<div class="photo-controls">' +
+          '<input type="file" accept="image/*" id="hero-file">' +
+          '<button type="button" class="btn btn-secondary btn-small" id="hero-upload-btn">Enregistrer cette photo</button>' +
+          '<span class="photo-status" id="hero-status"></span>' +
+        '</div>' +
+      '</div></div>';
+
+    document.getElementById("hero-upload-btn").addEventListener("click", function () {
+      var fileInput = document.getElementById("hero-file");
+      var statusEl = document.getElementById("hero-status");
+      if (!fileInput.files[0]){ statusEl.textContent = "Choisissez une photo d'abord."; return; }
+      statusEl.textContent = "Envoi en cours...";
+      readEditorIntoCatalogue();
+      uploadImage("images/hero.jpg", fileInput.files[0])
+        .then(function () {
+          catalogue.photoVersion = (catalogue.photoVersion || 1) + 1;
+          saveCatalogue(
+            function () {
+              statusEl.textContent = "Photo mise à jour ✓";
+              document.getElementById("hero-preview").src = rawImgUrl("images/hero.jpg");
+            },
+            function (err) { statusEl.textContent = "Échec : " + err.message; }
+          );
+        })
+        .catch(function (err) { statusEl.textContent = "Échec de l'envoi : " + err.message; });
+    });
+  }
+
+  function renderPromoEditor(){
+    var root = document.getElementById("promo-editor");
+    var html = '<div class="panel"><h2>Codes promo</h2>';
+    (catalogue.promoCodes || []).forEach(function (promo, pi) {
+      html += '<div class="promo-row" data-pi="' + pi + '">' +
+        '<input type="text" class="promo-code" placeholder="Code (ex. NOEL10)" value="' + (promo.code || "").replace(/"/g, "&quot;") + '">' +
+        '<input type="number" class="promo-discount" placeholder="% remise" value="' + Math.round((promo.discount || 0) * 100) + '">' +
+        '<input type="date" class="promo-from" value="' + (promo.from || "") + '">' +
+        '<input type="date" class="promo-to" value="' + (promo.to || "") + '">' +
+        '<button type="button" class="btn btn-secondary btn-small" data-remove-promo="' + pi + '">Suppr.</button>' +
+        '</div>';
+    });
+    html += '<button type="button" class="btn btn-secondary btn-small" id="add-promo-btn">+ Ajouter un code promo</button>';
+    html += '</div>';
+    root.innerHTML = html;
+
+    document.getElementById("add-promo-btn").addEventListener("click", function () {
+      readPromoEditor();
+      catalogue.promoCodes.push({ code: "", discount: 0.10, from: "", to: "" });
+      renderPromoEditor();
+    });
+    root.querySelectorAll("[data-remove-promo]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readPromoEditor();
+        catalogue.promoCodes.splice(parseInt(btn.getAttribute("data-remove-promo"), 10), 1);
+        renderPromoEditor();
       });
+    });
+  }
+
+  function readPromoEditor(){
+    if (!catalogue.promoCodes) catalogue.promoCodes = [];
+    document.querySelectorAll("#promo-editor .promo-row").forEach(function (rowEl, i) {
+      catalogue.promoCodes[i] = {
+        code: rowEl.querySelector(".promo-code").value.trim().toUpperCase(),
+        discount: (parseFloat(rowEl.querySelector(".promo-discount").value) || 0) / 100,
+        from: rowEl.querySelector(".promo-from").value,
+        to: rowEl.querySelector(".promo-to").value
+      };
+    });
+  }
+
+  var adminCalMonth = new Date();
+  adminCalMonth.setDate(1);
+  var adminSelectedDates = {};
+  var ADMIN_MOIS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+  function adminTodayISO(){
+    var now = new Date();
+    return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  }
+  function adminIsoOf(y, m, d){
+    return y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  }
+  function isDateClosed(iso){
+    return (catalogue.closedDates || []).some(function (c) { return c.date === iso; });
+  }
+
+  function renderClosedEditor(){
+    var root = document.getElementById("closed-editor");
+    var today = adminTodayISO();
+
+    // Nettoyage : on retire les dates fermées déjà passées, elles ne servent plus à rien.
+    if (catalogue.closedDates){
+      catalogue.closedDates = catalogue.closedDates.filter(function (cd) { return cd.date >= today; });
+    }
+
+    var y = adminCalMonth.getFullYear();
+    var m = adminCalMonth.getMonth();
+    var firstDay = new Date(y, m, 1).getDay();
+    var offset = firstDay === 0 ? 6 : firstDay - 1;
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var currentMonthStr = today.slice(0, 7);
+    var displayedMonthStr = y + "-" + String(m + 1).padStart(2, "0");
+
+    var grid = "";
+    for (var e = 0; e < offset; e++) grid += '<span class="admin-cal-day admin-cal-empty"></span>';
+    for (var d = 1; d <= daysInMonth; d++){
+      var iso = adminIsoOf(y, m, d);
+      var past = iso < today;
+      var closed = isDateClosed(iso);
+      var selected = !!adminSelectedDates[iso];
+      var classes = "admin-cal-day";
+      if (closed) classes += " admin-cal-closed";
+      if (selected) classes += " admin-cal-selected";
+      if (past) classes += " admin-cal-past";
+      grid += '<button type="button" class="' + classes + '" data-iso="' + iso + '"' + (past ? " disabled" : "") + '>' + d + '</button>';
+    }
+
+    var html = '<div class="panel"><h2>Calendrier — jours fermés</h2>' +
+      '<p class="help" style="margin-top:0;margin-bottom:14px;">Sélectionnez une ou plusieurs dates (elles se surlignent), puis fermez-les ou rouvrez-les en une fois. Les dates fermées apparaissent en rouge barré.</p>' +
+      '<div class="admin-cal-header">' +
+        '<button type="button" class="btn btn-secondary btn-small" id="admin-cal-prev"' + (displayedMonthStr <= currentMonthStr ? " disabled" : "") + '>‹</button>' +
+        '<span>' + ADMIN_MOIS_FR[m] + " " + y + '</span>' +
+        '<button type="button" class="btn btn-secondary btn-small" id="admin-cal-next">›</button>' +
+      '</div>' +
+      '<div class="admin-cal-weekdays"><span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span></div>' +
+      '<div class="admin-cal-grid" id="admin-cal-grid">' + grid + '</div>' +
+      '<div class="field" style="margin-top:14px;"><label>Raison (appliquée aux dates fermées)</label><input type="text" id="closed-reason-input" placeholder="Vacances, jour férié..."></div>' +
+      '<div style="display:flex;gap:10px;margin-top:10px;">' +
+        '<button type="button" class="btn btn-secondary btn-small" id="close-selected-btn">Fermer les dates sélectionnées</button>' +
+        '<button type="button" class="btn btn-secondary btn-small" id="reopen-selected-btn">Rouvrir les dates sélectionnées</button>' +
+      '</div>';
+
+    var closedList = (catalogue.closedDates || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    html += '<div class="field" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">' +
+      '<label>Dates actuellement fermées</label>';
+    if (closedList.length){
+      html += '<select id="closed-dates-select" multiple size="' + Math.min(closedList.length, 6) + '" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
+        closedList.map(function (cd) {
+          return '<option value="' + cd.date + '">' + cd.date + (cd.reason ? " — " + cd.reason : "") + '</option>';
+        }).join("") +
+        '</select>' +
+        '<button type="button" class="btn btn-secondary btn-small" id="reopen-from-select-btn" style="margin-top:8px;">Rouvrir la sélection</button>';
+    } else {
+      html += '<p class="help" style="margin-top:0;">Aucune date fermée à venir.</p>';
+    }
+    html += '</div>';
+    html += '</div>';
+    root.innerHTML = html;
+
+    document.getElementById("admin-cal-prev").addEventListener("click", function () {
+      adminCalMonth.setMonth(adminCalMonth.getMonth() - 1);
+      renderClosedEditor();
+    });
+    document.getElementById("admin-cal-next").addEventListener("click", function () {
+      adminCalMonth.setMonth(adminCalMonth.getMonth() + 1);
+      renderClosedEditor();
+    });
+    document.getElementById("admin-cal-grid").addEventListener("click", function (e) {
+      var btn = e.target.closest(".admin-cal-day[data-iso]");
+      if (!btn || btn.disabled) return;
+      var iso = btn.getAttribute("data-iso");
+      if (adminSelectedDates[iso]) delete adminSelectedDates[iso]; else adminSelectedDates[iso] = true;
+      renderClosedEditor();
+    });
+    document.getElementById("close-selected-btn").addEventListener("click", function () {
+      var reason = document.getElementById("closed-reason-input").value.trim();
+      if (!catalogue.closedDates) catalogue.closedDates = [];
+      Object.keys(adminSelectedDates).forEach(function (iso) {
+        if (!isDateClosed(iso)) catalogue.closedDates.push({ date: iso, reason: reason });
+      });
+      adminSelectedDates = {};
+      renderClosedEditor();
+    });
+    document.getElementById("reopen-selected-btn").addEventListener("click", function () {
+      catalogue.closedDates = (catalogue.closedDates || []).filter(function (cd) { return !adminSelectedDates[cd.date]; });
+      adminSelectedDates = {};
+      renderClosedEditor();
+    });
+    var reopenFromSelectBtn = document.getElementById("reopen-from-select-btn");
+    if (reopenFromSelectBtn){
+      reopenFromSelectBtn.addEventListener("click", function () {
+        var select = document.getElementById("closed-dates-select");
+        var toRemove = Array.prototype.map.call(select.selectedOptions, function (opt) { return opt.value; });
+        catalogue.closedDates = (catalogue.closedDates || []).filter(function (cd) { return toRemove.indexOf(cd.date) === -1; });
+        renderClosedEditor();
+      });
+    }
+  }
+
+  function readClosedEditor(){
+    if (!catalogue.closedDates) catalogue.closedDates = [];
+  }
+
+  function toMinutes(hhmm){
+    var p = hhmm.split(":");
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+  function fromMinutes(mins){
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+  }
+  function generateSlots(windows, interval){
+    var slots = [];
+    (windows || []).forEach(function (w) {
+      var cur = toMinutes(w.start);
+      var end = toMinutes(w.end);
+      while (cur < end){
+        slots.push(fromMinutes(cur));
+        cur += interval;
+      }
+    });
+    return slots;
+  }
+  function isSlotTaken(date, time){
+    return (catalogue.takenSlots || []).some(function (t) { return t.date === date && t.time === time; });
+  }
+
+  var DAY_NAMES_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+  var DAY_LABELS_FR = { lundi: "Lun", mardi: "Mar", mercredi: "Mer", jeudi: "Jeu", vendredi: "Ven", samedi: "Sam", dimanche: "Dim" };
+  var slotPickerDate = "";
+  var slotsEditorDay = "lundi";
+
+  var slotsOverrideDate = "";
+
+  function readDateOverride(){
+    if (!slotsOverrideDate) return;
+    if (!catalogue.timeSlots.dateOverrides) catalogue.timeSlots.dateOverrides = {};
+    if (!catalogue.timeSlots.dateOverrides.hasOwnProperty(slotsOverrideDate)) return;
+    var windows = [];
+    document.querySelectorAll("#override-windows .promo-row[data-owi]").forEach(function (rowEl) {
+      windows.push({
+        start: rowEl.querySelector(".slot-window-start").value,
+        end: rowEl.querySelector(".slot-window-end").value
+      });
+    });
+    catalogue.timeSlots.dateOverrides[slotsOverrideDate] = windows;
+  }
+
+  function renderDateOverrideEditor(){
+    if (!catalogue.timeSlots.dateOverrides) catalogue.timeSlots.dateOverrides = {};
+    var overrides = catalogue.timeSlots.dateOverrides;
+    var hasOverride = overrides.hasOwnProperty(slotsOverrideDate);
+
+    var html = '<div class="panel"><h2>Exception pour une date précise</h2>' +
+      '<p class="help" style="margin-top:0;margin-bottom:14px;">Modifiez les horaires d\'une seule date (ex : le 5/10/2026) sans toucher aux horaires habituels du lundi.</p>' +
+      '<div class="field" style="max-width:220px;"><label>Date à personnaliser</label><input type="date" id="override-date-input" value="' + slotsOverrideDate + '"></div>';
+
+    if (slotsOverrideDate){
+      if (hasOverride){
+        html += '<div id="override-windows">';
+        (overrides[slotsOverrideDate] || []).forEach(function (w, wi) {
+          html += '<div class="promo-row" style="grid-template-columns:1fr 1fr auto;" data-owi="' + wi + '">' +
+            '<input type="time" class="slot-window-start" value="' + w.start + '">' +
+            '<input type="time" class="slot-window-end" value="' + w.end + '">' +
+            '<button type="button" class="btn btn-secondary btn-small" data-remove-override-window="' + wi + '">Suppr.</button>' +
+            '</div>';
+        });
+        if (!(overrides[slotsOverrideDate] || []).length){
+          html += '<p class="help" style="margin-top:0;margin-bottom:10px;">Aucune plage — le site ne proposera aucun créneau ce jour-là.</p>';
+        }
+        html += '</div>' +
+          '<button type="button" class="btn btn-secondary btn-small" id="add-override-window-btn">+ Ajouter une plage pour cette date</button> ' +
+          '<button type="button" class="btn btn-secondary btn-small" id="remove-override-btn">Revenir aux horaires habituels de ce jour</button>';
+      } else {
+        html += '<button type="button" class="btn btn-secondary btn-small" id="create-override-btn">Personnaliser les horaires du ' + slotsOverrideDate + '</button>';
+      }
+    }
+
+    var overrideDates = Object.keys(overrides).sort();
+    if (overrideDates.length){
+      html += '<div class="field" style="margin-top:14px;"><label>Dates avec des horaires personnalisés</label>' +
+        overrideDates.map(function (d) {
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.86rem;">' +
+            '<span>' + d + ' (' + overrides[d].length + ' plage' + (overrides[d].length > 1 ? "s" : "") + ')</span>' +
+            '<span><button type="button" class="btn btn-secondary btn-small" data-edit-override="' + d + '">Modifier</button> ' +
+            '<button type="button" class="btn btn-secondary btn-small" data-delete-override="' + d + '">Supprimer</button></span>' +
+            '</div>';
+        }).join("") +
+        '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  function wireDateOverrideEditor(){
+    var dateInput = document.getElementById("override-date-input");
+    if (!dateInput) return;
+    dateInput.addEventListener("change", function () {
+      readDateOverride();
+      slotsOverrideDate = dateInput.value;
+      renderSlotsEditor();
+    });
+
+    var createBtn = document.getElementById("create-override-btn");
+    if (createBtn){
+      createBtn.addEventListener("click", function () {
+        readSlotsEditor();
+        var dayName = DAY_NAMES_FR[(new Date(slotsOverrideDate + "T12:00").getDay() + 6) % 7];
+        var base = (catalogue.timeSlots.byDay[dayName] || []).map(function (w) { return { start: w.start, end: w.end }; });
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate] = base;
+        renderSlotsEditor();
+      });
+    }
+
+    var addOverrideWindowBtn = document.getElementById("add-override-window-btn");
+    if (addOverrideWindowBtn){
+      addOverrideWindowBtn.addEventListener("click", function () {
+        readDateOverride();
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate].push({ start: "09:00", end: "09:30" });
+        renderSlotsEditor();
+      });
+    }
+
+    document.querySelectorAll("[data-remove-override-window]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readDateOverride();
+        catalogue.timeSlots.dateOverrides[slotsOverrideDate].splice(parseInt(btn.getAttribute("data-remove-override-window"), 10), 1);
+        renderSlotsEditor();
+      });
+    });
+
+    var removeOverrideBtn = document.getElementById("remove-override-btn");
+    if (removeOverrideBtn){
+      removeOverrideBtn.addEventListener("click", function () {
+        delete catalogue.timeSlots.dateOverrides[slotsOverrideDate];
+        renderSlotsEditor();
+      });
+    }
+
+    document.querySelectorAll("[data-edit-override]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readDateOverride();
+        slotsOverrideDate = btn.getAttribute("data-edit-override");
+        renderSlotsEditor();
+      });
+    });
+    document.querySelectorAll("[data-delete-override]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = btn.getAttribute("data-delete-override");
+        delete catalogue.timeSlots.dateOverrides[d];
+        if (slotsOverrideDate === d) slotsOverrideDate = "";
+        renderSlotsEditor();
+      });
+    });
+  }
+
+  function renderSlotsEditor(){
+    var root = document.getElementById("slots-editor");
+    if (!catalogue.timeSlots) catalogue.timeSlots = { interval: 15, byDay: {} };
+    if (!catalogue.timeSlots.byDay) catalogue.timeSlots.byDay = {};
+    DAY_NAMES_FR.forEach(function (d) {
+      if (!catalogue.timeSlots.byDay[d]) catalogue.timeSlots.byDay[d] = [];
+    });
+    var windows = catalogue.timeSlots.byDay[slotsEditorDay] || [];
+
+    var html = '<div class="panel"><h2>Créneaux horaires</h2>' +
+      '<p class="help" style="margin-top:0;margin-bottom:14px;">Définissez des plages différentes selon le jour de la semaine (ex : ouvrir plus le samedi). Choisissez un jour ci-dessous pour éditer ses plages.</p>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">' +
+      DAY_NAMES_FR.map(function (d) {
+        return '<button type="button" class="btn btn-small ' + (d === slotsEditorDay ? "btn-primary" : "btn-secondary") + '" data-select-day="' + d + '">' + DAY_LABELS_FR[d] + '</button>';
+      }).join("") +
+      '</div>';
+
+    windows.forEach(function (w, wi) {
+      html += '<div class="promo-row" style="grid-template-columns:1fr 1fr auto;" data-wi="' + wi + '">' +
+        '<input type="time" class="slot-window-start" value="' + w.start + '">' +
+        '<input type="time" class="slot-window-end" value="' + w.end + '">' +
+        '<button type="button" class="btn btn-secondary btn-small" data-remove-window="' + wi + '">Suppr.</button>' +
+        '</div>';
+    });
+    if (!windows.length){
+      html += '<p class="help" style="margin-top:0;margin-bottom:10px;">Aucune plage ce jour-là — le site ne proposera aucun créneau pour ' + slotsEditorDay + '.</p>';
+    }
+    html += '<button type="button" class="btn btn-secondary btn-small" id="add-window-btn">+ Ajouter une plage pour ' + slotsEditorDay + '</button>';
+
+    html += '<div class="field" style="margin-top:14px;">' +
+      '<label>Dupliquer les plages de "' + slotsEditorDay + '" vers d\'autres jours</label>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">' +
+      DAY_NAMES_FR.filter(function (d) { return d !== slotsEditorDay; }).map(function (d) {
+        return '<label style="font-size:0.82rem;display:flex;align-items:center;gap:4px;"><input type="checkbox" class="dup-day-check" value="' + d + '"> ' + DAY_LABELS_FR[d] + '</label>';
+      }).join("") +
+      '<button type="button" class="btn btn-secondary btn-small" id="duplicate-day-btn">Appliquer</button>' +
+      '</div></div>';
+
+    html += '<div class="field" style="margin-top:14px;max-width:200px;"><label>Intervalle entre deux créneaux (minutes)</label><input type="number" step="5" min="5" id="slot-interval-input" value="' + (catalogue.timeSlots.interval || 15) + '"></div>' +
+      '</div>';
+
+    html += renderDateOverrideEditor();
+
+    html += '<div class="panel"><h2>Créneaux déjà pris</h2>' +
+      '<p class="help" style="margin-top:0;margin-bottom:14px;">Dès que vous confirmez une réservation reçue par e-mail, bloquez son créneau ici pour qu\'il ne soit plus proposé aux autres clients.</p>' +
+      '<div class="date-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">' +
+        '<div class="field" style="margin-bottom:0;"><label>Date</label><input type="date" id="slot-pick-date" value="' + slotPickerDate + '"></div>' +
+        '<div class="field" style="margin-bottom:0;"><label>Créneau</label><select id="slot-pick-time"></select></div>' +
+        '<button type="button" class="btn btn-secondary btn-small" id="block-slot-btn">Bloquer ce créneau</button>' +
+      '</div>';
+
+    var takenList = (catalogue.takenSlots || []).slice().sort(function (a, b) { return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+    if (takenList.length){
+      html += '<div class="field" style="margin-top:14px;">' +
+        '<label>Créneaux actuellement bloqués</label>' +
+        '<select id="taken-slots-select" multiple size="' + Math.min(takenList.length, 6) + '" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
+        takenList.map(function (t) { return '<option value="' + t.date + '|' + t.time + '">' + t.date + " à " + t.time + '</option>'; }).join("") +
+        '</select>' +
+        '<button type="button" class="btn btn-secondary btn-small" id="unblock-slots-btn" style="margin-top:8px;">Libérer la sélection</button>' +
+        '</div>';
+    } else {
+      html += '<p class="help" style="margin-top:14px;margin-bottom:0;">Aucun créneau bloqué actuellement.</p>';
+    }
+    html += '</div>';
+    root.innerHTML = html;
+    wireDateOverrideEditor();
+
+    root.querySelectorAll("[data-select-day]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readSlotsEditor();
+        slotsEditorDay = btn.getAttribute("data-select-day");
+        renderSlotsEditor();
+      });
+    });
+
+    document.getElementById("add-window-btn").addEventListener("click", function () {
+      readSlotsEditor();
+      catalogue.timeSlots.byDay[slotsEditorDay].push({ start: "09:00", end: "09:30" });
+      renderSlotsEditor();
+    });
+    root.querySelectorAll("[data-remove-window]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readSlotsEditor();
+        catalogue.timeSlots.byDay[slotsEditorDay].splice(parseInt(btn.getAttribute("data-remove-window"), 10), 1);
+        renderSlotsEditor();
+      });
+    });
+
+    document.getElementById("duplicate-day-btn").addEventListener("click", function () {
+      readSlotsEditor();
+      var targets = Array.prototype.map.call(root.querySelectorAll(".dup-day-check:checked"), function (c) { return c.value; });
+      var source = catalogue.timeSlots.byDay[slotsEditorDay].map(function (w) { return { start: w.start, end: w.end }; });
+      targets.forEach(function (d) { catalogue.timeSlots.byDay[d] = source.map(function (w) { return { start: w.start, end: w.end }; }); });
+      renderSlotsEditor();
+    });
+
+    function refreshTimeOptions(){
+      var dateInput = document.getElementById("slot-pick-date");
+      var timeSelect = document.getElementById("slot-pick-time");
+      slotPickerDate = dateInput.value;
+      var dayName = slotPickerDate ? DAY_NAMES_FR[(new Date(slotPickerDate + "T12:00").getDay() + 6) % 7] : null;
+      var dayWindows = dayName ? (catalogue.timeSlots.byDay[dayName] || []) : [];
+      var slots = generateSlots(dayWindows, catalogue.timeSlots.interval || 15).filter(function (t) { return !isSlotTaken(slotPickerDate, t); });
+      timeSelect.innerHTML = slots.length
+        ? slots.map(function (t) { return '<option value="' + t + '">' + t + '</option>'; }).join("")
+        : '<option value="">Aucun créneau libre</option>';
+    }
+    document.getElementById("slot-pick-date").addEventListener("change", refreshTimeOptions);
+    refreshTimeOptions();
+
+    document.getElementById("block-slot-btn").addEventListener("click", function () {
+      var date = document.getElementById("slot-pick-date").value;
+      var time = document.getElementById("slot-pick-time").value;
+      if (!date || !time) return;
+      if (!catalogue.takenSlots) catalogue.takenSlots = [];
+      if (!isSlotTaken(date, time)) catalogue.takenSlots.push({ date: date, time: time });
+      renderSlotsEditor();
+    });
+
+    var unblockBtn = document.getElementById("unblock-slots-btn");
+    if (unblockBtn){
+      unblockBtn.addEventListener("click", function () {
+        var select = document.getElementById("taken-slots-select");
+        var toRemove = Array.prototype.map.call(select.selectedOptions, function (opt) { return opt.value; });
+        catalogue.takenSlots = (catalogue.takenSlots || []).filter(function (t) {
+          return toRemove.indexOf(t.date + "|" + t.time) === -1;
+        });
+        renderSlotsEditor();
+      });
+    }
+  }
+
+  function readSlotsEditor(){
+    if (!catalogue.timeSlots) catalogue.timeSlots = { interval: 15, byDay: {} };
+    if (!catalogue.timeSlots.byDay) catalogue.timeSlots.byDay = {};
+    var windows = [];
+    document.querySelectorAll("#slots-editor .promo-row[data-wi]").forEach(function (rowEl) {
+      windows.push({
+        start: rowEl.querySelector(".slot-window-start").value,
+        end: rowEl.querySelector(".slot-window-end").value
+      });
+    });
+    catalogue.timeSlots.byDay[slotsEditorDay] = windows;
+    var intervalInput = document.getElementById("slot-interval-input");
+    if (intervalInput) catalogue.timeSlots.interval = parseInt(intervalInput.value, 10) || 15;
+    readDateOverride();
+  }
+
+  function renderStockEditor(){
+    var root = document.getElementById("stock-editor");
+    var html = '<div class="panel"><h2>Stock des composants</h2><p class="help" style="margin-top:0;margin-bottom:14px;">Ce stock est partagé entre tous les produits qui utilisent ce composant (ex : les palmes d\'une taille servent aussi bien en location seule qu\'en kit PMT). Le nom et les tailles sont modifiables ; l\'identifiant technique reste fixe et sert de référence interne.</p>';
+    catalogue.components.forEach(function (comp, ci) {
+      html += '<div class="field" data-ci="' + ci + '" style="border-bottom:1px solid var(--line);padding-bottom:14px;">';
+      html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="text" class="comp-name" value="' + comp.name.replace(/"/g, "&quot;") + '" style="flex:1;">' +
+        '<label style="font-size:0.78rem;display:flex;align-items:center;gap:4px;white-space:nowrap;color:var(--ink-soft);">' +
+          '<input type="checkbox" class="comp-has-sizes"' + (comp.sizes ? " checked" : "") + '> Tailles</label>' +
+        '<button type="button" class="btn btn-secondary btn-small" data-remove-component="' + ci + '">Supprimer</button>' +
+        '</div>' +
+        '<div class="item-id" style="margin-bottom:8px;">Identifiant technique : ' + comp.id + ' (fixe)</div>';
+
+      if (comp.sizes){
+        comp.sizes.forEach(function (size, si) {
+          var val = comp.stock && comp.stock[size] != null ? comp.stock[size] : "";
+          html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">' +
+            '<input type="text" class="comp-size-name" value="' + size.replace(/"/g, "&quot;") + '" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
+            '<input type="number" step="1" class="comp-size-stock" value="' + val + '" placeholder="illimité" style="width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
+            '<button type="button" class="btn btn-secondary btn-small" data-remove-size="' + ci + ':' + si + '">Suppr.</button>' +
+            '</div>';
+        });
+        html += '<button type="button" class="btn btn-secondary btn-small" data-add-size="' + ci + '">+ Ajouter une taille</button>';
+      } else {
+        var flatVal = comp.stock != null ? comp.stock : "";
+        html += '<input type="number" step="1" class="comp-stock-flat" value="' + flatVal + '" placeholder="illimité">';
+      }
+      html += '</div>';
+    });
+    html += '<button type="button" class="btn btn-secondary btn-small" id="add-component-btn" style="margin-top:6px;">+ Ajouter un composant</button>';
+    html += '</div>';
+    root.innerHTML = html;
+
+    root.querySelectorAll("[data-add-size]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        // Ne pas lire ni écraser les stocks de l’ancien catalogue GitHub.
+        var ci = parseInt(btn.getAttribute("data-add-size"), 10);
+        var comp = catalogue.components[ci];
+        var newSize = "Nouvelle taille";
+        comp.sizes.push(newSize);
+        if (!comp.stock) comp.stock = {};
+        comp.stock[newSize] = null;
+        // Stock géré exclusivement dans Supabase.
+      });
+    });
+    root.querySelectorAll("[data-remove-size]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readStockEditor();
+        var parts = btn.getAttribute("data-remove-size").split(":");
+        var ci = parseInt(parts[0], 10), si = parseInt(parts[1], 10);
+        var comp = catalogue.components[ci];
+        var removed = comp.sizes.splice(si, 1)[0];
+        if (comp.stock) delete comp.stock[removed];
+        renderStockEditor();
+      });
+    });
+    root.querySelectorAll("[data-remove-component]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        readStockEditor();
+        var ci = parseInt(btn.getAttribute("data-remove-component"), 10);
+        if (confirm("Supprimer ce composant ? Les produits qui l'utilisent encore ne fonctionneront plus correctement.")){
+          catalogue.components.splice(ci, 1);
+          renderStockEditor();
+        }
+      });
+    });
+    document.getElementById("add-component-btn").addEventListener("click", function () {
+      readStockEditor();
+      var name = prompt("Nom du nouveau composant :");
+      if (!name) return;
+      catalogue.components.push({ id: slugify(name), name: name, sizes: null, stock: null });
+      renderStockEditor();
+    });
+  }
+
+  function readStockEditor(){
+    document.querySelectorAll('#stock-editor .field[data-ci]').forEach(function (fieldEl) {
+      var ci = parseInt(fieldEl.getAttribute("data-ci"), 10);
+      var comp = catalogue.components[ci];
+      comp.name = fieldEl.querySelector(".comp-name").value.trim();
+      var hasSizes = fieldEl.querySelector(".comp-has-sizes").checked;
+
+      if (hasSizes){
+        var sizeNames = [];
+        var stock = {};
+        fieldEl.querySelectorAll(".comp-size-name").forEach(function (nameInput, si) {
+          var sizeName = nameInput.value.trim();
+          var stockInputs = fieldEl.querySelectorAll(".comp-size-stock");
+          var v = stockInputs[si].value.trim();
+          sizeNames.push(sizeName);
+          stock[sizeName] = v === "" ? null : parseInt(v, 10);
+        });
+        comp.sizes = sizeNames;
+        comp.stock = stock;
+      } else {
+        comp.sizes = null;
+        var flatInput = fieldEl.querySelector(".comp-stock-flat");
+        var flat = flatInput ? flatInput.value.trim() : "";
+        comp.stock = flat === "" ? null : parseInt(flat, 10);
+      }
+    });
+  }
+
+  function renderEditor(){
+    renderHeroTextEditor();
+    renderHeroPhotoEditor();
+    renderPromoEditor();
+    renderClosedEditor();
+    renderSlotsEditor();
+    renderStockEditor();
+    var root = document.getElementById("editor");
+    var html = "";
+    catalogue.groups.forEach(function (group, gi) {
+      html += '<div class="panel group-block" data-gi="' + gi + '">';
+      html += '<div class="group-title-row">' +
+        '<div class="field" style="margin-bottom:0;"><label>Nom de la catégorie</label><input type="text" class="group-name" value="' + group.group.replace(/"/g, "&quot;") + '"></div>' +
+        '<div class="field" style="margin-bottom:0;"><label>Sous-titre</label><input type="text" class="group-note" value="' + (group.note || "").replace(/"/g, "&quot;") + '"></div>' +
+        '</div>';
+
+      group.items.forEach(function (item, ii) {
+        var compLabels = (item.components || []).map(function (req) {
+          var comp = catalogue.components.filter(function (c) { return c.id === req.id; })[0];
+          return comp ? comp.name + (req.needsSize ? " (à tailles)" : "") : req.id;
+        }).join(", ");
+        html += '<div class="item-block" data-ii="' + ii + '">' +
+          '<div class="item-id">Identifiant technique : ' + item.id + ' (fixe) — composants : ' + (compLabels || "aucun") + '</div>' +
+          '<div class="field"><label>Nom</label><input type="text" class="item-name" value="' + item.name.replace(/"/g, "&quot;") + '"></div>' +
+          '<div class="field"><label>Description</label><textarea class="item-desc" rows="2">' + item.desc + '</textarea></div>' +
+          '<div class="price-row">' +
+            '<div class="field"><label>1-2 j (€)</label><input type="number" step="0.5" class="item-p0" value="' + item.prices[0] + '"></div>' +
+            '<div class="field"><label>3-5 j (€)</label><input type="number" step="0.5" class="item-p1" value="' + item.prices[1] + '"></div>' +
+            '<div class="field"><label>+5 j (€)</label><input type="number" step="0.5" class="item-p2" value="' + item.prices[2] + '"></div>' +
+            '<div class="field"><label>Caution (€)</label><input type="number" step="1" class="item-caution" value="' + item.caution + '"></div>' +
+          '</div>' +
+          '<div class="item-photo-row">' +
+            '<div style="min-width:125px;display:flex;flex-direction:column;gap:5px;">' +
+              '<strong style="font-size:0.82rem;">' + item.name.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
+              '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" alt="Photo de ' + item.name.replace(/"/g, "&quot;") + '" onerror="this.style.display=\'none\'">' +
+            '</div>' +
+            '<input type="file" accept="image/*" class="item-photo-file" data-photo-id="' + item.id + '">' +
+            '<button type="button" class="btn btn-secondary btn-small item-photo-upload" data-photo-id="' + item.id + '">Enregistrer</button>' +
+          '</div>' +
+          '<div class="photo-status item-photo-status" data-photo-id="' + item.id + '"></div>' +
+          '<div class="item-actions"><button type="button" class="btn btn-secondary btn-small" data-remove-item="' + gi + ':' + ii + '">Supprimer ce produit</button></div>' +
+          '</div>';
+      });
+
+      html += '<div class="add-item-row"><button type="button" class="btn btn-secondary btn-small" data-add-item="' + gi + '">+ Ajouter un produit dans cette catégorie</button></div>';
+      html += '</div>';
+    });
+    root.innerHTML = html;
+  }
+
+  function readEditorIntoCatalogue(){
+    var heroTitleInput = document.getElementById("hero-title-input");
+    var heroSubtitleInput = document.getElementById("hero-subtitle-input");
+    if (heroTitleInput) catalogue.heroTitle = heroTitleInput.value.trim();
+    if (heroSubtitleInput) catalogue.heroSubtitle = heroSubtitleInput.value.trim();
+    readPromoEditor();
+    readClosedEditor();
+    readSlotsEditor();
+    document.querySelectorAll(".group-block").forEach(function (groupEl) {
+      var gi = parseInt(groupEl.getAttribute("data-gi"), 10);
+      catalogue.groups[gi].group = groupEl.querySelector(".group-name").value.trim();
+      catalogue.groups[gi].note = groupEl.querySelector(".group-note").value.trim();
+      groupEl.querySelectorAll(".item-block").forEach(function (itemEl) {
+        var ii = parseInt(itemEl.getAttribute("data-ii"), 10);
+        var item = catalogue.groups[gi].items[ii];
+
+      });
+    });
+  }
+
+  document.getElementById("editor").addEventListener("click", function (e) {
+    var addBtn = e.target.closest("[data-add-item]");
+    var removeBtn = e.target.closest("[data-remove-item]");
+
+    if (addBtn){
+      readEditorIntoCatalogue();
+      var gi = parseInt(addBtn.getAttribute("data-add-item"), 10);
+      var name = prompt("Nom du nouveau produit :");
+      if (!name) return;
+      var id = slugify(name);
+      catalogue.groups[gi].items.push({ id: id, name: name, desc: "", prices: [0, 0, 0], caution: 0, components: [] });
+      renderEditor();
+    }
+
+    if (removeBtn){
+      readEditorIntoCatalogue();
+      var parts = removeBtn.getAttribute("data-remove-item").split(":");
+      var gi2 = parseInt(parts[0], 10), ii2 = parseInt(parts[1], 10);
+      if (confirm("Supprimer ce produit du catalogue ?")){
+        catalogue.groups[gi2].items.splice(ii2, 1);
+        renderEditor();
+      }
+    }
+
+    var photoBtn = e.target.closest(".item-photo-upload");
+    if (photoBtn){
+      var pid = photoBtn.getAttribute("data-photo-id");
+      var fileInput = document.querySelector('.item-photo-file[data-photo-id="' + pid + '"]');
+      var statusEl = document.querySelector('.item-photo-status[data-photo-id="' + pid + '"]');
+      if (!fileInput.files[0]){ statusEl.textContent = "Choisissez une photo d'abord."; return; }
+      statusEl.textContent = "Envoi en cours...";
+      readEditorIntoCatalogue();
+      uploadImage("images/kits/" + pid + ".jpg", fileInput.files[0])
+        .then(function () {
+          catalogue.photoVersion = (catalogue.photoVersion || 1) + 1;
+          saveCatalogue(
+            function () { renderEditor(); },
+            function (err) { statusEl.textContent = "Échec : " + err.message; }
+          );
+        })
+        .catch(function (err) { statusEl.textContent = "Échec de l'envoi : " + err.message; });
+    }
   });
 
+  document.getElementById("save-btn").addEventListener("click", function () {
+    readEditorIntoCatalogue();
+    var statusText = document.getElementById("save-status-text");
+    statusText.textContent = "Enregistrement...";
+    saveCatalogue(
+      function () { statusText.textContent = "Enregistré ✓ (en ligne dans 1-2 min)"; },
+      function (err) { statusText.textContent = "Échec : " + err.message; }
+    );
+  });
+</script>
+
+<script>(function(){const sb=window.supabase.createClient("https://kyzixknnlgdgvxkewmzd.supabase.co","sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL");let ps=[],ms=[];const $=id=>document.getElementById(id);function msg(t,ok){$("sb-status").textContent=t;$("sb-status").className="status show "+(ok?"ok":"err")}function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}async function load(){const {data,error}=await sb.rpc("admin_get_catalogue");if(error)throw error;ps=Array.isArray(data)?data:(data?.produits||[]);const map=new Map();ps.forEach(p=>(p.composants||[]).forEach(c=>(c.materiels||[]).forEach(m=>{if(!map.has(m.id))map.set(m.id,{...m})})));ms=[...map.values()];draw()}function draw(){$("sb-products").innerHTML=ps.map((p,i)=>'<div class="admin-product" data-p="'+i+'"><strong>'+esc(p.nom)+'</strong><div class="grid">'+[['nom','Nom','text'],['prix_1_2j','Prix 1–2 j','number'],['prix_3_5j','Prix 3–5 j','number'],['prix_5j_plus','Prix +5 j','number'],['caution','Caution','number']].map(([k,l,t])=>'<div class="field"><label>'+l+'</label><input data-k="'+k+'" type="'+t+'" min="0" step=".5" value="'+esc(p[k])+'"></div>').join('')+'</div><div class="field"><label>Description</label><textarea data-k="description">'+esc(p.description)+'</textarea></div><label class="check"><input type="checkbox" data-k="actif" '+(p.actif?'checked':'')+'> Disponible</label></div>').join('');$("sb-materials").innerHTML=ms.map((m,i)=>'<div class="admin-material" data-m="'+i+'"><strong>'+esc(m.nom)+(m.taille?' — '+esc(m.taille):'')+'</strong><div class="grid"><div class="field"><label>Nom</label><input data-k="nom" value="'+esc(m.nom)+'"></div><div class="field"><label>Taille</label><input data-k="taille" value="'+esc(m.taille)+'"></div><div class="field"><label>Stock</label><input type="number" min="0" step="1" data-k="stock" value="'+esc(m.stock)+'"></div></div><label class="check"><input type="checkbox" data-k="actif" '+(m.actif?'checked':'')+'> Matériel actif</label></div>').join('')}function read(){document.querySelectorAll("#sb-products [data-p]").forEach(n=>{const p=ps[+n.dataset.p];n.querySelectorAll("[data-k]").forEach(x=>p[x.dataset.k]=x.type==="checkbox"?x.checked:x.type==="number"?Number(x.value):x.value)});document.querySelectorAll("#sb-materials [data-m]").forEach(n=>{const m=ms[+n.dataset.m];n.querySelectorAll("[data-k]").forEach(x=>m[x.dataset.k]=x.type==="checkbox"?x.checked:x.type==="number"?Number(x.value):x.value)})}$("sb-login-btn").addEventListener("click",async()=>{try{const {error}=await sb.auth.signInWithPassword({email:$("sb-email").value.trim(),password:$("sb-password").value});if(error)throw error;window.maloeAdminRequest=async function(input){const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error("Session expirée. Reconnectez-vous.");const response=await fetch("https://kyzixknnlgdgvxkewmzd.supabase.co/functions/v1/github-admin",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":"sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL"},body:JSON.stringify(input)});const data=await response.json();if(!response.ok)throw new Error(data.message||data.error||("Erreur HTTP "+response.status));return data};await load();const data=await window.maloeAdminRequest({path:"products.json",method:"GET"});currentSha=data.sha;catalogue=JSON.parse(b64DecodeUnicode(data.content));$("sb-login").style.display="none";$("sb-catalogue").style.display="block";renderEditor();$("editor").style.display="block";$("sticky-save").style.display="flex";msg("Connecté. Catalogue et réglages chargés.",true)}catch(e){msg("Connexion/chargement impossible : "+e.message,false)}});$("sb-logout").addEventListener("click",async()=>{await sb.auth.signOut();window.maloeAdminRequest=null;$("sb-login").style.display="block";$("sb-catalogue").style.display="none";$("editor").style.display="none";$("sticky-save").style.display="none";msg("Déconnecté.",true)});$("sb-save").addEventListener("click",async()=>{read();const b=$("sb-save");b.disabled=true;try{for(const p of ps){const {error}=await sb.rpc("admin_update_product",{p_id:p.id,p_nom:p.nom,p_description:p.description,p_prix_1_2j:p.prix_1_2j,p_prix_3_5j:p.prix_3_5j,p_prix_5j_plus:p.prix_5j_plus,p_caution:p.caution,p_actif:p.actif});if(error)throw error}for(const m of ms){const {error}=await sb.rpc("admin_update_material",{p_id:m.id,p_nom:m.nom,p_stock:m.stock,p_actif:m.actif,p_taille:m.taille||null});if(error)throw error}await load();msg("Produits et stocks enregistrés dans Supabase.",true)}catch(e){msg("Erreur : "+e.message,false)}finally{b.disabled=false}})})();</script></body>
+</html>
   function componentLabel(comp, item){
     var req = (item.components || []).filter(function (c) { return c.id === comp.id; })[0];
     return req ? comp.name + (req.needsSize ? " (tailles)" : "") : null;
