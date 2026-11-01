@@ -713,7 +713,7 @@
     catalogue.components.forEach(function (comp, ci) {
       html += '<div class="field" data-ci="' + ci + '" style="border-bottom:1px solid var(--line);padding-bottom:14px;">';
       html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
-        '<input type="text" class="comp-name" value="' + comp.name.replace(/"/g, "&quot;") + '" style="flex:1;">' +
+        '<input type="text" class="comp-name" value="' + String(comp.name || "").replace(/"/g, "&quot;") + '" style="flex:1;">' +
         '<label style="font-size:0.78rem;display:flex;align-items:center;gap:4px;white-space:nowrap;color:var(--ink-soft);">' +
           '<input type="checkbox" class="comp-has-sizes"' + (comp.sizes ? " checked" : "") + '> Tailles</label>' +
         '<button type="button" class="btn btn-secondary btn-small" data-remove-component="' + ci + '">Supprimer</button>' +
@@ -724,7 +724,7 @@
         comp.sizes.forEach(function (size, si) {
           var val = comp.stock && comp.stock[size] != null ? comp.stock[size] : "";
           html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">' +
-            '<input type="text" class="comp-size-name" value="' + size.replace(/"/g, "&quot;") + '" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
+            '<input type="text" class="comp-size-name" value="' + String(size || "").replace(/"/g, "&quot;") + '" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
             '<input type="number" step="1" class="comp-size-stock" value="' + val + '" placeholder="illimité" style="width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;">' +
             '<button type="button" class="btn btn-secondary btn-small" data-remove-size="' + ci + ':' + si + '">Suppr.</button>' +
             '</div>';
@@ -822,7 +822,7 @@
     catalogue.groups.forEach(function (group, gi) {
       html += '<div class="panel group-block" data-gi="' + gi + '">';
       html += '<div class="group-title-row">' +
-        '<div class="field" style="margin-bottom:0;"><label>Nom de la catégorie</label><input type="text" class="group-name" value="' + group.group.replace(/"/g, "&quot;") + '"></div>' +
+        '<div class="field" style="margin-bottom:0;"><label>Nom de la catégorie</label><input type="text" class="group-name" value="' + String(group.group || "").replace(/"/g, "&quot;") + '"></div>' +
         '<div class="field" style="margin-bottom:0;"><label>Sous-titre</label><input type="text" class="group-note" value="' + (group.note || "").replace(/"/g, "&quot;") + '"></div>' +
         '</div>';
 
@@ -833,7 +833,7 @@
         }).join(", ");
         html += '<div class="item-block" data-ii="' + ii + '">' +
           '<div class="item-id">Identifiant technique : ' + item.id + ' (fixe) — composants : ' + (compLabels || "aucun") + '</div>' +
-          '<div class="field"><label>Nom</label><input type="text" class="item-name" value="' + item.name.replace(/"/g, "&quot;") + '"></div>' +
+          '<div class="field"><label>Nom</label><input type="text" class="item-name" value="' + String(item.name || item.id || "Produit").replace(/"/g, "&quot;") + '"></div>' +
           '<div class="field"><label>Description</label><textarea class="item-desc" rows="2">' + item.desc + '</textarea></div>' +
           '<div class="price-row">' +
             '<div class="field"><label>1-2 j (€)</label><input type="number" step="0.5" class="item-p0" value="' + item.prices[0] + '"></div>' +
@@ -843,8 +843,8 @@
           '</div>' +
           '<div class="item-photo-row">' +
             '<div style="min-width:125px;display:flex;flex-direction:column;gap:5px;">' +
-              '<strong style="font-size:0.82rem;">' + item.name.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
-              '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" alt="Photo de ' + item.name.replace(/"/g, "&quot;") + '" onerror="this.style.display=\'none\'">' +
+              '<strong style="font-size:0.82rem;">' + String(item.name || item.id || "Produit").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
+              '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" alt="Photo de ' + String(item.name || item.id || "Produit").replace(/"/g, "&quot;") + '" onerror="this.style.display=\'none\'">' +
             '</div>' +
             '<input type="file" accept="image/*" class="item-photo-file" data-photo-id="' + item.id + '">' +
             '<button type="button" class="btn btn-secondary btn-small item-photo-upload" data-photo-id="' + item.id + '">Enregistrer</button>' +
