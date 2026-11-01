@@ -921,7 +921,10 @@
             '<div class="field"><label>Caution (€)</label><input type="number" step="1" class="item-caution" value="' + item.caution + '"></div>' +
           '</div>' +
           '<div class="item-photo-row">' +
-            '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" onerror="this.style.display=\'none\'">' +
+            '<div style="min-width:125px;display:flex;flex-direction:column;gap:5px;">' +
+              '<strong style="font-size:0.82rem;">' + item.name.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
+              '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" alt="Photo de ' + item.name.replace(/"/g, "&quot;") + '" onerror="this.style.display=\'none\'">' +
+            '</div>' +
             '<input type="file" accept="image/*" class="item-photo-file" data-photo-id="' + item.id + '">' +
             '<button type="button" class="btn btn-secondary btn-small item-photo-upload" data-photo-id="' + item.id + '">Enregistrer</button>' +
           '</div>' +
