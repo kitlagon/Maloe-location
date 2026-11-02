@@ -192,6 +192,13 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
+      // Diagnostic temporaire : ne journalise que les informations techniques de l'erreur RPC.
+      console.error("Reservation RPC error", {
+        code: error.code ?? null,
+        message: error.message ?? "unknown",
+        details: error.details ?? null,
+        hint: error.hint ?? null,
+      });
       const knownConflict = /stock insuffisant|indisponible|taille|dates|créneaux|panier|code promotionnel/i.test(error.message || "");
       return json({
         error: knownConflict
