@@ -27,13 +27,13 @@ const json = (body: unknown, status = 200) =>
   });
 
 function validDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(value + "T00:00:00Z");
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
 function validTime(value: unknown): value is string {
-  return typeof value === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
 Deno.serve(async (req) => {
@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
       return json({ error: "Coordonnées client manquantes." }, 400);
     }
 
-    const fullName = client.nom.trim().replace(/\\s+/g, " ");
+    const fullName = client.nom.trim().replace(/\s+/g, " ");
     const email = client.email.trim();
     const telephone = client.telephone.trim();
     const splitAt = fullName.lastIndexOf(" ");
     if (fullName.length < 3 || fullName.length > 120 || splitAt < 1 ||
-        !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 ||
-        !/^[+0-9().\\s-]{6,25}$/.test(telephone) ||
-        telephone.replace(/\\D/g, "").length < 6) {
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
+        !/^[+0-9().\s-]{6,25}$/.test(telephone) ||
+        telephone.replace(/\D/g, "").length < 6) {
       return json({ error: "Vérifiez votre prénom, votre nom, votre e-mail et votre téléphone." }, 400);
     }
 
