@@ -121,59 +121,61 @@
       "id": "palmes",
       "name": "Palmes",
       "sizes": [
-        "Taille 1",
-        "Taille 2",
-        "Taille 3"
+        "35/38",
+        "38/41",
+        "41/44",
+        "44/47"
       ],
       "stock": {
-        "Taille 1": 2,
-        "Taille 2": 3,
-        "Taille 3": 3
+        "35/38": 1,
+        "38/41": 2,
+        "41/44": 2,
+        "44/47": 1
       }
     },
     {
       "id": "masque-tuba",
       "name": "Masque + tuba",
       "sizes": [
-        "Enfant",
-        "Adulte"
+        "M",
+        "L"
       ],
       "stock": {
-        "Enfant": null,
-        "Adulte": null
+        "M": 1,
+        "L": 2
       }
     },
     {
       "id": "easybreath",
       "name": "Masque Easybreath",
       "sizes": [
-        "XS (enfant)",
+        "XS",
         "S/M",
         "M/L"
       ],
       "stock": {
-        "XS (enfant)": null,
-        "S/M": null,
-        "M/L": null
+        "XS": 1,
+        "S/M": 2,
+        "M/L": 2
       }
     },
     {
       "id": "camera",
       "name": "Caméra 360°",
       "sizes": null,
-      "stock": 1
+      "stock": 0
     },
     {
       "id": "glaciere-mat",
       "name": "Glacière",
       "sizes": null,
-      "stock": 5
+      "stock": 2
     },
     {
       "id": "parasol-mat",
       "name": "Parasol",
       "sizes": null,
-      "stock": 5
+      "stock": 2
     }
   ],
   "groups": [
