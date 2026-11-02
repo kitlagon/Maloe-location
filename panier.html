@@ -525,6 +525,82 @@
           promoRemoveBtn.addEventListener("click", function () { appliedPromo = null; render(); });
         }
 
+        // Création de réservation en attente, sans déclencher de paiement.
+        var sendBtn = document.getElementById("send-btn");
+        if (sendBtn) {
+          sendBtn.disabled = false;
+          sendBtn.textContent = "Créer ma réservation (sans paiement)";
+          sendBtn.addEventListener("click", async function () {
+            var statusEl = document.getElementById("reservation-status");
+            if (statusEl) statusEl.textContent = "";
+            if (appliedPromo) {
+              if (statusEl) statusEl.textContent = "Les codes promo ne sont pas encore disponibles pour les réservations en ligne. Retirez le code promo pour continuer.";
+              return;
+            }
+            if (!retrait || !retour || !selectedRetraitSlot || !selectedRetourSlot || !computeDays()) {
+              if (statusEl) statusEl.textContent = "Vérifiez vos dates et vos créneaux de retrait et de retour.";
+              return;
+            }
+            var nom = (document.getElementById("client-nom").value || "").trim();
+            var email = (document.getElementById("client-email").value || "").trim();
+            var telephone = (document.getElementById("client-phone").value || "").trim();
+            if (!nom || !email || !telephone) {
+              if (statusEl) statusEl.textContent = "Veuillez renseigner votre nom, votre e-mail et votre téléphone.";
+              return;
+            }
+            if (!turnstileToken) {
+              if (statusEl) statusEl.textContent = "Effectuez d'abord la vérification anti-robot.";
+              return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.textContent = "Création de la réservation...";
+            try {
+              var response = await supabaseClient.functions.invoke("create-reservation", {
+                body: {
+                  retrait: retrait,
+                  retour: retour,
+                  slotRetrait: selectedRetraitSlot,
+                  slotRetour: selectedRetourSlot,
+                  lines: lines,
+                  client: { nom: nom, email: email, telephone: telephone },
+                  turnstileToken: turnstileToken
+                }
+              });
+              if (response.error) {
+                var serverMessage = response.data && response.data.error
+                  ? response.data.error
+                  : "Impossible de créer la réservation. Vérifiez les informations et réessayez.";
+                throw new Error(serverMessage);
+              }
+              var result = response.data;
+              if (!result || result.success !== true || !result.reservation || !result.reservation.reservation_id) {
+                throw new Error("La réponse du serveur est incomplète. Contactez Maloé Location avant de recommencer.");
+              }
+              content.innerHTML =
+                '<div class="contact-panel"><h1>Demande de réservation enregistrée</h1>' +
+                '<p>Votre réservation est en attente de paiement. Aucun paiement n’a été effectué.</p>' +
+                '<p><strong>Référence :</strong> ' + result.reservation.reservation_id + '</p>' +
+                '<p><strong>Montant de la location :</strong> ' + result.reservation.total + ' €</p>' +
+                '<p><strong>Caution à prévoir au retrait :</strong> ' + result.reservation.caution + ' €</p>' +
+                '<p class="caution-note">Cette réservation bloque temporairement le matériel pendant 15 minutes. Le paiement en ligne n’est pas encore activé.</p>' +
+                '</div>';
+            } catch (error) {
+              if (statusEl) statusEl.textContent = error && error.message ? error.message : "Une erreur est survenue. Réessayez.";
+              turnstileToken = "";
+              if (window.turnstile && turnstileWidgetId !== null) {
+                window.turnstile.reset(turnstileWidgetId);
+              }
+              sendBtn.disabled = false;
+              sendBtn.textContent = "Créer ma réservation (sans paiement)";
+            }
+          });
+        }
+        var statusContainer = document.createElement("p");
+        statusContainer.id = "reservation-status";
+        statusContainer.className = "form-note";
+        statusContainer.setAttribute("role", "status");
+        if (sendBtn && sendBtn.parentNode) sendBtn.parentNode.insertBefore(statusContainer, sendBtn.nextSibling);
 
       }
 
