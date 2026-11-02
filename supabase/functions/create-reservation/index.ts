@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       return json({ error: "Demande invalide." }, 400);
     }
 
-    const { retrait, retour, slotRetrait, slotRetour, lines, client, promoCode } = input;
+    const { retrait, retour, slotRetrait, slotRetour, lines, client, promoCode, turnstileToken } = input;
 
     if (!Array.isArray(lines) || lines.length === 0 || lines.length > 20) {
       return json({ error: "Votre panier est vide ou invalide." }, 400);
@@ -118,6 +118,36 @@ Deno.serve(async (req) => {
         sizes[family] = size;
       }
       mappedLines.push({ product_id: productId, qty, sizes });
+    }
+
+    // Vérification obligatoire du jeton Turnstile côté serveur.
+    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY");
+    if (!turnstileSecret) {
+      return json({ error: "La vérification anti-robot est momentanément indisponible." }, 503);
+    }
+    if (typeof turnstileToken !== "string" || turnstileToken.length < 1 || turnstileToken.length > 2048) {
+      return json({ error: "Veuillez effectuer la vérification anti-robot." }, 400);
+    }
+
+    let turnstileResult: any;
+    try {
+      const verifyResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!verifyResponse.ok) throw new Error("Turnstile verification request failed");
+      turnstileResult = await verifyResponse.json();
+    } catch {
+      return json({ error: "La vérification anti-robot a échoué. Réessayez." }, 503);
+    }
+
+    if (turnstileResult?.success !== true || turnstileResult?.hostname !== "maloe-location.re") {
+      return json({ error: "La vérification anti-robot est invalide ou a expiré. Réessayez." }, 400);
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
