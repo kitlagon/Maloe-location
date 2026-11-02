@@ -42,8 +42,14 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceRoleKey) {
+    let secretKeys: Record<string, string>;
+    try {
+      secretKeys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+    } catch {
+      return json({ error: "Configuration serveur invalide." }, 500);
+    }
+    const serviceRoleKey = secretKeys.default;
+    if (!supabaseUrl || typeof serviceRoleKey !== "string" || !serviceRoleKey) {
       return json({ error: "Configuration serveur incomplète." }, 500);
     }
 
