@@ -19,11 +19,22 @@ const productIds: Record<string, string> = {
   parasol: "9bcf2e83-62f6-422b-9bf4-69fc455fbe32",
 };
 
+const allowedSizeFamilies = new Set(["palmes", "masque-tuba", "easybreath"]);
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+function validDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  const date = new Date(value + "T00:00:00Z");
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function validTime(value: unknown): value is string {
+  return typeof value === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,37 +47,72 @@ Deno.serve(async (req) => {
       return json({ error: "Configuration serveur incomplète." }, 500);
     }
 
-    const input = await req.json();
-    const { retrait, retour, slotRetrait, slotRetour, lines, client, promoCode } = input ?? {};
+    const rawBody = await req.text();
+    if (rawBody.length > 32_000) return json({ error: "Demande trop volumineuse." }, 413);
+
+    let input: any;
+    try {
+      input = JSON.parse(rawBody);
+    } catch {
+      return json({ error: "Format de demande invalide." }, 400);
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return json({ error: "Demande invalide." }, 400);
+    }
+
+    const { retrait, retour, slotRetrait, slotRetour, lines, client, promoCode } = input;
 
     if (!Array.isArray(lines) || lines.length === 0 || lines.length > 20) {
       return json({ error: "Votre panier est vide ou invalide." }, 400);
     }
-    if (typeof retrait !== "string" || typeof retour !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(retrait) || !/^\d{4}-\d{2}-\d{2}$/.test(retour)) {
-      return json({ error: "Dates invalides." }, 400);
+    if (!validDate(retrait) || !validDate(retour) || retour < retrait) {
+      return json({ error: "Dates de location invalides." }, 400);
     }
-    if (typeof client?.nom !== "string" || typeof client?.email !== "string" ||
-        typeof client?.telephone !== "string") {
+    if (!validTime(slotRetrait) || !validTime(slotRetour)) {
+      return json({ error: "Créneaux horaires invalides." }, 400);
+    }
+    if (retrait === retour && slotRetour <= slotRetrait) {
+      return json({ error: "L'heure de retour doit être après l'heure de retrait." }, 400);
+    }
+
+    if (!client || typeof client !== "object" ||
+        typeof client.nom !== "string" || typeof client.email !== "string" ||
+        typeof client.telephone !== "string") {
       return json({ error: "Coordonnées client manquantes." }, 400);
     }
 
-    const fullName = client.nom.trim().replace(/\s+/g, " ");
+    const fullName = client.nom.trim().replace(/\\s+/g, " ");
+    const email = client.email.trim();
+    const telephone = client.telephone.trim();
     const splitAt = fullName.lastIndexOf(" ");
-    if (splitAt < 1 || !client.email.trim() || !client.telephone.trim()) {
-      return json({ error: "Indiquez votre prénom, votre nom, votre e-mail et votre téléphone." }, 400);
+    if (fullName.length < 3 || fullName.length > 120 || splitAt < 1 ||
+        !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254 ||
+        !/^[+0-9().\\s-]{6,25}$/.test(telephone) ||
+        telephone.replace(/\\D/g, "").length < 6) {
+      return json({ error: "Vérifiez votre prénom, votre nom, votre e-mail et votre téléphone." }, 400);
     }
 
-    const mappedLines = lines.map((line: any) => {
+    const mappedLines = [];
+    for (const line of lines) {
       const productId = productIds[String(line?.id ?? "")];
       const qty = Number(line?.qty);
       if (!productId || !Number.isInteger(qty) || qty < 1 || qty > 20) {
-        throw new Error("Un article ou une quantité du panier est invalide.");
+        return json({ error: "Un article ou une quantité du panier est invalide." }, 400);
       }
-      const sizes = line?.sizes && typeof line.sizes === "object" && !Array.isArray(line.sizes)
-        ? line.sizes : {};
-      return { product_id: productId, qty, sizes };
-    });
+
+      const rawSizes = line?.sizes;
+      if (rawSizes !== undefined && (!rawSizes || typeof rawSizes !== "object" || Array.isArray(rawSizes))) {
+        return json({ error: "Les tailles sélectionnées sont invalides." }, 400);
+      }
+      const sizes: Record<string, string> = {};
+      for (const [family, size] of Object.entries(rawSizes ?? {})) {
+        if (!allowedSizeFamilies.has(family) || typeof size !== "string" || size.length > 20) {
+          return json({ error: "Les tailles sélectionnées sont invalides." }, 400);
+        }
+        sizes[family] = size;
+      }
+      mappedLines.push({ product_id: productId, qty, sizes });
+    }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -76,8 +122,8 @@ Deno.serve(async (req) => {
       p_client: {
         prenom: fullName.slice(0, splitAt).trim(),
         nom: fullName.slice(splitAt + 1).trim(),
-        email: client.email.trim(),
-        telephone: client.telephone.trim(),
+        email,
+        telephone,
       },
       p_date_retrait: retrait,
       p_date_retour: retour,
@@ -88,13 +134,16 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
-      const message = error.message || "Impossible de créer la réservation.";
-      const status = /stock insuffisant|indisponible|taille|dates|créneaux|panier|code promotionnel/i.test(message) ? 409 : 400;
-      return json({ error: message }, status);
+      const knownConflict = /stock insuffisant|indisponible|taille|dates|créneaux|panier|code promotionnel/i.test(error.message || "");
+      return json({
+        error: knownConflict
+          ? "La réservation ne peut pas être créée avec ces dates, tailles ou disponibilités. Vérifiez votre panier."
+          : "Une erreur empêche la création de la réservation. Réessayez plus tard.",
+      }, knownConflict ? 409 : 400);
     }
 
     return json({ success: true, reservation: data }, 201);
-  } catch (error) {
-    return json({ error: error instanceof Error ? error.message : "Erreur serveur." }, 400);
+  } catch {
+    return json({ error: "Erreur serveur. Réessayez plus tard." }, 500);
   }
 });
