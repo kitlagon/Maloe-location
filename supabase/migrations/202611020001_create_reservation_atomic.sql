@@ -34,6 +34,8 @@ DECLARE
   v_line_total numeric;
   v_allocations jsonb;
   v_item_details jsonb;
+  v_cart_allocations jsonb := '[]'::jsonb;
+  v_cart_used integer;
   v_first_name text;
   v_last_name text;
   v_email text;
@@ -145,7 +147,10 @@ BEGIN
           AND (r.statut <> 'en_attente_paiement' OR r.expires_at > v_now)
         );
 
-      v_available := COALESCE(v_material.stock,0) - v_used;
+      SELECT COALESCE(SUM((x->>'qty')::integer),0) INTO v_cart_used
+      FROM jsonb_array_elements(v_cart_allocations) x
+      WHERE (x->>'materiel_id')::uuid = v_material.id;
+      v_available := COALESCE(v_material.stock,0) - v_used - v_cart_used;
       IF v_available < (v_component.quantite * v_qty) THEN
         RAISE EXCEPTION 'Stock insuffisant pour % (%).', v_material.nom, COALESCE(v_material.taille,'');
       END IF;
@@ -155,6 +160,10 @@ BEGIN
         'qty', v_component.quantite * v_qty,
         'famille_code', v_material.famille_code,
         'taille', v_material.taille
+      ));
+      v_cart_allocations := v_cart_allocations || jsonb_build_array(jsonb_build_object(
+        'materiel_id', v_material.id,
+        'qty', v_component.quantite * v_qty
       ));
     END LOOP;
 
