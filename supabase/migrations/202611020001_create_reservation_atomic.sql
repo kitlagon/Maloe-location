@@ -179,11 +179,11 @@ BEGIN
 
   INSERT INTO reservations (
     id, client_id, date_retrait, date_retour, heure_retrait, heure_retour,
-    total, caution, statut, expires_at, mode_test
+    total, caution, statut, expires_at, mode_test, created_at
   ) VALUES (
     v_reservation_id, v_client_id, p_date_retrait, p_date_retour,
     p_heure_retrait, p_heure_retour, v_total, v_caution,
-    'en_attente_paiement', v_now + interval '15 minutes', false
+    'en_attente_paiement', v_now + interval '15 minutes', false, v_now
   );
 
   -- Deuxième passage pour enregistrer chaque ligne et ses composants réellement affectés.
