@@ -123,9 +123,13 @@ Deno.serve(async (req) => {
     // Vérification obligatoire du jeton Turnstile côté serveur.
     const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY");
     if (!turnstileSecret) {
+      console.warn("Turnstile: secret missing");
       return json({ error: "La vérification anti-robot est momentanément indisponible." }, 503);
     }
     if (typeof turnstileToken !== "string" || turnstileToken.length < 1 || turnstileToken.length > 2048) {
+      console.warn("Turnstile: token missing or invalid format", {
+        tokenPresent: typeof turnstileToken === "string" && turnstileToken.length > 0,
+      });
       return json({ error: "Veuillez effectuer la vérification anti-robot." }, 400);
     }
 
@@ -140,13 +144,31 @@ Deno.serve(async (req) => {
         }),
         signal: AbortSignal.timeout(8000),
       });
-      if (!verifyResponse.ok) throw new Error("Turnstile verification request failed");
+      if (!verifyResponse.ok) {
+        console.warn("Turnstile: Siteverify HTTP error", { status: verifyResponse.status });
+        return json({ error: "La vérification anti-robot a échoué. Réessayez." }, 503);
+      }
       turnstileResult = await verifyResponse.json();
-    } catch {
+    } catch (error) {
+      console.warn("Turnstile: Siteverify request failed", {
+        error: error instanceof Error ? error.name : "unknown",
+      });
       return json({ error: "La vérification anti-robot a échoué. Réessayez." }, 503);
     }
 
-    if (turnstileResult?.success !== true || turnstileResult?.hostname !== "maloe-location.re") {
+    const turnstileHostname = typeof turnstileResult?.hostname === "string"
+      ? turnstileResult.hostname
+      : null;
+    const turnstileErrorCodes = Array.isArray(turnstileResult?.["error-codes"])
+      ? turnstileResult["error-codes"].filter((code: unknown) => typeof code === "string")
+      : [];
+    console.warn("Turnstile: Siteverify result", {
+      success: turnstileResult?.success === true,
+      hostname: turnstileHostname,
+      errorCodes: turnstileErrorCodes,
+    });
+
+    if (turnstileResult?.success !== true || turnstileHostname !== "maloe-location.re") {
       return json({ error: "La vérification anti-robot est invalide ou a expiré. Réessayez." }, 400);
     }
 
