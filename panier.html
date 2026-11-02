@@ -132,11 +132,57 @@
   <div class="wrap" id="content"></div>
 </main>
 
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
 <script>
   var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var catalogue = [];
+
+  // Turnstile : le jeton sera transmis au serveur lors du branchement du formulaire.
+  var turnstileToken = "";
+  var turnstileWidgetId = null;
+  var turnstileRendering = false;
+
+  function renderTurnstileWidget(){
+    var container = document.getElementById("turnstile-container");
+    if (!container || !window.turnstile || turnstileRendering || turnstileWidgetId !== null) return;
+    turnstileRendering = true;
+    turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: "0x4AAAAAAFwoHDEYsq911gz7",
+      callback: function(token){
+        turnstileToken = token;
+        var status = document.getElementById("turnstile-status");
+        if (status) status.textContent = "Vérification anti-robot effectuée.";
+      },
+      "expired-callback": function(){
+        turnstileToken = "";
+        var status = document.getElementById("turnstile-status");
+        if (status) status.textContent = "La vérification a expiré. Veuillez recommencer.";
+      },
+      "error-callback": function(){
+        turnstileToken = "";
+        var status = document.getElementById("turnstile-status");
+        if (status) status.textContent = "La vérification est indisponible. Réessayez.";
+      },
+      theme: "light"
+    });
+    turnstileRendering = false;
+  }
+
+  // L'API peut se charger avant ou après l'affichage du formulaire.
+  var turnstileWaitCount = 0;
+  function waitForTurnstile(){
+    if (window.turnstile) {
+      renderTurnstileWidget();
+      return;
+    }
+    if (turnstileWaitCount++ < 40) window.setTimeout(waitForTurnstile, 250);
+    else {
+      var status = document.getElementById("turnstile-status");
+      if (status) status.textContent = "Le contrôle anti-robot n'a pas pu se charger. Actualisez la page.";
+    }
+  }
 
   // Conserver le panier, les dates et les créneaux en revenant au catalogue.
   document.getElementById("continue-shopping").addEventListener("click", function (event) {
@@ -426,10 +472,16 @@
             '<div class="field"><label for="client-email">Adresse e-mail *</label><input type="email" id="client-email" placeholder="vous@exemple.com" autocomplete="email" required></div>' +
             '<div class="field"><label for="client-phone">Téléphone *</label><input type="tel" id="client-phone" placeholder="Votre numéro de téléphone" autocomplete="tel" required></div>' +
             '<div class="field" style="margin-bottom:0;"><label for="client-message">Message (optionnel)</label><textarea id="client-message" rows="3" placeholder="Une précision concernant votre réservation..."></textarea></div>' +
+            '<div class="field"><label>Vérification anti-robot</label><div id="turnstile-container"></div><p class="form-note" id="turnstile-status">Veuillez effectuer la vérification anti-robot.</p></div>' +
             '<div class="payment-info">Après la mise en service du paiement sécurisé Stancer, vous pourrez régler votre location par carte bancaire. Votre réservation sera confirmée automatiquement après validation effective du paiement.</div>' +
             '<button class="btn btn-primary send-btn" id="send-btn" type="button" disabled>Paiement en ligne bientôt disponible</button>' +
             '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
+
+        turnstileToken = "";
+        turnstileWidgetId = null;
+        turnstileWaitCount = 0;
+        waitForTurnstile();
 
         var editDatesLink = document.getElementById("edit-dates-link");
         if (editDatesLink){
