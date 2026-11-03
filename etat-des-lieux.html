@@ -155,7 +155,7 @@
       Prendre / ajouter des photos
       <input type="file" id="photo-input" accept="image/*" capture="environment" multiple>
     </label>
-    <div class="photo-grid" id="photo-grid"></div>
+    <div class="photo-grid" id="photo-grid"></div><p id="photo-status" style="font-size:.82rem;color:var(--ink-soft);"></p><div id="departure-photo-comparison" hidden><h3>Photos prises à la remise</h3><div class="photo-grid" id="departure-photo-grid"></div></div>
   </div>
 
   <div class="panel">
@@ -297,6 +297,12 @@
     var id = this.value;
     applyReservation(reservations.filter(function(r){ return r.id === id; })[0] || null);
   });
+  document.querySelectorAll('input[name="type"]').forEach(function(radio){
+    radio.addEventListener("change", function(){
+      if (this.value === "Retour" && selectedReservation) loadDeparturePhotos(selectedReservation.id);
+      else document.getElementById("departure-photo-comparison").hidden = true;
+    });
+  });
 
 
   document.getElementById("timestamp").textContent =
@@ -308,39 +314,84 @@
   }).join("");
 
   function makePhotoCapture(inputId, gridId){
-    var list = [];
+    var entries = [];
     var input = document.getElementById(inputId);
     var grid = document.getElementById(gridId);
-
     function render(){
-      grid.innerHTML = list.map(function (src, i) {
-        return '<div class="photo-thumb"><img src="' + src + '"><button type="button" data-idx="' + i + '">×</button></div>';
+      grid.innerHTML = entries.map(function(entry, i){
+        return '<div class="photo-thumb"><img src="' + entry.preview + '"><button type="button" data-idx="' + i + '">×</button></div>';
       }).join("");
     }
-
-    input.addEventListener("change", function () {
-      Array.prototype.forEach.call(input.files, function (file) {
+    input.addEventListener("change", function(){
+      Array.prototype.forEach.call(input.files, function(file){
+        if (!/^image\\/(jpeg|png|webp)$/.test(file.type)) return;
         var reader = new FileReader();
-        reader.onload = function (e) {
-          list.push(e.target.result);
-          render();
-        };
+        reader.onload = function(e){ entries.push({file:file, preview:e.target.result}); render(); };
         reader.readAsDataURL(file);
       });
       input.value = "";
     });
-
-    grid.addEventListener("click", function (e) {
+    grid.addEventListener("click", function(e){
       var btn = e.target.closest("button[data-idx]");
       if (!btn) return;
-      list.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+      entries.splice(parseInt(btn.getAttribute("data-idx"),10),1);
       render();
     });
+    return {
+      getList:function(){ return entries.map(function(entry){return entry.preview;}); },
+      getFiles:function(){ return entries.map(function(entry){return entry.file;}); }
+    };
+  }
+  var photoCapture = makePhotoCapture("photo-input", "photo-grid");
 
-    return { getList: function () { return list; } };
+  async function edlRequest(url, options){
+    var sessionResult = await edlSupabase.auth.getSession();
+    var session = sessionResult.data.session;
+    if (!session) throw new Error("Session expirée. Reconnecte-toi.");
+    var response = await fetch(url, Object.assign({}, options || {}, {
+      headers:Object.assign({"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_ANON_KEY}, (options && options.headers) || {})
+    }));
+    var payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Une erreur est survenue.");
+    return payload;
   }
 
-  var photoCapture = makePhotoCapture("photo-input", "photo-grid");
+  async function uploadCurrentPhotos(){
+    if (!selectedReservation) throw new Error("Sélectionne une réservation avant d'enregistrer les photos.");
+    var stage = document.querySelector('input[name="type"]:checked').value === "Remise" ? "depart" : "retour";
+    var files = photoCapture.getFiles();
+    for (var i=0;i<files.length;i++){
+      var form = new FormData();
+      form.append("reservation_id", selectedReservation.id);
+      form.append("etape", stage);
+      form.append("file", files[i], files[i].name);
+      await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos", {method:"POST",body:form});
+    }
+    document.getElementById("photo-status").textContent = files.length + " photo(s) enregistrée(s) dans le stockage privé.";
+  }
+
+  async function loadDeparturePhotos(reservationId){
+    var panel = document.getElementById("departure-photo-comparison");
+    var grid = document.getElementById("departure-photo-grid");
+    panel.hidden = true;
+    grid.innerHTML = "";
+    if (!reservationId) return;
+    try {
+      var payload = await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos?reservation_id=" + encodeURIComponent(reservationId) + "&etape=depart");
+      (payload.photos || []).forEach(function(photo){
+        var holder = document.createElement("div");
+        holder.className = "photo-thumb";
+        var img = document.createElement("img");
+        img.src = photo.url;
+        img.alt = "Photo de l'état des lieux de remise";
+        holder.appendChild(img);
+        grid.appendChild(holder);
+      });
+      panel.hidden = !payload.photos || payload.photos.length === 0;
+    } catch(error) {
+      document.getElementById("photo-status").textContent = error.message;
+    }
+  }
 
   function setupSignaturePad(canvasId, clearId){
     var pad = document.getElementById(canvasId);
@@ -423,6 +474,8 @@
     var now = new Date();
     var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
     var photos = photoCapture.getList();
+    try { await uploadCurrentPhotos(); }
+    catch(uploadError){ errorEl.textContent = uploadError.message; errorEl.style.display = "block"; return; }
     var jsPDF = window.jspdf.jsPDF;
     var pdf = new jsPDF({ unit: "mm", format: "a4" });
     var margin = 16, pageW = 210, pageH = 297, y = 20;
