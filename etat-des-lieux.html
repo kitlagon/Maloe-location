@@ -138,8 +138,9 @@
   </div>
 
   <div class="panel">
-    <h2>Kits concernés</h2>
-    <div class="kit-list" id="kit-list"></div>
+    <h2>Matériel de la réservation</h2>
+    <p style="font-size:.84rem;color:var(--ink-soft);margin-top:-6px;">Les articles affichés correspondent exactement à la réservation sélectionnée.</p>
+    <div id="reserved-items"><p style="font-size:.88rem;color:var(--ink-soft);">Sélectionne une réservation pour afficher le matériel.</p></div>
   </div>
 
   <div class="panel">
@@ -149,14 +150,7 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Photos horodatées</h2>
-    <label class="photo-input-btn">
-      Prendre / ajouter des photos
-      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple>
-    </label>
-    <div class="photo-grid" id="photo-grid"></div><p id="photo-status" style="font-size:.82rem;color:var(--ink-soft);"></p><div id="departure-photo-comparison" hidden><h3>Photos prises à la remise</h3><div class="photo-grid" id="departure-photo-grid"></div></div>
-  </div>
+  <p id="photo-status" style="font-size:.82rem;color:var(--ink-soft);margin:0 0 14px;"></p>
 
   <div class="panel">
     <h2>Signature du client</h2>
@@ -218,12 +212,6 @@
     }
   });
 
-  var KIT_NAMES = [
-    "Glacière + pain de glace", "Parasol + pied", "Kit PMT", "Palmes + masque Easybreath",
-    "Masque + tuba", "Masque Easybreath seul", "Palmes seules",
-    "Caméra 360° + accessoires aquatiques", "Kit PMT + caméra", "Palmes + Easybreath + caméra"
-  ];
-
   var selectedReservation = null;
   var reservationSelect = document.getElementById("reservation-select");
   var reservationInfo = document.getElementById("reservation-info");
@@ -268,12 +256,12 @@
 
   function applyReservation(r){
     selectedReservation = r || null;
+    renderReservedItems();
     if (!r){
       reservationInfo.style.display = "none";
-      document.getElementById("departure-photo-comparison").hidden = true;
       return;
     }
-    if (document.querySelector('input[name="type"]:checked').value === "Retour") loadDeparturePhotos(r.id);
+    renderReservedItems();
     document.getElementById("nom-client").value = [r.client && r.client.prenom, r.client && r.client.nom].filter(Boolean).join(" ");
     document.getElementById("telephone-client").value = (r.client && r.client.telephone) || "";
     document.getElementById("email-client").value = (r.client && r.client.email) || "";
@@ -310,11 +298,7 @@
   document.getElementById("timestamp").textContent =
     "Horodatage : " + new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
-  var kitList = document.getElementById("kit-list");
-  kitList.innerHTML = KIT_NAMES.map(function (name, i) {
-    return '<div class="kit-row"><span>' + name + '</span><input type="number" min="0" step="1" value="0" id="kit-' + i + '"></div>';
-  }).join("");
-
+  var itemPhotoCaptures = {};
   function makePhotoCapture(inputId, gridId){
     var entries = [];
     var input = document.getElementById(inputId);
@@ -344,8 +328,6 @@
       getFiles:function(){ return entries.map(function(entry){return entry.file;}); }
     };
   }
-  var photoCapture = makePhotoCapture("photo-input", "photo-grid");
-
   async function edlRequest(url, options){
     var sessionResult = await edlSupabase.auth.getSession();
     var session = sessionResult.data.session;
@@ -361,38 +343,69 @@
   async function uploadCurrentPhotos(){
     if (!selectedReservation) throw new Error("Sélectionne une réservation avant d'enregistrer les photos.");
     var stage = document.querySelector('input[name="type"]:checked').value === "Remise" ? "depart" : "retour";
-    var files = photoCapture.getFiles();
-    for (var i=0;i<files.length;i++){
-      var form = new FormData();
-      form.append("reservation_id", selectedReservation.id);
-      form.append("etape", stage);
-      form.append("file", files[i], files[i].name);
-      await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos", {method:"POST",body:form});
+    var total = 0;
+    for (var itemId in itemPhotoCaptures){
+      var files = itemPhotoCaptures[itemId].getFiles();
+      for (var i=0;i<files.length;i++){
+        var form = new FormData();
+        form.append("reservation_id", selectedReservation.id);
+        form.append("reservation_item_id", itemId);
+        form.append("etape", stage);
+        form.append("file", files[i], files[i].name);
+        await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos", {method:"POST",body:form});
+        total++;
+      }
     }
-    document.getElementById("photo-status").textContent = files.length + " photo(s) enregistrée(s) dans le stockage privé.";
+    document.getElementById("photo-status").textContent = total + " photo(s) enregistrée(s) dans le stockage privé.";
   }
 
   async function loadDeparturePhotos(reservationId){
-    var panel = document.getElementById("departure-photo-comparison");
-    var grid = document.getElementById("departure-photo-grid");
-    panel.hidden = true;
-    grid.innerHTML = "";
     if (!reservationId) return;
     try {
       var payload = await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos?reservation_id=" + encodeURIComponent(reservationId) + "&etape=depart");
       (payload.photos || []).forEach(function(photo){
+        var grid = document.getElementById("departure-photos-" + photo.reservation_item_id);
+        if (!grid) return;
         var holder = document.createElement("div");
         holder.className = "photo-thumb";
         var img = document.createElement("img");
         img.src = photo.url;
-        img.alt = "Photo de l'état des lieux de remise";
+        img.alt = "Photo prise à la remise";
         holder.appendChild(img);
         grid.appendChild(holder);
       });
-      panel.hidden = !payload.photos || payload.photos.length === 0;
     } catch(error) {
       document.getElementById("photo-status").textContent = error.message;
     }
+  }
+
+  function renderReservedItems(){
+    var host = document.getElementById("reserved-items");
+    itemPhotoCaptures = {};
+    if (!selectedReservation){ host.innerHTML = '<p style="font-size:.88rem;color:var(--ink-soft);">Sélectionne une réservation pour afficher le matériel.</p>'; return; }
+    var items = selectedReservation.items || [];
+    if (!items.length){ host.textContent = "Aucun article associé à cette réservation."; return; }
+    host.innerHTML = items.map(function(item){
+      var label = (item.produit && item.produit.nom) || "Matériel";
+      var detail = item.details ? " — " + item.details : "";
+      var safeId = String(item.id).replace(/[^a-zA-Z0-9_-]/g,"");
+      return '<section class="reserved-item" style="border-top:1px solid var(--line);padding:14px 0;">' +
+        '<div style="font-weight:600;">'+escapeHtml(label)+'</div><div style="font-size:.84rem;color:var(--ink-soft);margin:3px 0 10px;">Quantité : '+Number(item.quantite || 1)+escapeHtml(detail)+'</div>'+
+        '<div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de cet article</div>'+
+        '<label class="photo-input-btn">Prendre / ajouter des photos<input type="file" id="photo-input-'+safeId+'" accept="image/jpeg,image/png,image/webp" capture="environment" multiple></label>'+
+        '<div class="photo-grid" id="photo-grid-'+safeId+'"></div>'+
+        '<div class="departure-comparison" style="margin-top:12px;"><div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de remise (comparaison)</div><div class="photo-grid" id="departure-photos-'+safeId+'"></div></div>'+
+      '</section>';
+    }).join("");
+    items.forEach(function(item){
+      var safeId = String(item.id).replace(/[^a-zA-Z0-9_-]/g,"");
+      itemPhotoCaptures[item.id] = makePhotoCapture("photo-input-"+safeId,"photo-grid-"+safeId);
+    });
+    if (document.querySelector('input[name="type"]:checked').value === "Retour") loadDeparturePhotos(selectedReservation.id);
+  }
+
+  function escapeHtml(value){
+    return String(value == null ? "" : value).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch];});
   }
 
   function setupSignaturePad(canvasId, clearId){
@@ -459,13 +472,11 @@
     var email = document.getElementById("email-client").value.trim();
     var type = document.querySelector('input[name="type"]:checked').value;
     var remarques = document.getElementById("remarques").value.trim();
-    var kits = KIT_NAMES.map(function (name, i) {
-      var qty = parseInt(document.getElementById("kit-" + i).value, 10) || 0;
-      return qty > 0 ? (qty > 1 ? qty + "× " + name : name) : null;
-    }).filter(Boolean);
+    var reservedItems = selectedReservation && selectedReservation.items ? selectedReservation.items : [];
+    var itemLabels = reservedItems.map(function(item){return ((item.produit && item.produit.nom) || "Matériel") + " × " + (item.quantite || 1) + (item.details ? " (" + item.details + ")" : "");});
 
-    if (!nom || !telephone || kits.length === 0 || !clientSignature.hasSignature() || !maloeSignature.hasSignature()){
-      errorEl.textContent = "Merci de renseigner le nom, le téléphone du client, au moins un kit, et de recueillir les deux signatures avant de générer le PDF.";
+    if (!nom || !telephone || !selectedReservation || reservedItems.length === 0 || !clientSignature.hasSignature() || !maloeSignature.hasSignature()){
+      errorEl.textContent = "Sélectionne une réservation avec du matériel, renseigne le nom et le téléphone du client, puis recueille les deux signatures.";
       errorEl.style.display = "block";
       return;
     }
@@ -475,7 +486,7 @@
     var maloeSigData = maloeSignature.data();
     var now = new Date();
     var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
-    var photos = photoCapture.getList();
+    var photos = [];
     try { await uploadCurrentPhotos(); }
     catch(uploadError){ errorEl.textContent = uploadError.message; errorEl.style.display = "block"; return; }
     var jsPDF = window.jspdf.jsPDF;
@@ -521,7 +532,7 @@
 
     section("Client");
     textBlock("Nom : " + nom + "\nTéléphone : " + (telephone || "—") + "\nE-mail : " + (email || "—"));
-    section("Kits concernés"); textBlock(kits.join(", "));
+    section("Matériel réservé"); textBlock(itemLabels.join("\n"));
     if (remarques) { section("État / remarques"); textBlock(remarques); }
     addPhotos("Photos du matériel", photos);
 
