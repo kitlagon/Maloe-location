@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.etat_des_lieux_fichiers (
   size_bytes integer NOT NULL CHECK (size_bytes > 0 AND size_bytes <= 10485760),
   sha256 text NOT NULL CHECK (sha256 ~ '^[a-f0-9]{64}$'),
   created_at timestamptz NOT NULL DEFAULT now(),
-  delete_after timestamptz,
+  delete_after timestamptz
 );
 
 -- Un seul PDF par étape, mais autant de photos que nécessaire.
@@ -75,3 +75,59 @@ COMMENT ON TABLE public.etat_des_lieux_fichiers IS
 
 COMMENT ON COLUMN public.etat_des_lieux_fichiers.delete_after IS
   'Date limite de conservation. À renseigner à la clôture du retour : date/heure effective du retour + 14 jours. Un traitement planifié supprimera les fichiers échus du Storage puis leurs lignes.';
+
+
+-- Date/heure réelle à laquelle Maloé Location clôture l'état des lieux de retour.
+ALTER TABLE public.reservations
+  ADD COLUMN IF NOT EXISTS retour_effectif_at timestamptz;
+
+COMMENT ON COLUMN public.reservations.retour_effectif_at IS
+  'Horodatage réel de clôture de l’état des lieux de retour. Déclenche le délai de conservation de 14 jours.';
+
+-- À appeler depuis une Edge Function authentifiée après signature et création
+-- du PDF de retour. La clôture est unique et fixe delete_after à J+14.
+CREATE OR REPLACE FUNCTION public.cloturer_retour_etat_des_lieux(p_reservation_id uuid)
+RETURNS timestamptz
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_retour_effectif_at timestamptz;
+BEGIN
+  IF p_reservation_id IS NULL THEN
+    RAISE EXCEPTION 'Réservation manquante.';
+  END IF;
+
+  -- Il faut que le PDF de retour soit déjà enregistré avant de clôturer.
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.etat_des_lieux_fichiers
+    WHERE reservation_id = p_reservation_id
+      AND etape = 'retour'
+      AND type_fichier = 'pdf'
+  ) THEN
+    RAISE EXCEPTION 'Le PDF de retour doit être enregistré avant la clôture.';
+  END IF;
+
+  UPDATE public.reservations
+  SET retour_effectif_at = COALESCE(retour_effectif_at, now())
+  WHERE id = p_reservation_id
+  RETURNING retour_effectif_at INTO v_retour_effectif_at;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Réservation introuvable.';
+  END IF;
+
+  UPDATE public.etat_des_lieux_fichiers
+  SET delete_after = v_retour_effectif_at + interval '14 days'
+  WHERE reservation_id = p_reservation_id;
+
+  RETURN v_retour_effectif_at;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.cloturer_retour_etat_des_lieux(uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cloturer_retour_etat_des_lieux(uuid)
+  TO service_role;
