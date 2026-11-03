@@ -13,6 +13,29 @@ Cette procédure concerne uniquement la branche `feature/edl-double-signature`. 
    - `edl_anon_key` : clé publishable/anon du projet
    - `edl_cleanup_secret` : exactement la même valeur que `EDL_CLEANUP_SECRET`
 
+## Enregistrement des secrets dans Vault
+
+Dans l'éditeur SQL Supabase, remplacer les valeurs entre chevrons puis exécuter ces commandes séparément. Ne jamais partager ni enregistrer les vraies clés dans Git :
+
+```sql
+select vault.create_secret(
+  'https://<REF_PROJET>.supabase.co',
+  'edl_project_url'
+);
+
+select vault.create_secret(
+  '<CLE_PUBLISHABLE_OU_ANON_DU_PROJET>',
+  'edl_anon_key'
+);
+
+select vault.create_secret(
+  '<MEME_SECRET_QUE_EDL_CLEANUP_SECRET>',
+  'edl_cleanup_secret'
+);
+```
+
+Si un secret portant déjà ce nom existe, le mettre à jour via l'interface Vault plutôt que de créer un doublon.
+
 ## Planification quotidienne
 
 À exécuter dans l'éditeur SQL Supabase **après** le déploiement de la fonction et l'enregistrement des secrets Vault :
