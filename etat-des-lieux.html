@@ -270,8 +270,10 @@
     selectedReservation = r || null;
     if (!r){
       reservationInfo.style.display = "none";
+      document.getElementById("departure-photo-comparison").hidden = true;
       return;
     }
+    if (document.querySelector('input[name="type"]:checked').value === "Retour") loadDeparturePhotos(r.id);
     document.getElementById("nom-client").value = [r.client && r.client.prenom, r.client && r.client.nom].filter(Boolean).join(" ");
     document.getElementById("telephone-client").value = (r.client && r.client.telephone) || "";
     document.getElementById("email-client").value = (r.client && r.client.email) || "";
