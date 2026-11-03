@@ -25,8 +25,9 @@ Après déploiement de la fonction et activation des extensions `pg_cron`, `pg_n
 
 - `maloe_project_url` : URL du projet Supabase, par exemple `https://VOTRE-PROJECT-REF.supabase.co`.
 - `maloe_edl_cleanup_secret` : la même valeur que `EDL_CLEANUP_SECRET`.
+- `maloe_publishable_key` : la clé publique `sb_publishable_…` du projet, utilisée uniquement comme en-tête `apikey` pour l'appel au gateway.
 
-Ne pas utiliser une clé `service_role` dans le cron : la fonction détient déjà son accès serveur et exige le secret dédié.
+Ne jamais placer une clé secrète (`sb_secret_…`) ou une ancienne clé `service_role` dans le cron. La fonction détient son accès serveur via `SUPABASE_SECRET_KEYS` et exige en plus le secret dédié.
 
 ## 4. Programmer l'appel
 
@@ -45,6 +46,11 @@ select cron.schedule(
     ) || '/functions/v1/edl-cleanup',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
+      'apikey', (
+        select decrypted_secret
+        from vault.decrypted_secrets
+        where name = 'maloe_publishable_key'
+      ),
       'x-edl-cleanup-secret', (
         select decrypted_secret
         from vault.decrypted_secrets
