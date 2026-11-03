@@ -82,5 +82,19 @@ Deno.serve(async (req) => {
     console.error("EDL PDF metadata insert failed", insertError.message);
     return json({ error: "Le PDF n'a pas pu être associé à la réservation. Vérifie qu'un PDF de cette étape n'existe pas déjà." }, 409);
   }
+
+  // Le délai de conservation démarre uniquement après l'enregistrement
+  // du PDF de retour et la clôture explicite de l'état des lieux.
+  if (stage === "retour") {
+    const { error: closeError } = await admin.rpc("cloturer_retour_etat_des_lieux", {
+      p_reservation_id: reservationId,
+    });
+    if (closeError) {
+      await admin.from("etat_des_lieux_fichiers").delete().eq("id", record.id);
+      await admin.storage.from("etats-des-lieux").remove([path]);
+      console.error("EDL return closure failed", closeError.message);
+      return json({ error: "Le PDF a été annulé car la clôture du retour n'a pas pu être enregistrée." }, 500);
+    }
+  }
   return json({ id: record.id, message: "PDF enregistré dans le stockage privé." }, 201);
 });
