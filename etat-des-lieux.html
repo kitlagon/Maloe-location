@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --lagoon-deep:#0B4F4A; --lagoon-bright:#1B8A82; --sand:#F1E6CE; --sand-light:#FAF5E9;
@@ -81,13 +82,26 @@
 </head>
 <body>
 
-<header>
+<section id="edl-login" class="wrap" style="max-width:440px;padding-top:12vh;">
+  <div class="panel">
+    <h1>Accès outil état des lieux</h1>
+    <p style="color:var(--ink-soft);font-size:.9rem;">Connexion réservée à l’équipe Maloé Location.</p>
+    <form id="edl-login-form">
+      <div class="field"><label for="edl-email">Adresse e-mail</label><input id="edl-email" type="email" required autocomplete="username"></div>
+      <div class="field"><label for="edl-password">Mot de passe</label><input id="edl-password" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-primary" type="submit">Se connecter</button>
+      <p class="error-msg" id="edl-login-error" role="alert"></p>
+    </form>
+  </div>
+</section>
+<header id="edl-header" hidden>
   <div class="nav">
     <span class="logo"><img class="logo-img" src="images/logo.jpg" alt="Maloé Location">Maloé Location — outil interne</span>
-    <a class="back-link" href="index.html">← Retour au site</a>
+    <button class="back-link" id="edl-logout" type="button" style="border:0;background:none;cursor:pointer;">Déconnexion</button>
   </div>
 </header>
 
+<main id="edl-app" hidden>
 <div class="wrap">
   <h1>État des lieux</h1>
   <p class="timestamp" id="timestamp"></p>
@@ -136,11 +150,6 @@
   </div>
 
   <div class="panel">
-    <h2>Vérification de l'identité</h2>
-    <p style="font-size:0.86rem;color:var(--ink-soft);margin:0;">La pièce d'identité est à présenter lors du retrait. Sa copie ne sera pas intégrée au PDF. Son éventuel stockage sécurisé sera ajouté séparément après validation.</p>
-  </div>
-
-  <div class="panel">
     <h2>Photos horodatées</h2>
     <label class="photo-input-btn">
       Prendre / ajouter des photos
@@ -170,10 +179,34 @@
   <button class="btn btn-primary" id="generate-btn">Générer le PDF</button>
   <p class="error-msg" id="error-msg"></p>
 </div>
+</main>
 
 <div id="print-view"></div>
 
 <script>
+  const SUPABASE_URL = "https://kyzixknnlgdgvxkewmzd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL";
+  const edlSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const loginForm = document.getElementById("edl-login-form");
+  const loginError = document.getElementById("edl-login-error");
+  async function refreshEdlAccess(){
+    const {data:{session}} = await edlSupabase.auth.getSession();
+    const allowed = !!(session && session.user && session.user.app_metadata && session.user.app_metadata.edl_access === true);
+    document.getElementById("edl-login").hidden = allowed;
+    document.getElementById("edl-header").hidden = !allowed;
+    document.getElementById("edl-app").hidden = !allowed;
+    if (session && !allowed) { await edlSupabase.auth.signOut(); loginError.textContent = "Ce compte n’est pas autorisé à utiliser l’outil état des lieux."; loginError.style.display = "block"; }
+  }
+  loginForm.addEventListener("submit", async function(event){
+    event.preventDefault(); loginError.style.display = "none";
+    const {error} = await edlSupabase.auth.signInWithPassword({email:document.getElementById("edl-email").value.trim(),password:document.getElementById("edl-password").value});
+    if(error){loginError.textContent = "Connexion impossible. Vérifie l’adresse e-mail et le mot de passe.";loginError.style.display = "block";return;}
+    await refreshEdlAccess();
+  });
+  document.getElementById("edl-logout").addEventListener("click", async function(){await edlSupabase.auth.signOut();await refreshEdlAccess();});
+  edlSupabase.auth.onAuthStateChange(function(){refreshEdlAccess();});
+  refreshEdlAccess();
+
   var KIT_NAMES = [
     "Glacière + pain de glace", "Parasol + pied", "Kit PMT", "Palmes + masque Easybreath",
     "Masque + tuba", "Masque Easybreath seul", "Palmes seules",
