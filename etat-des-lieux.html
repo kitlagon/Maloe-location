@@ -56,7 +56,7 @@
   }
 
   .sig-wrap{border:1px dashed var(--line);border-radius:10px;overflow:hidden;background:var(--sand-light);}
-  canvas#sig-pad{display:block;width:100%;height:180px;touch-action:none;}
+  .sig-pad{display:block;width:100%;height:180px;touch-action:none;}
   .sig-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
   .sig-actions button{background:none;border:none;color:var(--coral);text-decoration:underline;font-size:0.84rem;cursor:pointer;font-family:inherit;}
 
@@ -136,12 +136,8 @@
   </div>
 
   <div class="panel">
-    <h2>Pièce d'identité du client</h2>
-    <label class="photo-input-btn">
-      Prendre une photo de la pièce d'identité
-      <input type="file" id="id-photo-input" accept="image/*" capture="environment" multiple>
-    </label>
-    <div class="photo-grid" id="id-photo-grid"></div>
+    <h2>Vérification de l'identité</h2>
+    <p style="font-size:0.86rem;color:var(--ink-soft);margin:0;">La pièce d'identité est à présenter lors du retrait. Sa copie ne sera pas intégrée au PDF. Son éventuel stockage sécurisé sera ajouté séparément après validation.</p>
   </div>
 
   <div class="panel">
@@ -155,12 +151,19 @@
 
   <div class="panel">
     <h2>Signature du client</h2>
-    <div class="sig-wrap">
-      <canvas id="sig-pad"></canvas>
-    </div>
+    <div class="sig-wrap"><canvas id="sig-client-pad" class="sig-pad"></canvas></div>
     <div class="sig-actions">
-      <button type="button" id="sig-clear">Effacer la signature</button>
+      <button type="button" id="sig-client-clear">Effacer la signature</button>
       <span style="font-size:0.8rem;color:var(--ink-soft);">Signer avec le doigt ou la souris</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Signature de Maloé Location</h2>
+    <div class="sig-wrap"><canvas id="sig-maloe-pad" class="sig-pad"></canvas></div>
+    <div class="sig-actions">
+      <button type="button" id="sig-maloe-clear">Effacer la signature</button>
+      <span style="font-size:0.8rem;color:var(--ink-soft);">Signature du représentant</span>
     </div>
   </div>
 
@@ -263,59 +266,64 @@
     return { getList: function () { return list; } };
   }
 
-  var idPhotoCapture = makePhotoCapture("id-photo-input", "id-photo-grid");
   var photoCapture = makePhotoCapture("photo-input", "photo-grid");
 
-  var canvas = document.getElementById("sig-pad");
-  var ctx = canvas.getContext("2d");
-  var drawing = false;
-  var hasSignature = false;
+  function setupSignaturePad(canvasId, clearId){
+    var pad = document.getElementById(canvasId);
+    var context = pad.getContext("2d");
+    var drawing = false;
+    var hasSignature = false;
 
-  function resizeCanvas(){
-    var ratio = window.devicePixelRatio || 1;
-    var rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#132420";
-  }
-  resizeCanvas();
-  window.addEventListener("resize", function () {
-    var data = hasSignature ? canvas.toDataURL() : null;
-    resizeCanvas();
-    if (data){
-      var img = new Image();
-      img.onload = function () { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
-      img.src = data;
+    function resize(){
+      var previous = hasSignature ? pad.toDataURL("image/png") : null;
+      var ratio = window.devicePixelRatio || 1;
+      var rect = pad.getBoundingClientRect();
+      pad.width = rect.width * ratio;
+      pad.height = rect.height * ratio;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.lineWidth = 2;
+      context.lineCap = "round";
+      context.strokeStyle = "#132420";
+      if (previous){
+        var image = new Image();
+        image.onload = function(){ context.drawImage(image, 0, 0, rect.width, rect.height); };
+        image.src = previous;
+      }
     }
-  });
-
-  function pos(e){
-    var rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    function point(event){
+      var rect = pad.getBoundingClientRect();
+      return {x:event.clientX-rect.left,y:event.clientY-rect.top};
+    }
+    pad.addEventListener("pointerdown",function(event){
+      drawing = true;
+      hasSignature = true;
+      pad.setPointerCapture(event.pointerId);
+      var p = point(event);
+      context.beginPath();
+      context.moveTo(p.x,p.y);
+    });
+    pad.addEventListener("pointermove",function(event){
+      if (!drawing) return;
+      var p = point(event);
+      context.lineTo(p.x,p.y);
+      context.stroke();
+    });
+    pad.addEventListener("pointerup",function(){drawing=false;});
+    pad.addEventListener("pointercancel",function(){drawing=false;});
+    document.getElementById(clearId).addEventListener("click",function(){
+      context.clearRect(0,0,pad.width,pad.height);
+      hasSignature = false;
+    });
+    resize();
+    window.addEventListener("resize",resize);
+    return {
+      hasSignature:function(){return hasSignature;},
+      data:function(){return hasSignature ? pad.toDataURL("image/png") : null;}
+    };
   }
 
-  canvas.addEventListener("pointerdown", function (e) {
-    drawing = true;
-    hasSignature = true;
-    var p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  });
-  canvas.addEventListener("pointermove", function (e) {
-    if (!drawing) return;
-    var p = pos(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  });
-  window.addEventListener("pointerup", function () { drawing = false; });
-
-  document.getElementById("sig-clear").addEventListener("click", function () {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasSignature = false;
-  });
+  var clientSignature = setupSignaturePad("sig-client-pad","sig-client-clear");
+  var maloeSignature = setupSignaturePad("sig-maloe-pad","sig-maloe-clear");
 
   document.getElementById("generate-btn").addEventListener("click", async function () {
     var errorEl = document.getElementById("error-msg");
@@ -329,17 +337,17 @@
       return qty > 0 ? (qty > 1 ? qty + "× " + name : name) : null;
     }).filter(Boolean);
 
-    if (!nom || !telephone || kits.length === 0 || !hasSignature){
-      errorEl.textContent = "Merci de renseigner le nom, le téléphone du client, au moins un kit, et de faire signer le client avant de générer le PDF.";
+    if (!nom || !telephone || kits.length === 0 || !clientSignature.hasSignature() || !maloeSignature.hasSignature()){
+      errorEl.textContent = "Merci de renseigner le nom, le téléphone du client, au moins un kit, et de recueillir les deux signatures avant de générer le PDF.";
       errorEl.style.display = "block";
       return;
     }
     errorEl.style.display = "none";
 
-    var sigData = canvas.toDataURL("image/png");
+    var clientSigData = clientSignature.data();
+    var maloeSigData = maloeSignature.data();
     var now = new Date();
     var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
-    var idPhotos = idPhotoCapture.getList();
     var photos = photoCapture.getList();
     var jsPDF = window.jspdf.jsPDF;
     var pdf = new jsPDF({ unit: "mm", format: "a4" });
@@ -386,13 +394,17 @@
     textBlock("Nom : " + nom + "\nTéléphone : " + (telephone || "—") + "\nE-mail : " + (email || "—"));
     section("Kits concernés"); textBlock(kits.join(", "));
     if (remarques) { section("État / remarques"); textBlock(remarques); }
-    addPhotos("Pièce d'identité", idPhotos);
     addPhotos("Photos du matériel", photos);
 
     section("Signature du client");
     ensureSpace(55);
-    try { pdf.addImage(sigData, "PNG", margin, y, 85, 48); } catch(e) {}
-    y += 55;
+    try { pdf.addImage(clientSigData, "PNG", margin, y, 85, 38); } catch(e) {}
+    y += 45;
+
+    section("Signature de Maloé Location");
+    ensureSpace(55);
+    try { pdf.addImage(maloeSigData, "PNG", margin, y, 85, 38); } catch(e) {}
+    y += 45;
 
     pdf.setFont("helvetica", "italic"); pdf.setFontSize(8); pdf.setTextColor(100,100,100);
     pdf.text("Document généré électroniquement par Maloé Location", margin, pageH - 10);
