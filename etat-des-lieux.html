@@ -122,7 +122,7 @@
         <option value="">— Sélectionner une réservation —</option>
       </select>
     </div>
-    <div id="reservation-info" style="display:none;background:var(--sand-light);border-radius:10px;padding:12px;font-size:0.86rem;margin-bottom:14px;"></div>
+    <div id="reservation-info" style="display:none;background:var(--sand-light);border-radius:10px;padding:12px;font-size:0.86rem;margin-bottom:14px;"></div><p id="reservation-loading" style="font-size:.85rem;color:var(--ink-soft);"></p>
     <div class="field">
       <label for="nom-client">Nom du client</label>
       <input type="text" id="nom-client" placeholder="Nom et prénom" autocomplete="name">
@@ -205,7 +205,18 @@
   });
   document.getElementById("edl-logout").addEventListener("click", async function(){await edlSupabase.auth.signOut();await refreshEdlAccess();});
   edlSupabase.auth.onAuthStateChange(function(){refreshEdlAccess();});
-  refreshEdlAccess();
+  refreshEdlAccess().then(function(){
+    edlSupabase.auth.getSession().then(function(result){
+      if (result.data.session) loadReservations();
+    });
+  });
+  edlSupabase.auth.onAuthStateChange(function(event, session){
+    if (event === "SIGNED_IN" && session) loadReservations();
+    if (event === "SIGNED_OUT") {
+      reservations = [];
+      reservationSelect.innerHTML = '<option value="">— Sélectionner une réservation —</option>';
+    }
+  });
 
   var KIT_NAMES = [
     "Glacière + pain de glace", "Parasol + pied", "Kit PMT", "Palmes + masque Easybreath",
@@ -216,19 +227,44 @@
   var selectedReservation = null;
   var reservationSelect = document.getElementById("reservation-select");
   var reservationInfo = document.getElementById("reservation-info");
-  var reservations = JSON.parse(localStorage.getItem("maloe_reservations") || "[]");
+  var reservations = [];
 
   function formatReservationDate(iso){
     if (!iso) return "—";
     try { return new Date(iso).toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"}); } catch(e){ return iso; }
   }
 
-  reservations.forEach(function(r){
-    var option = document.createElement("option");
-    option.value = r.id;
-    option.textContent = r.id + " — " + ((r.client && r.client.nom) || "Client") + " — " + formatReservationDate(r.retrait);
-    reservationSelect.appendChild(option);
-  });
+  async function loadReservations(){
+    var loading = document.getElementById("reservation-loading");
+    if (loading) loading.textContent = "Chargement des réservations…";
+    var sessionResult = await edlSupabase.auth.getSession();
+    var session = sessionResult.data.session;
+    if (!session) return;
+    try {
+      var response = await fetch(SUPABASE_URL + "/functions/v1/edl-reservations", {
+        headers: { "Authorization": "Bearer " + session.access_token, "apikey": SUPABASE_ANON_KEY }
+      });
+      var payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Chargement impossible.");
+      reservations = payload.reservations || [];
+      reservationSelect.innerHTML = '<option value="">— Sélectionner une réservation —</option>';
+      reservations.forEach(function(r){
+        var option = document.createElement("option");
+        option.value = r.id;
+        var clientName = r.client ? [r.client.prenom, r.client.nom].filter(Boolean).join(" ") : "Client";
+        option.textContent = r.id.slice(0,8) + " — " + clientName + " — " + formatReservationDate(r.date_retrait);
+        reservationSelect.appendChild(option);
+      });
+      if (loading) loading.textContent = reservations.length ? reservations.length + " réservation(s) chargée(s)." : "Aucune réservation trouvée.";
+      var requestedId = new URLSearchParams(window.location.search).get("reservation");
+      if (requestedId) {
+        reservationSelect.value = requestedId;
+        applyReservation(reservations.find(function(r){ return r.id === requestedId; }) || null);
+      }
+    } catch(error) {
+      if (loading) loading.textContent = error.message || "Impossible de charger les réservations.";
+    }
+  }
 
   function applyReservation(r){
     selectedReservation = r || null;
@@ -236,14 +272,24 @@
       reservationInfo.style.display = "none";
       return;
     }
-    document.getElementById("nom-client").value = (r.client && r.client.nom) || "";
+    document.getElementById("nom-client").value = [r.client && r.client.prenom, r.client && r.client.nom].filter(Boolean).join(" ");
     document.getElementById("telephone-client").value = (r.client && r.client.telephone) || "";
     document.getElementById("email-client").value = (r.client && r.client.email) || "";
-    var items = (r.lines || []).map(function(line){ return line.id + " × " + line.qty; }).join("<br>");
-    reservationInfo.innerHTML = "<strong>" + r.id + "</strong><br>" +
-      "Retrait : " + formatReservationDate(r.retrait) + (r.slotRetrait ? " à " + r.slotRetrait : "") + "<br>" +
-      "Retour : " + formatReservationDate(r.retour) + (r.slotRetour ? " à " + r.slotRetour : "") +
-      (items ? "<br><br><strong>Matériel réservé</strong><br>" + items : "");
+    var items = (r.items || []).map(function(item){
+      return (item.produit && item.produit.nom ? item.produit.nom : "Matériel") + " × " + item.quantite;
+    });
+    reservationInfo.innerHTML = "";
+    [
+      "Réservation " + r.id,
+      "Statut : " + (r.statut || "—"),
+      "Retrait : " + formatReservationDate(r.date_retrait) + (r.heure_retrait ? " à " + r.heure_retrait : ""),
+      "Retour : " + formatReservationDate(r.date_retour) + (r.heure_retour ? " à " + r.heure_retour : ""),
+      "Matériel réservé : " + (items.join(" • ") || "—")
+    ].forEach(function(line){
+      var p = document.createElement("div");
+      p.textContent = line;
+      reservationInfo.appendChild(p);
+    });
     reservationInfo.style.display = "block";
   }
 
@@ -252,11 +298,6 @@
     applyReservation(reservations.filter(function(r){ return r.id === id; })[0] || null);
   });
 
-  var requestedReservationId = new URLSearchParams(window.location.search).get("reservation");
-  if (requestedReservationId){
-    reservationSelect.value = requestedReservationId;
-    applyReservation(reservations.filter(function(r){ return r.id === requestedReservationId; })[0] || null);
-  }
 
   document.getElementById("timestamp").textContent =
     "Horodatage : " + new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
