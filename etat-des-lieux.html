@@ -556,7 +556,16 @@
 
     var safeName = nom.replace(/[^a-z0-9À-ÿ]+/gi, "_").replace(/^_|_$/g, "");
     var dateFile = now.toISOString().slice(0,10);
-    pdf.save("Etat_des_lieux_" + safeName + "_" + type + "_" + dateFile + ".pdf");
+    var pdfName = "Etat_des_lieux_" + safeName + "_" + type + "_" + dateFile + ".pdf";
+    if (selectedReservation) {
+      var pdfBlob = pdf.output("blob");
+      var pdfForm = new FormData();
+      pdfForm.append("reservation_id", selectedReservation.id);
+      pdfForm.append("etape", type === "Remise" ? "depart" : "retour");
+      pdfForm.append("file", pdfBlob, pdfName);
+      await edlRequest(SUPABASE_URL + "/functions/v1/edl-documents", {method:"POST",body:pdfForm});
+    }
+    pdf.save(pdfName);
   });
 </script>
 
