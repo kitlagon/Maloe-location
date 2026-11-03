@@ -359,14 +359,23 @@
     document.getElementById("photo-status").textContent = total + " photo(s) enregistrée(s) dans le stockage privé.";
   }
 
+  var departurePhotoUrls = {};
+
   async function loadDeparturePhotos(reservationId){
     if (!reservationId) return;
-    reservedItems.forEach(function(item){ var grid = document.getElementById("departure-photos-" + item.id); if (grid) grid.innerHTML = ""; });
+    departurePhotoUrls = {};
+    (selectedReservation && selectedReservation.items ? selectedReservation.items : []).forEach(function(item){
+      var grid = document.getElementById("departure-photos-" + String(item.id).replace(/[^a-zA-Z0-9_-]/g,""));
+      if (grid) grid.innerHTML = "";
+    });
     try {
       var payload = await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos?reservation_id=" + encodeURIComponent(reservationId) + "&etape=depart");
       (payload.photos || []).forEach(function(photo){
-        var grid = document.getElementById("departure-photos-" + photo.reservation_item_id);
+        var itemId = String(photo.reservation_item_id);
+        var grid = document.getElementById("departure-photos-" + itemId.replace(/[^a-zA-Z0-9_-]/g,""));
         if (!grid) return;
+        if (!departurePhotoUrls[itemId]) departurePhotoUrls[itemId] = [];
+        departurePhotoUrls[itemId].push(photo.url);
         var holder = document.createElement("div");
         holder.className = "photo-thumb";
         var img = document.createElement("img");
@@ -377,7 +386,20 @@
       });
     } catch(error) {
       document.getElementById("photo-status").textContent = error.message;
+      throw error;
     }
+  }
+
+  async function imageUrlToDataUrl(url){
+    var response = await fetch(url);
+    if (!response.ok) throw new Error("Impossible de charger une photo de remise pour le PDF.");
+    var blob = await response.blob();
+    return await new Promise(function(resolve,reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = function(){ reject(new Error("Lecture d'une photo de remise impossible.")); };
+      reader.readAsDataURL(blob);
+    });
   }
 
   function renderReservedItems(){
@@ -487,9 +509,25 @@
     var maloeSigData = maloeSignature.data();
     var now = new Date();
     var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
-    var photos = [];
-    try { await uploadCurrentPhotos(); }
-    catch(uploadError){ errorEl.textContent = uploadError.message; errorEl.style.display = "block"; return; }
+    try {
+      await uploadCurrentPhotos();
+      if (type === "Retour") await loadDeparturePhotos(selectedReservation.id);
+    } catch(uploadError){ errorEl.textContent = uploadError.message; errorEl.style.display = "block"; return; }
+    var departurePhotoData = {};
+    if (type === "Retour") {
+      try {
+        for (var departureItemId in departurePhotoUrls) {
+          departurePhotoData[departureItemId] = [];
+          for (var departureIndex = 0; departureIndex < departurePhotoUrls[departureItemId].length; departureIndex++) {
+            departurePhotoData[departureItemId].push(await imageUrlToDataUrl(departurePhotoUrls[departureItemId][departureIndex]));
+          }
+        }
+      } catch(photoError) {
+        errorEl.textContent = photoError.message;
+        errorEl.style.display = "block";
+        return;
+      }
+    }
     var jsPDF = window.jspdf.jsPDF;
     var pdf = new jsPDF({ unit: "mm", format: "a4" });
     var margin = 16, pageW = 210, pageH = 297, y = 20;
@@ -537,7 +575,9 @@
     reservedItems.forEach(function(item){
       var itemName = (item.produit && item.produit.nom) || "Matériel";
       var itemPhotos = itemPhotoCaptures[item.id] ? itemPhotoCaptures[item.id].getList() : [];
-      if (itemPhotos.length) addPhotos("Photos — " + itemName, itemPhotos);
+      var previousPhotos = departurePhotoData[String(item.id)] || [];
+      if (type === "Retour" && previousPhotos.length) addPhotos("Photos de remise — " + itemName, previousPhotos);
+      if (itemPhotos.length) addPhotos((type === "Retour" ? "Photos de retour — " : "Photos — ") + itemName, itemPhotos);
     });
     if (remarques) { section("État / remarques"); textBlock(remarques); }
 
