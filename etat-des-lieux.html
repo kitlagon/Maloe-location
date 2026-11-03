@@ -533,8 +533,12 @@
     section("Client");
     textBlock("Nom : " + nom + "\nTéléphone : " + (telephone || "—") + "\nE-mail : " + (email || "—"));
     section("Matériel réservé"); textBlock(itemLabels.join("\n"));
+    reservedItems.forEach(function(item){
+      var itemName = (item.produit && item.produit.nom) || "Matériel";
+      var itemPhotos = itemPhotoCaptures[item.id] ? itemPhotoCaptures[item.id].getList() : [];
+      if (itemPhotos.length) addPhotos("Photos — " + itemName, itemPhotos);
+    });
     if (remarques) { section("État / remarques"); textBlock(remarques); }
-    addPhotos("Photos du matériel", photos);
 
     section("Signature du client");
     ensureSpace(55);
