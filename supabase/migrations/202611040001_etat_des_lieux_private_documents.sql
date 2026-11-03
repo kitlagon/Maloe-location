@@ -33,6 +33,7 @@ SET
 CREATE TABLE IF NOT EXISTS public.etat_des_lieux_fichiers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   reservation_id uuid NOT NULL REFERENCES public.reservations(id) ON DELETE CASCADE,
+  reservation_item_id uuid REFERENCES public.reservation_items(id) ON DELETE CASCADE,
   etape text NOT NULL CHECK (etape IN ('depart', 'retour')),
   type_fichier text NOT NULL CHECK (type_fichier IN ('pdf', 'photo')),
   storage_path text NOT NULL UNIQUE,
@@ -44,9 +45,17 @@ CREATE TABLE IF NOT EXISTS public.etat_des_lieux_fichiers (
   sha256 text NOT NULL CHECK (sha256 ~ '^[a-f0-9]{64}$'),
   created_at timestamptz NOT NULL DEFAULT now(),
   delete_after timestamptz,
-  CONSTRAINT etat_des_lieux_pdf_one_per_stage
-    UNIQUE (reservation_id, etape, type_fichier)
 );
+
+-- Un seul PDF par étape, mais autant de photos que nécessaire.
+-- Chaque photo peut être rattachée à une ligne de réservation pour l'affichage par matériel.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_edl_pdf_one_per_stage
+  ON public.etat_des_lieux_fichiers (reservation_id, etape)
+  WHERE type_fichier = 'pdf';
+
+CREATE INDEX IF NOT EXISTS idx_edl_fichiers_reservation_item
+  ON public.etat_des_lieux_fichiers (reservation_item_id)
+  WHERE reservation_item_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_edl_fichiers_reservation_etape
   ON public.etat_des_lieux_fichiers (reservation_id, etape);
