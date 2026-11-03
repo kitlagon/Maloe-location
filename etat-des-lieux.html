@@ -310,7 +310,7 @@
     }
     input.addEventListener("change", function(){
       Array.prototype.forEach.call(input.files, function(file){
-        if (!/^image\\/(jpeg|png|webp)$/.test(file.type)) return;
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return;
         var reader = new FileReader();
         reader.onload = function(e){ entries.push({file:file, preview:e.target.result}); render(); };
         reader.readAsDataURL(file);
@@ -361,6 +361,7 @@
 
   async function loadDeparturePhotos(reservationId){
     if (!reservationId) return;
+    reservedItems.forEach(function(item){ var grid = document.getElementById("departure-photos-" + item.id); if (grid) grid.innerHTML = ""; });
     try {
       var payload = await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos?reservation_id=" + encodeURIComponent(reservationId) + "&etape=depart");
       (payload.photos || []).forEach(function(photo){
