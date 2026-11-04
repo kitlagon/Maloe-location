@@ -183,34 +183,45 @@
   const edlSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const loginForm = document.getElementById("edl-login-form");
   const loginError = document.getElementById("edl-login-error");
-  async function refreshEdlAccess(){
-    const {data:{session}} = await edlSupabase.auth.getSession();
+  function applyEdlSession(session){
     const allowed = !!(session && session.user && session.user.app_metadata && session.user.app_metadata.edl_access === true);
     document.getElementById("edl-login").hidden = allowed;
     document.getElementById("edl-header").hidden = !allowed;
     document.getElementById("edl-app").hidden = !allowed;
-    if (session && !allowed) { await edlSupabase.auth.signOut(); loginError.textContent = "Ce compte n’est pas autorisé à utiliser l’outil état des lieux."; loginError.style.display = "block"; }
+    if (session && !allowed) {
+      loginError.textContent = "Ce compte n’est pas autorisé à utiliser l’outil état des lieux.";
+      loginError.style.display = "block";
+      // Ne pas appeler signOut directement dans onAuthStateChange : Supabase
+      // recommande de différer les opérations auth asynchrones hors du callback.
+      setTimeout(function(){ edlSupabase.auth.signOut(); }, 0);
+    }
+    return allowed;
   }
   loginForm.addEventListener("submit", async function(event){
     event.preventDefault(); loginError.style.display = "none";
-    const {error} = await edlSupabase.auth.signInWithPassword({email:document.getElementById("edl-email").value.trim(),password:document.getElementById("edl-password").value});
+    const {data, error} = await edlSupabase.auth.signInWithPassword({email:document.getElementById("edl-email").value.trim(),password:document.getElementById("edl-password").value});
     if(error){loginError.textContent = "Connexion impossible. Vérifie l’adresse e-mail et le mot de passe.";loginError.style.display = "block";return;}
-    await refreshEdlAccess();
+    if (applyEdlSession(data.session)) loadReservations();
   });
-  document.getElementById("edl-logout").addEventListener("click", async function(){await edlSupabase.auth.signOut();await refreshEdlAccess();});
-  edlSupabase.auth.onAuthStateChange(function(){refreshEdlAccess();});
-  refreshEdlAccess().then(function(){
-    edlSupabase.auth.getSession().then(function(result){
-      if (result.data.session) loadReservations();
-    });
+  document.getElementById("edl-logout").addEventListener("click", async function(){
+    const {error} = await edlSupabase.auth.signOut();
+    if (error) {
+      loginError.textContent = "La déconnexion n’a pas abouti. Réessaie.";
+      loginError.style.display = "block";
+    }
   });
   edlSupabase.auth.onAuthStateChange(function(event, session){
-    if (event === "SIGNED_IN" && session) loadReservations();
+    const allowed = applyEdlSession(session);
+    if ((event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && allowed) {
+      loadReservations();
+    }
     if (event === "SIGNED_OUT") {
       reservations = [];
       reservationSelect.innerHTML = '<option value="">— Sélectionner une réservation —</option>';
+      applyEdlSession(null);
     }
   });
+
 
   var selectedReservation = null;
   var reservationSelect = document.getElementById("reservation-select");
