@@ -255,6 +255,22 @@
   }
 
   function applyReservation(r){
+    var nextReservationId = r ? r.id : null;
+    var previousReservationId = selectedReservation ? selectedReservation.id : null;
+    if (nextReservationId !== previousReservationId) {
+      // Évite de réutiliser les éléments saisis pour une autre réservation.
+      Object.keys(itemPhotoCaptures).forEach(function(itemId){
+        itemPhotoCaptures[itemId].clear();
+      });
+      uploadedPhotoData = {};
+      departurePhotoUrls = {};
+      document.getElementById("remarques").value = "";
+      document.getElementById("photo-status").textContent = "";
+      clientSignature.clear();
+      maloeSignature.clear();
+      var comparison = document.getElementById("departure-photo-comparison");
+      if (comparison) comparison.hidden = true;
+    }
     selectedReservation = r || null;
     renderReservedItems();
     if (!r){
@@ -493,7 +509,11 @@
     window.addEventListener("resize",resize);
     return {
       hasSignature:function(){return hasSignature;},
-      data:function(){return hasSignature ? pad.toDataURL("image/png") : null;}
+      data:function(){return hasSignature ? pad.toDataURL("image/png") : null;},
+      clear:function(){
+        context.clearRect(0,0,pad.width,pad.height);
+        hasSignature = false;
+      }
     };
   }
 
