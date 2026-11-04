@@ -54,10 +54,23 @@ Deno.serve(async (req) => {
       .from("reservations").select("id").eq("id", reservationId).maybeSingle();
     if (reservationError || !reservation) return json({ error: "Réservation introuvable." }, 404);
 
-    if (itemId) {
-      const { data: item, error: itemError } = await admin.from("reservation_items")
-        .select("id").eq("id", itemId).eq("reservation_id", reservationId).maybeSingle();
-      if (itemError || !item) return json({ error: "Matériel non rattaché à cette réservation." }, 400);
+    if (!itemId) return json({ error: "Le matériel concerné doit être précisé pour chaque photo." }, 400);
+    const { data: item, error: itemError } = await admin.from("reservation_items")
+      .select("id").eq("id", itemId).eq("reservation_id", reservationId).maybeSingle();
+    if (itemError || !item) return json({ error: "Matériel non rattaché à cette réservation." }, 400);
+
+    const { count: photoCount, error: countError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id", { count: "exact", head: true })
+      .eq("reservation_id", reservationId)
+      .eq("reservation_item_id", itemId)
+      .eq("etape", stage)
+      .eq("type_fichier", "photo");
+    if (countError) {
+      console.error("EDL photo count failed", countError.message);
+      return json({ error: "Impossible de vérifier le nombre de photos." }, 500);
+    }
+    if ((photoCount ?? 0) >= 3) {
+      return json({ error: "Limite atteinte : 3 photos maximum pour ce matériel à cette étape." }, 409);
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
