@@ -264,12 +264,16 @@
       });
       uploadedPhotoData = {};
       departurePhotoUrls = {};
+      document.getElementById("nom-client").value = "";
+      document.getElementById("telephone-client").value = "";
+      document.getElementById("email-client").value = "";
       document.getElementById("remarques").value = "";
       document.getElementById("photo-status").textContent = "";
       clientSignature.clear();
       maloeSignature.clear();
-      var comparison = document.getElementById("departure-photo-comparison");
-      if (comparison) comparison.hidden = true;
+      document.querySelectorAll(".departure-comparison").forEach(function(comparison){
+        comparison.hidden = true;
+      });
     }
     selectedReservation = r || null;
     renderReservedItems();
