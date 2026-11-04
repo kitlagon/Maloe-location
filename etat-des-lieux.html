@@ -310,8 +310,13 @@
       }).join("");
     }
     input.addEventListener("change", function(){
-      Array.prototype.forEach.call(input.files, function(file){
-        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return;
+      var remaining = 3 - entries.length;
+      var selected = Array.prototype.slice.call(input.files || []);
+      var accepted = selected.filter(function(file){ return /^image\/(jpeg|png|webp)$/.test(file.type); }).slice(0, Math.max(0, remaining));
+      if (selected.length > accepted.length) {
+        document.getElementById("photo-status").textContent = "3 photos maximum par matériel et par étape. Les photos déjà enregistrées comptent aussi.";
+      }
+      accepted.forEach(function(file){
         var reader = new FileReader();
         reader.onload = function(e){ entries.push({file:file, preview:e.target.result}); render(); };
         reader.readAsDataURL(file);
@@ -421,6 +426,7 @@
       return '<section class="reserved-item" style="border-top:1px solid var(--line);padding:14px 0;">' +
         '<div style="font-weight:600;">'+escapeHtml(label)+'</div><div style="font-size:.84rem;color:var(--ink-soft);margin:3px 0 10px;">Quantité : '+Number(item.quantite || 1)+escapeHtml(detail)+'</div>'+
         '<div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de cet article</div>'+
+        '<p style="font-size:.8rem;color:var(--ink-soft);margin:0 0 8px;">3 photos maximum par matériel et par étape. Au retour, ajoute des photos uniquement si tu constates une différence avec la remise.</p>'+
         '<label class="photo-input-btn">Prendre / ajouter des photos<input type="file" id="photo-input-'+safeId+'" accept="image/jpeg,image/png,image/webp" capture="environment" multiple></label>'+
         '<div class="photo-grid" id="photo-grid-'+safeId+'"></div>'+
         '<div class="departure-comparison" style="margin-top:12px;"><div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de remise (comparaison)</div><div class="photo-grid" id="departure-photos-'+safeId+'"></div></div>'+
