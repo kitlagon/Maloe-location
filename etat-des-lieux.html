@@ -299,6 +299,7 @@
     "Horodatage : " + new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
   var itemPhotoCaptures = {};
+  var uploadedPhotoData = {};
   function makePhotoCapture(inputId, gridId){
     var entries = [];
     var input = document.getElementById(inputId);
@@ -325,7 +326,8 @@
     });
     return {
       getList:function(){ return entries.map(function(entry){return entry.preview;}); },
-      getFiles:function(){ return entries.map(function(entry){return entry.file;}); }
+      getFiles:function(){ return entries.map(function(entry){return entry.file;}); },
+      clear:function(){ entries = []; render(); }
     };
   }
   async function edlRequest(url, options){
@@ -344,8 +346,11 @@
     if (!selectedReservation) throw new Error("Sélectionne une réservation avant d'enregistrer les photos.");
     var stage = document.querySelector('input[name="type"]:checked').value === "Remise" ? "depart" : "retour";
     var total = 0;
+    uploadedPhotoData = {};
     for (var itemId in itemPhotoCaptures){
       var files = itemPhotoCaptures[itemId].getFiles();
+      var previews = itemPhotoCaptures[itemId].getList();
+      uploadedPhotoData[itemId] = previews.slice();
       for (var i=0;i<files.length;i++){
         var form = new FormData();
         form.append("reservation_id", selectedReservation.id);
@@ -356,6 +361,7 @@
         total++;
       }
     }
+    Object.keys(itemPhotoCaptures).forEach(function(itemId){ itemPhotoCaptures[itemId].clear(); });
     document.getElementById("photo-status").textContent = total + " photo(s) enregistrée(s) dans le stockage privé.";
   }
 
@@ -574,7 +580,7 @@
     section("Matériel réservé"); textBlock(itemLabels.join("\n"));
     reservedItems.forEach(function(item){
       var itemName = (item.produit && item.produit.nom) || "Matériel";
-      var itemPhotos = itemPhotoCaptures[item.id] ? itemPhotoCaptures[item.id].getList() : [];
+      var itemPhotos = uploadedPhotoData[String(item.id)] || [];
       var previousPhotos = departurePhotoData[String(item.id)] || [];
       if (type === "Retour" && previousPhotos.length) addPhotos("Photos de remise — " + itemName, previousPhotos);
       if (itemPhotos.length) addPhotos((type === "Retour" ? "Photos de retour — " : "Photos — ") + itemName, itemPhotos);
