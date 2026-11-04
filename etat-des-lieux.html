@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --lagoon-deep:#0B4F4A; --lagoon-bright:#1B8A82; --sand:#F1E6CE; --sand-light:#FAF5E9;
@@ -56,7 +57,7 @@
   }
 
   .sig-wrap{border:1px dashed var(--line);border-radius:10px;overflow:hidden;background:var(--sand-light);}
-  canvas#sig-pad{display:block;width:100%;height:180px;touch-action:none;}
+  .sig-pad{display:block;width:100%;height:180px;touch-action:none;}
   .sig-actions{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
   .sig-actions button{background:none;border:none;color:var(--coral);text-decoration:underline;font-size:0.84rem;cursor:pointer;font-family:inherit;}
 
@@ -81,13 +82,26 @@
 </head>
 <body>
 
-<header>
+<section id="edl-login" class="wrap" style="max-width:440px;padding-top:12vh;">
+  <div class="panel">
+    <h1>Accès outil état des lieux</h1>
+    <p style="color:var(--ink-soft);font-size:.9rem;">Connexion réservée à l’équipe Maloé Location.</p>
+    <form id="edl-login-form">
+      <div class="field"><label for="edl-email">Adresse e-mail</label><input id="edl-email" type="email" required autocomplete="username"></div>
+      <div class="field"><label for="edl-password">Mot de passe</label><input id="edl-password" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-primary" type="submit">Se connecter</button>
+      <p class="error-msg" id="edl-login-error" role="alert"></p>
+    </form>
+  </div>
+</section>
+<header id="edl-header" hidden>
   <div class="nav">
     <span class="logo"><img class="logo-img" src="images/logo.jpg" alt="Maloé Location">Maloé Location — outil interne</span>
-    <a class="back-link" href="index.html">← Retour au site</a>
+    <button class="back-link" id="edl-logout" type="button" style="border:0;background:none;cursor:pointer;">Déconnexion</button>
   </div>
 </header>
 
+<main id="edl-app" hidden>
 <div class="wrap">
   <h1>État des lieux</h1>
   <p class="timestamp" id="timestamp"></p>
@@ -108,7 +122,7 @@
         <option value="">— Sélectionner une réservation —</option>
       </select>
     </div>
-    <div id="reservation-info" style="display:none;background:var(--sand-light);border-radius:10px;padding:12px;font-size:0.86rem;margin-bottom:14px;"></div>
+    <div id="reservation-info" style="display:none;background:var(--sand-light);border-radius:10px;padding:12px;font-size:0.86rem;margin-bottom:14px;"></div><p id="reservation-loading" style="font-size:.85rem;color:var(--ink-soft);"></p>
     <div class="field">
       <label for="nom-client">Nom du client</label>
       <input type="text" id="nom-client" placeholder="Nom et prénom" autocomplete="name">
@@ -124,8 +138,9 @@
   </div>
 
   <div class="panel">
-    <h2>Kits concernés</h2>
-    <div class="kit-list" id="kit-list"></div>
+    <h2>Matériel de la réservation</h2>
+    <p style="font-size:.84rem;color:var(--ink-soft);margin-top:-6px;">Les articles affichés correspondent exactement à la réservation sélectionnée.</p>
+    <div id="reserved-items"><p style="font-size:.88rem;color:var(--ink-soft);">Sélectionne une réservation pour afficher le matériel.</p></div>
   </div>
 
   <div class="panel">
@@ -135,79 +150,167 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Pièce d'identité du client</h2>
-    <label class="photo-input-btn">
-      Prendre une photo de la pièce d'identité
-      <input type="file" id="id-photo-input" accept="image/*" capture="environment" multiple>
-    </label>
-    <div class="photo-grid" id="id-photo-grid"></div>
-  </div>
-
-  <div class="panel">
-    <h2>Photos horodatées</h2>
-    <label class="photo-input-btn">
-      Prendre / ajouter des photos
-      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple>
-    </label>
-    <div class="photo-grid" id="photo-grid"></div>
-  </div>
+  <p id="photo-status" style="font-size:.82rem;color:var(--ink-soft);margin:0 0 14px;"></p>
 
   <div class="panel">
     <h2>Signature du client</h2>
-    <div class="sig-wrap">
-      <canvas id="sig-pad"></canvas>
-    </div>
+    <div class="sig-wrap"><canvas id="sig-client-pad" class="sig-pad"></canvas></div>
     <div class="sig-actions">
-      <button type="button" id="sig-clear">Effacer la signature</button>
+      <button type="button" id="sig-client-clear">Effacer la signature</button>
       <span style="font-size:0.8rem;color:var(--ink-soft);">Signer avec le doigt ou la souris</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Signature de Maloé Location</h2>
+    <div class="sig-wrap"><canvas id="sig-maloe-pad" class="sig-pad"></canvas></div>
+    <div class="sig-actions">
+      <button type="button" id="sig-maloe-clear">Effacer la signature</button>
+      <span style="font-size:0.8rem;color:var(--ink-soft);">Signature du représentant</span>
     </div>
   </div>
 
   <button class="btn btn-primary" id="generate-btn">Générer le PDF</button>
   <p class="error-msg" id="error-msg"></p>
 </div>
+</main>
 
 <div id="print-view"></div>
 
 <script>
-  var KIT_NAMES = [
-    "Glacière + pain de glace", "Parasol + pied", "Kit PMT", "Palmes + masque Easybreath",
-    "Masque + tuba", "Masque Easybreath seul", "Palmes seules",
-    "Caméra 360° + accessoires aquatiques", "Kit PMT + caméra", "Palmes + Easybreath + caméra"
-  ];
+  const SUPABASE_URL = "https://kyzixknnlgdgvxkewmzd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL";
+  const edlSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const loginForm = document.getElementById("edl-login-form");
+  const loginError = document.getElementById("edl-login-error");
+  function applyEdlSession(session){
+    const allowed = !!(session && session.user && session.user.app_metadata && session.user.app_metadata.edl_access === true);
+    document.getElementById("edl-login").hidden = allowed;
+    document.getElementById("edl-header").hidden = !allowed;
+    document.getElementById("edl-app").hidden = !allowed;
+    if (session && !allowed) {
+      loginError.textContent = "Ce compte n’est pas autorisé à utiliser l’outil état des lieux.";
+      loginError.style.display = "block";
+      // Ne pas appeler signOut directement dans onAuthStateChange : Supabase
+      // recommande de différer les opérations auth asynchrones hors du callback.
+      setTimeout(function(){ edlSupabase.auth.signOut(); }, 0);
+    }
+    return allowed;
+  }
+  loginForm.addEventListener("submit", async function(event){
+    event.preventDefault(); loginError.style.display = "none";
+    const {data, error} = await edlSupabase.auth.signInWithPassword({email:document.getElementById("edl-email").value.trim(),password:document.getElementById("edl-password").value});
+    if(error){loginError.textContent = "Connexion impossible. Vérifie l’adresse e-mail et le mot de passe.";loginError.style.display = "block";return;}
+    if (applyEdlSession(data.session)) loadReservations();
+  });
+  document.getElementById("edl-logout").addEventListener("click", async function(){
+    const {error} = await edlSupabase.auth.signOut();
+    if (error) {
+      loginError.textContent = "La déconnexion n’a pas abouti. Réessaie.";
+      loginError.style.display = "block";
+    }
+  });
+  edlSupabase.auth.onAuthStateChange(function(event, session){
+    const allowed = applyEdlSession(session);
+    if ((event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && allowed) {
+      loadReservations();
+    }
+    if (event === "SIGNED_OUT") {
+      reservations = [];
+      reservationSelect.innerHTML = '<option value="">— Sélectionner une réservation —</option>';
+      applyEdlSession(null);
+    }
+  });
+
 
   var selectedReservation = null;
   var reservationSelect = document.getElementById("reservation-select");
   var reservationInfo = document.getElementById("reservation-info");
-  var reservations = JSON.parse(localStorage.getItem("maloe_reservations") || "[]");
+  var reservations = [];
 
   function formatReservationDate(iso){
     if (!iso) return "—";
     try { return new Date(iso).toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"}); } catch(e){ return iso; }
   }
 
-  reservations.forEach(function(r){
-    var option = document.createElement("option");
-    option.value = r.id;
-    option.textContent = r.id + " — " + ((r.client && r.client.nom) || "Client") + " — " + formatReservationDate(r.retrait);
-    reservationSelect.appendChild(option);
-  });
+  async function loadReservations(){
+    var loading = document.getElementById("reservation-loading");
+    if (loading) loading.textContent = "Chargement des réservations…";
+    var sessionResult = await edlSupabase.auth.getSession();
+    var session = sessionResult.data.session;
+    if (!session) return;
+    try {
+      var response = await fetch(SUPABASE_URL + "/functions/v1/edl-reservations", {
+        headers: { "Authorization": "Bearer " + session.access_token, "apikey": SUPABASE_ANON_KEY }
+      });
+      var payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Chargement impossible.");
+      reservations = payload.reservations || [];
+      reservationSelect.innerHTML = '<option value="">— Sélectionner une réservation —</option>';
+      reservations.forEach(function(r){
+        var option = document.createElement("option");
+        option.value = r.id;
+        var clientName = r.client ? [r.client.prenom, r.client.nom].filter(Boolean).join(" ") : "Client";
+        option.textContent = r.id.slice(0,8) + " — " + clientName + " — " + formatReservationDate(r.date_retrait);
+        reservationSelect.appendChild(option);
+      });
+      if (loading) loading.textContent = reservations.length ? reservations.length + " réservation(s) chargée(s)." : "Aucune réservation trouvée.";
+      var requestedId = new URLSearchParams(window.location.search).get("reservation");
+      if (requestedId) {
+        reservationSelect.value = requestedId;
+        applyReservation(reservations.find(function(r){ return r.id === requestedId; }) || null);
+      }
+    } catch(error) {
+      if (loading) loading.textContent = error.message || "Impossible de charger les réservations.";
+    }
+  }
 
   function applyReservation(r){
+    var nextReservationId = r ? r.id : null;
+    var previousReservationId = selectedReservation ? selectedReservation.id : null;
+    if (nextReservationId !== previousReservationId) {
+      // Évite de réutiliser les éléments saisis pour une autre réservation.
+      Object.keys(itemPhotoCaptures).forEach(function(itemId){
+        itemPhotoCaptures[itemId].clear();
+      });
+      uploadedPhotoData = {};
+      departurePhotoUrls = {};
+      document.getElementById("nom-client").value = "";
+      document.getElementById("telephone-client").value = "";
+      document.getElementById("email-client").value = "";
+      document.getElementById("remarques").value = "";
+      document.getElementById("photo-status").textContent = "";
+      clientSignature.clear();
+      maloeSignature.clear();
+      document.querySelectorAll(".departure-comparison").forEach(function(comparison){
+        comparison.hidden = true;
+      });
+    }
     selectedReservation = r || null;
+    renderReservedItems();
     if (!r){
       reservationInfo.style.display = "none";
       return;
     }
-    document.getElementById("nom-client").value = (r.client && r.client.nom) || "";
+    renderReservedItems();
+    document.getElementById("nom-client").value = [r.client && r.client.prenom, r.client && r.client.nom].filter(Boolean).join(" ");
     document.getElementById("telephone-client").value = (r.client && r.client.telephone) || "";
     document.getElementById("email-client").value = (r.client && r.client.email) || "";
-    var items = (r.lines || []).map(function(line){ return line.id + " × " + line.qty; }).join("<br>");
-    reservationInfo.innerHTML = "<strong>" + r.id + "</strong><br>" +
-      "Retrait : " + formatReservationDate(r.retrait) + (r.slotRetrait ? " à " + r.slotRetrait : "") + "<br>" +
-      "Retour : " + formatReservationDate(r.retour) + (r.slotRetour ? " à " + r.slotRetour : "") +
-      (items ? "<br><br><strong>Matériel réservé</strong><br>" + items : "");
+    var items = (r.items || []).map(function(item){
+      return (item.produit && item.produit.nom ? item.produit.nom : "Matériel") + " × " + item.quantite;
+    });
+    reservationInfo.innerHTML = "";
+    [
+      "Réservation " + r.id,
+      "Statut : " + (r.statut || "—"),
+      "Retrait : " + formatReservationDate(r.date_retrait) + (r.heure_retrait ? " à " + r.heure_retrait : ""),
+      "Retour : " + formatReservationDate(r.date_retour) + (r.heure_retour ? " à " + r.heure_retour : ""),
+      "Matériel réservé : " + (items.join(" • ") || "—")
+    ].forEach(function(line){
+      var p = document.createElement("div");
+      p.textContent = line;
+      reservationInfo.appendChild(p);
+    });
     reservationInfo.style.display = "block";
   }
 
@@ -215,107 +318,222 @@
     var id = this.value;
     applyReservation(reservations.filter(function(r){ return r.id === id; })[0] || null);
   });
+  document.querySelectorAll('input[name="type"]').forEach(function(radio){
+    radio.addEventListener("change", function(){
+      if (this.value === "Retour" && selectedReservation) loadDeparturePhotos(selectedReservation.id);
+      else document.getElementById("departure-photo-comparison").hidden = true;
+    });
+  });
 
-  var requestedReservationId = new URLSearchParams(window.location.search).get("reservation");
-  if (requestedReservationId){
-    reservationSelect.value = requestedReservationId;
-    applyReservation(reservations.filter(function(r){ return r.id === requestedReservationId; })[0] || null);
-  }
 
   document.getElementById("timestamp").textContent =
     "Horodatage : " + new Date().toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
-  var kitList = document.getElementById("kit-list");
-  kitList.innerHTML = KIT_NAMES.map(function (name, i) {
-    return '<div class="kit-row"><span>' + name + '</span><input type="number" min="0" step="1" value="0" id="kit-' + i + '"></div>';
-  }).join("");
-
+  var itemPhotoCaptures = {};
+  var uploadedPhotoData = {};
   function makePhotoCapture(inputId, gridId){
-    var list = [];
+    var entries = [];
     var input = document.getElementById(inputId);
     var grid = document.getElementById(gridId);
-
     function render(){
-      grid.innerHTML = list.map(function (src, i) {
-        return '<div class="photo-thumb"><img src="' + src + '"><button type="button" data-idx="' + i + '">×</button></div>';
+      grid.innerHTML = entries.map(function(entry, i){
+        return '<div class="photo-thumb"><img src="' + entry.preview + '"><button type="button" data-idx="' + i + '">×</button></div>';
       }).join("");
     }
-
-    input.addEventListener("change", function () {
-      Array.prototype.forEach.call(input.files, function (file) {
+    input.addEventListener("change", function(){
+      var remaining = 3 - entries.length;
+      var selected = Array.prototype.slice.call(input.files || []);
+      var accepted = selected.filter(function(file){ return /^image\/(jpeg|png|webp)$/.test(file.type); }).slice(0, Math.max(0, remaining));
+      if (selected.length > accepted.length) {
+        document.getElementById("photo-status").textContent = "3 photos maximum par matériel et par étape. Les photos déjà enregistrées comptent aussi.";
+      }
+      accepted.forEach(function(file){
         var reader = new FileReader();
-        reader.onload = function (e) {
-          list.push(e.target.result);
-          render();
-        };
+        reader.onload = function(e){ entries.push({file:file, preview:e.target.result}); render(); };
         reader.readAsDataURL(file);
       });
       input.value = "";
     });
-
-    grid.addEventListener("click", function (e) {
+    grid.addEventListener("click", function(e){
       var btn = e.target.closest("button[data-idx]");
       if (!btn) return;
-      list.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+      entries.splice(parseInt(btn.getAttribute("data-idx"),10),1);
       render();
     });
-
-    return { getList: function () { return list; } };
+    return {
+      getList:function(){ return entries.map(function(entry){return entry.preview;}); },
+      getFiles:function(){ return entries.map(function(entry){return entry.file;}); },
+      clear:function(){ entries = []; render(); }
+    };
+  }
+  async function edlRequest(url, options){
+    var sessionResult = await edlSupabase.auth.getSession();
+    var session = sessionResult.data.session;
+    if (!session) throw new Error("Session expirée. Reconnecte-toi.");
+    var response = await fetch(url, Object.assign({}, options || {}, {
+      headers:Object.assign({"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_ANON_KEY}, (options && options.headers) || {})
+    }));
+    var payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Une erreur est survenue.");
+    return payload;
   }
 
-  var idPhotoCapture = makePhotoCapture("id-photo-input", "id-photo-grid");
-  var photoCapture = makePhotoCapture("photo-input", "photo-grid");
-
-  var canvas = document.getElementById("sig-pad");
-  var ctx = canvas.getContext("2d");
-  var drawing = false;
-  var hasSignature = false;
-
-  function resizeCanvas(){
-    var ratio = window.devicePixelRatio || 1;
-    var rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#132420";
-  }
-  resizeCanvas();
-  window.addEventListener("resize", function () {
-    var data = hasSignature ? canvas.toDataURL() : null;
-    resizeCanvas();
-    if (data){
-      var img = new Image();
-      img.onload = function () { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
-      img.src = data;
+  async function uploadCurrentPhotos(){
+    if (!selectedReservation) throw new Error("Sélectionne une réservation avant d'enregistrer les photos.");
+    var stage = document.querySelector('input[name="type"]:checked').value === "Remise" ? "depart" : "retour";
+    var total = 0;
+    uploadedPhotoData = {};
+    for (var itemId in itemPhotoCaptures){
+      var files = itemPhotoCaptures[itemId].getFiles();
+      var previews = itemPhotoCaptures[itemId].getList();
+      uploadedPhotoData[itemId] = previews.slice();
+      for (var i=0;i<files.length;i++){
+        var form = new FormData();
+        form.append("reservation_id", selectedReservation.id);
+        form.append("reservation_item_id", itemId);
+        form.append("etape", stage);
+        form.append("file", files[i], files[i].name);
+        await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos", {method:"POST",body:form});
+        total++;
+      }
     }
-  });
-
-  function pos(e){
-    var rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    Object.keys(itemPhotoCaptures).forEach(function(itemId){ itemPhotoCaptures[itemId].clear(); });
+    document.getElementById("photo-status").textContent = total + " photo(s) enregistrée(s) dans le stockage privé.";
   }
 
-  canvas.addEventListener("pointerdown", function (e) {
-    drawing = true;
-    hasSignature = true;
-    var p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  });
-  canvas.addEventListener("pointermove", function (e) {
-    if (!drawing) return;
-    var p = pos(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  });
-  window.addEventListener("pointerup", function () { drawing = false; });
+  var departurePhotoUrls = {};
 
-  document.getElementById("sig-clear").addEventListener("click", function () {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasSignature = false;
-  });
+  async function loadDeparturePhotos(reservationId){
+    if (!reservationId) return;
+    departurePhotoUrls = {};
+    (selectedReservation && selectedReservation.items ? selectedReservation.items : []).forEach(function(item){
+      var grid = document.getElementById("departure-photos-" + String(item.id).replace(/[^a-zA-Z0-9_-]/g,""));
+      if (grid) grid.innerHTML = "";
+    });
+    try {
+      var payload = await edlRequest(SUPABASE_URL + "/functions/v1/edl-photos?reservation_id=" + encodeURIComponent(reservationId) + "&etape=depart");
+      (payload.photos || []).forEach(function(photo){
+        var itemId = String(photo.reservation_item_id);
+        var grid = document.getElementById("departure-photos-" + itemId.replace(/[^a-zA-Z0-9_-]/g,""));
+        if (!grid) return;
+        if (!departurePhotoUrls[itemId]) departurePhotoUrls[itemId] = [];
+        departurePhotoUrls[itemId].push(photo.url);
+        var holder = document.createElement("div");
+        holder.className = "photo-thumb";
+        var img = document.createElement("img");
+        img.src = photo.url;
+        img.alt = "Photo prise à la remise";
+        holder.appendChild(img);
+        grid.appendChild(holder);
+      });
+    } catch(error) {
+      document.getElementById("photo-status").textContent = error.message;
+      throw error;
+    }
+  }
+
+  async function imageUrlToDataUrl(url){
+    var response = await fetch(url);
+    if (!response.ok) throw new Error("Impossible de charger une photo de remise pour le PDF.");
+    var blob = await response.blob();
+    return await new Promise(function(resolve,reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = function(){ reject(new Error("Lecture d'une photo de remise impossible.")); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function renderReservedItems(){
+    var host = document.getElementById("reserved-items");
+    itemPhotoCaptures = {};
+    if (!selectedReservation){ host.innerHTML = '<p style="font-size:.88rem;color:var(--ink-soft);">Sélectionne une réservation pour afficher le matériel.</p>'; return; }
+    var items = selectedReservation.items || [];
+    if (!items.length){ host.textContent = "Aucun article associé à cette réservation."; return; }
+    host.innerHTML = items.map(function(item){
+      var label = (item.produit && item.produit.nom) || "Matériel";
+      var detail = item.details ? " — " + item.details : "";
+      var safeId = String(item.id).replace(/[^a-zA-Z0-9_-]/g,"");
+      return '<section class="reserved-item" style="border-top:1px solid var(--line);padding:14px 0;">' +
+        '<div style="font-weight:600;">'+escapeHtml(label)+'</div><div style="font-size:.84rem;color:var(--ink-soft);margin:3px 0 10px;">Quantité : '+Number(item.quantite || 1)+escapeHtml(detail)+'</div>'+
+        '<div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de cet article</div>'+
+        '<p style="font-size:.8rem;color:var(--ink-soft);margin:0 0 8px;">3 photos maximum par matériel et par étape. Au retour, ajoute des photos uniquement si tu constates une différence avec la remise.</p>'+
+        '<label class="photo-input-btn">Prendre / ajouter des photos<input type="file" id="photo-input-'+safeId+'" accept="image/jpeg,image/png,image/webp" capture="environment" multiple></label>'+
+        '<div class="photo-grid" id="photo-grid-'+safeId+'"></div>'+
+        '<div class="departure-comparison" style="margin-top:12px;"><div style="font-size:.82rem;font-weight:600;margin-bottom:6px;">Photos de remise (comparaison)</div><div class="photo-grid" id="departure-photos-'+safeId+'"></div></div>'+
+      '</section>';
+    }).join("");
+    items.forEach(function(item){
+      var safeId = String(item.id).replace(/[^a-zA-Z0-9_-]/g,"");
+      itemPhotoCaptures[item.id] = makePhotoCapture("photo-input-"+safeId,"photo-grid-"+safeId);
+    });
+    if (document.querySelector('input[name="type"]:checked').value === "Retour") loadDeparturePhotos(selectedReservation.id);
+  }
+
+  function escapeHtml(value){
+    return String(value == null ? "" : value).replace(/[&<>"]/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch];});
+  }
+
+  function setupSignaturePad(canvasId, clearId){
+    var pad = document.getElementById(canvasId);
+    var context = pad.getContext("2d");
+    var drawing = false;
+    var hasSignature = false;
+
+    function resize(){
+      var previous = hasSignature ? pad.toDataURL("image/png") : null;
+      var ratio = window.devicePixelRatio || 1;
+      var rect = pad.getBoundingClientRect();
+      pad.width = rect.width * ratio;
+      pad.height = rect.height * ratio;
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+      context.lineWidth = 2;
+      context.lineCap = "round";
+      context.strokeStyle = "#132420";
+      if (previous){
+        var image = new Image();
+        image.onload = function(){ context.drawImage(image, 0, 0, rect.width, rect.height); };
+        image.src = previous;
+      }
+    }
+    function point(event){
+      var rect = pad.getBoundingClientRect();
+      return {x:event.clientX-rect.left,y:event.clientY-rect.top};
+    }
+    pad.addEventListener("pointerdown",function(event){
+      drawing = true;
+      hasSignature = true;
+      pad.setPointerCapture(event.pointerId);
+      var p = point(event);
+      context.beginPath();
+      context.moveTo(p.x,p.y);
+    });
+    pad.addEventListener("pointermove",function(event){
+      if (!drawing) return;
+      var p = point(event);
+      context.lineTo(p.x,p.y);
+      context.stroke();
+    });
+    pad.addEventListener("pointerup",function(){drawing=false;});
+    pad.addEventListener("pointercancel",function(){drawing=false;});
+    document.getElementById(clearId).addEventListener("click",function(){
+      context.clearRect(0,0,pad.width,pad.height);
+      hasSignature = false;
+    });
+    resize();
+    window.addEventListener("resize",resize);
+    return {
+      hasSignature:function(){return hasSignature;},
+      data:function(){return hasSignature ? pad.toDataURL("image/png") : null;},
+      clear:function(){
+        context.clearRect(0,0,pad.width,pad.height);
+        hasSignature = false;
+      }
+    };
+  }
+
+  var clientSignature = setupSignaturePad("sig-client-pad","sig-client-clear");
+  var maloeSignature = setupSignaturePad("sig-maloe-pad","sig-maloe-clear");
 
   document.getElementById("generate-btn").addEventListener("click", async function () {
     var errorEl = document.getElementById("error-msg");
@@ -324,23 +542,39 @@
     var email = document.getElementById("email-client").value.trim();
     var type = document.querySelector('input[name="type"]:checked').value;
     var remarques = document.getElementById("remarques").value.trim();
-    var kits = KIT_NAMES.map(function (name, i) {
-      var qty = parseInt(document.getElementById("kit-" + i).value, 10) || 0;
-      return qty > 0 ? (qty > 1 ? qty + "× " + name : name) : null;
-    }).filter(Boolean);
+    var reservedItems = selectedReservation && selectedReservation.items ? selectedReservation.items : [];
+    var itemLabels = reservedItems.map(function(item){return ((item.produit && item.produit.nom) || "Matériel") + " × " + (item.quantite || 1) + (item.details ? " (" + item.details + ")" : "");});
 
-    if (!nom || !telephone || kits.length === 0 || !hasSignature){
-      errorEl.textContent = "Merci de renseigner le nom, le téléphone du client, au moins un kit, et de faire signer le client avant de générer le PDF.";
+    if (!nom || !telephone || !selectedReservation || reservedItems.length === 0 || !clientSignature.hasSignature() || !maloeSignature.hasSignature()){
+      errorEl.textContent = "Sélectionne une réservation avec du matériel, renseigne le nom et le téléphone du client, puis recueille les deux signatures.";
       errorEl.style.display = "block";
       return;
     }
     errorEl.style.display = "none";
 
-    var sigData = canvas.toDataURL("image/png");
+    var clientSigData = clientSignature.data();
+    var maloeSigData = maloeSignature.data();
     var now = new Date();
     var dateLabel = now.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" });
-    var idPhotos = idPhotoCapture.getList();
-    var photos = photoCapture.getList();
+    try {
+      await uploadCurrentPhotos();
+      if (type === "Retour") await loadDeparturePhotos(selectedReservation.id);
+    } catch(uploadError){ errorEl.textContent = uploadError.message; errorEl.style.display = "block"; return; }
+    var departurePhotoData = {};
+    if (type === "Retour") {
+      try {
+        for (var departureItemId in departurePhotoUrls) {
+          departurePhotoData[departureItemId] = [];
+          for (var departureIndex = 0; departureIndex < departurePhotoUrls[departureItemId].length; departureIndex++) {
+            departurePhotoData[departureItemId].push(await imageUrlToDataUrl(departurePhotoUrls[departureItemId][departureIndex]));
+          }
+        }
+      } catch(photoError) {
+        errorEl.textContent = photoError.message;
+        errorEl.style.display = "block";
+        return;
+      }
+    }
     var jsPDF = window.jspdf.jsPDF;
     var pdf = new jsPDF({ unit: "mm", format: "a4" });
     var margin = 16, pageW = 210, pageH = 297, y = 20;
@@ -384,22 +618,41 @@
 
     section("Client");
     textBlock("Nom : " + nom + "\nTéléphone : " + (telephone || "—") + "\nE-mail : " + (email || "—"));
-    section("Kits concernés"); textBlock(kits.join(", "));
+    section("Matériel réservé"); textBlock(itemLabels.join("\n"));
+    reservedItems.forEach(function(item){
+      var itemName = (item.produit && item.produit.nom) || "Matériel";
+      var itemPhotos = uploadedPhotoData[String(item.id)] || [];
+      var previousPhotos = departurePhotoData[String(item.id)] || [];
+      if (type === "Retour" && previousPhotos.length) addPhotos("Photos de remise — " + itemName, previousPhotos);
+      if (itemPhotos.length) addPhotos((type === "Retour" ? "Photos de retour — " : "Photos — ") + itemName, itemPhotos);
+    });
     if (remarques) { section("État / remarques"); textBlock(remarques); }
-    addPhotos("Pièce d'identité", idPhotos);
-    addPhotos("Photos du matériel", photos);
 
     section("Signature du client");
     ensureSpace(55);
-    try { pdf.addImage(sigData, "PNG", margin, y, 85, 48); } catch(e) {}
-    y += 55;
+    try { pdf.addImage(clientSigData, "PNG", margin, y, 85, 38); } catch(e) {}
+    y += 45;
+
+    section("Signature de Maloé Location");
+    ensureSpace(55);
+    try { pdf.addImage(maloeSigData, "PNG", margin, y, 85, 38); } catch(e) {}
+    y += 45;
 
     pdf.setFont("helvetica", "italic"); pdf.setFontSize(8); pdf.setTextColor(100,100,100);
     pdf.text("Document généré électroniquement par Maloé Location", margin, pageH - 10);
 
     var safeName = nom.replace(/[^a-z0-9À-ÿ]+/gi, "_").replace(/^_|_$/g, "");
     var dateFile = now.toISOString().slice(0,10);
-    pdf.save("Etat_des_lieux_" + safeName + "_" + type + "_" + dateFile + ".pdf");
+    var pdfName = "Etat_des_lieux_" + safeName + "_" + type + "_" + dateFile + ".pdf";
+    if (selectedReservation) {
+      var pdfBlob = pdf.output("blob");
+      var pdfForm = new FormData();
+      pdfForm.append("reservation_id", selectedReservation.id);
+      pdfForm.append("etape", type === "Remise" ? "depart" : "retour");
+      pdfForm.append("file", pdfBlob, pdfName);
+      await edlRequest(SUPABASE_URL + "/functions/v1/edl-documents", {method:"POST",body:pdfForm});
+    }
+    pdf.save(pdfName);
   });
 </script>
 

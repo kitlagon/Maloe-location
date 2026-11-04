@@ -1,0 +1,2 @@
+[functions.edl-cleanup]
+verify_jwt = false
