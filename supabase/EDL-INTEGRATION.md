@@ -6,7 +6,7 @@ Cette branche contient l'intégration des états des lieux de départ et de reto
 
 - `etat-des-lieux.html` : interface mobile, authentification administrateur EDL, choix d'une réservation, photos par article, signatures client/loueur, PDF séparés, rappel des photos et observations de départ au retour.
 - `admin.html` : lien d'accès depuis l'administration.
-- `supabase/migrations/20261105_edl_signatures_and_id_photo.sql` : ajoute la signature du loueur, l'unicité d'un constat par étape et le type de fichier pour la copie d'identité.
+- `supabase/migrations/20261105151549_edl_signatures_and_id_photo.sql` : ajoute la signature du loueur, l'unicité d'un constat par étape et le type de fichier pour la copie d'identité.
 - `supabase/functions/edl-records/index.ts` : lecture et sauvegarde des observations/signatures, contrôle de la copie d'identité et d'au moins une photo au départ, contrôle du PDF de départ avant le retour, accès limité aux comptes avec `app_metadata.edl_access = true`, pas d'écrasement d'un constat déjà enregistré.
 - `supabase/functions/edl-id-photo/index.ts` : stockage privé d'une copie filigranée, une seule copie par réservation, lien de consultation temporaire.
 - `supabase/functions/edl-documents/index.ts` : PDF uniquement après sauvegarde du constat; clôture du retour seulement après PDF; consultation via liens signés temporaires (5 minutes) pour retrouver les PDF.
@@ -32,7 +32,7 @@ Cette branche contient l'intégration des états des lieux de départ et de reto
 - Retour : photos du départ consultables, nouvelles observations/signatures sauvegardées, PDF de retour privé.
 - Documents : PDF de départ accessible après le départ et PDF de départ + retour accessibles après clôture, via liens signés temporaires.
 - Clôture : `retour_effectif_at` rempli après PDF de retour; `delete_after` fixé à 14 jours.
-- Nettoyage : les objets expirés sont supprimés par le cron existant.
+- Nettoyage : les objets Storage, les métadonnées des fichiers, les observations et les signatures sont supprimés par lots via `edl-cleanup` (version 5), appelé chaque jour à minuit GMT par le cron existant. La réservation et la fiche client ne sont pas supprimées.
 
 ## Protection des données
 
@@ -40,4 +40,4 @@ La copie d'une pièce d'identité est une donnée personnelle à risque au regar
 
 ## État actuel
 
-La migration est appliquée et les fonctions EDL sont actives. Aucune réservation ni aucun fichier EDL n'est présent actuellement dans la base. Le site public n'a pas encore été mis à jour. Les tests complets dans un navigateur restent à faire.
+La migration est appliquée et les fonctions EDL sont actives. La fonction `edl-cleanup` version 5 applique la conservation intégrale de 14 jours pour le dossier EDL. Les tests complets dans un navigateur restent à faire.
