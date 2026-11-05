@@ -7,7 +7,7 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 - `etat-des-lieux.html` : interface mobile, authentification administrateur EDL, choix d'une réservation, photos par article, signatures client/loueur, PDF séparés, rappel des photos et observations de départ au retour.
 - `admin.html` : lien d'accès depuis l'administration.
 - `supabase/migrations/20261105_edl_signatures_and_id_photo.sql` : ajoute la signature du loueur, l'unicité d'un constat par étape et le type de fichier pour la copie d'identité.
-- `supabase/functions/edl-records/index.ts` : lecture et sauvegarde des observations/signatures, accès limité aux comptes avec `app_metadata.edl_access = true`, pas d'écrasement d'un constat déjà enregistré.
+- `supabase/functions/edl-records/index.ts` : lecture et sauvegarde des observations/signatures, contrôle de la copie d'identité et d'au moins une photo au départ, contrôle du PDF de départ avant le retour, accès limité aux comptes avec `app_metadata.edl_access = true`, pas d'écrasement d'un constat déjà enregistré.
 - `supabase/functions/edl-id-photo/index.ts` : stockage privé d'une copie filigranée, une seule copie par réservation, lien de consultation temporaire.
 - `supabase/functions/edl-documents/index.ts` : PDF uniquement après sauvegarde du constat; clôture du retour seulement après PDF.
 - `supabase/functions/edl-reservations/index.ts` : ajoute la date réelle de clôture au résultat.
@@ -25,6 +25,8 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 
 - Connexion : compte EDL autorisé accepté; compte sans `edl_access` refusé.
 - Accès aux réservations et aux données uniquement via les fonctions serveur.
+- Départ : impossible à valider sans copie d'identité filigranée, au moins une photo, les deux signatures et le PDF privé.
+- Retour : impossible à enregistrer sans départ signé et PDF de départ.
 - Photo : format autorisé, taille maximale 10 Mo, maximum 3 par article et par étape.
 - Copie d'identité : filigrane visible, seule la copie filigranée envoyée, bucket privé, lien signé temporaire.
 - Départ : observations et deux signatures sauvegardées, PDF de départ privé.
