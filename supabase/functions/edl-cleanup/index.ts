@@ -32,8 +32,8 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Petits lots pour limiter la durée d'exécution. Les lignes ne sont
-  // supprimées qu'après confirmation de la suppression des objets Storage.
+  // 1) Supprimer d'abord les objets Storage arrivés à échéance.
+  // Les références en base ne sont supprimées qu'après succès du Storage.
   const { data: files, error: selectError } = await supabase
     .from("etat_des_lieux_fichiers")
     .select("id, storage_path")
@@ -43,31 +43,85 @@ Deno.serve(async (req) => {
     .limit(100);
 
   if (selectError) {
-    console.error("EDL cleanup select failed", selectError.message);
+    console.error("EDL cleanup file selection failed", selectError.message);
     return json({ error: "Impossible de rechercher les fichiers expirés." }, 500);
   }
-  if (!files?.length) return json({ success: true, deleted: 0 });
 
-  const paths = files.map((file) => file.storage_path);
-  const { error: storageError } = await supabase.storage
-    .from("etats-des-lieux")
-    .remove(paths);
+  let deletedFiles = 0;
+  if (files?.length) {
+    const paths = files.map((file) => file.storage_path);
+    const { error: storageError } = await supabase.storage
+      .from("etats-des-lieux")
+      .remove(paths);
 
-  if (storageError) {
-    console.error("EDL cleanup storage removal failed", storageError.message);
-    return json({ error: "La suppression du stockage a échoué; les références sont conservées." }, 500);
+    if (storageError) {
+      console.error("EDL cleanup storage removal failed", storageError.message);
+      return json({ error: "La suppression du stockage a échoué; les références sont conservées." }, 500);
+    }
+
+    const ids = files.map((file) => file.id);
+    const { error: deleteError } = await supabase
+      .from("etat_des_lieux_fichiers")
+      .delete()
+      .in("id", ids);
+
+    if (deleteError) {
+      console.error("EDL cleanup metadata deletion failed", deleteError.message);
+      return json({ error: "Les fichiers sont supprimés, mais les références restent à nettoyer." }, 500);
+    }
+    deletedFiles = files.length;
   }
 
-  const ids = files.map((file) => file.id);
-  const { error: deleteError } = await supabase
-    .from("etat_des_lieux_fichiers")
-    .delete()
-    .in("id", ids);
+  // 2) Supprimer aussi observations et signatures après 14 jours.
+  // La réservation et la fiche client ne sont jamais supprimées.
+  // On ne retire les constats que lorsqu'il ne reste plus aucun fichier
+  // associé à la réservation (les fichiers sont traités par lots de 100).
+  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: closedReservations, error: reservationsError } = await supabase
+    .from("reservations")
+    .select("id")
+    .not("retour_effectif_at", "is", null)
+    .lte("retour_effectif_at", cutoff)
+    .order("retour_effectif_at", { ascending: true })
+    .limit(100);
 
-  if (deleteError) {
-    console.error("EDL cleanup metadata deletion failed", deleteError.message);
-    return json({ error: "Les fichiers sont supprimés, mais les références restent à nettoyer." }, 500);
+  if (reservationsError) {
+    console.error("EDL cleanup reservation selection failed", reservationsError.message);
+    return json({ error: "Impossible de rechercher les dossiers EDL expirés.", deletedFiles }, 500);
   }
 
-  return json({ success: true, deleted: files.length });
+  let deletedRecords = 0;
+  for (const reservation of closedReservations ?? []) {
+    const { data: remainingFiles, error: remainingError } = await supabase
+      .from("etat_des_lieux_fichiers")
+      .select("id")
+      .eq("reservation_id", reservation.id)
+      .limit(1);
+
+    if (remainingError) {
+      console.error("EDL cleanup remaining-file check failed", remainingError.message);
+      return json({ error: "Impossible de vérifier les fichiers restants.", deletedFiles, deletedRecords }, 500);
+    }
+
+    if (remainingFiles?.length) continue;
+
+    const { data: removedRecords, error: recordsError } = await supabase
+      .from("etats_des_lieux")
+      .delete()
+      .eq("reservation_id", reservation.id)
+      .select("id");
+
+    if (recordsError) {
+      console.error("EDL cleanup record deletion failed", recordsError.message);
+      return json({ error: "Impossible de supprimer les observations et signatures expirées.", deletedFiles, deletedRecords }, 500);
+    }
+    deletedRecords += removedRecords?.length ?? 0;
+  }
+
+  return json({
+    success: true,
+    deletedFiles,
+    deletedRecords,
+    checkedReservations: closedReservations?.length ?? 0,
+  });
 });
