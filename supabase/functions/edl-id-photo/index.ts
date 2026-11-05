@@ -10,7 +10,7 @@ const json = (body: unknown, status = 200) =>
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-async function getAdmin(req: Request) {
+async function getAdmin(req: Request): Promise<{ admin: any } | { error: Response }> {
   const authorization = req.headers.get("Authorization") ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!token) return { error: json({ error: "Connexion requise." }, 401) };
@@ -31,8 +31,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Méthode non autorisée." }, 405);
   const auth = await getAdmin(req);
-  if (auth.error) return auth.error;
-  const admin = auth.admin!;
+  if ("error" in auth) return auth.error;
+  const admin = auth.admin;
 
   if (req.method === "GET") {
     const reservationId = new URL(req.url).searchParams.get("reservation_id") ?? "";
