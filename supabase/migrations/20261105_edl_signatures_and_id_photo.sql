@@ -17,3 +17,7 @@ alter table public.etat_des_lieux_fichiers
 
 -- La photo d'identité est classée à l'étape départ, sans article associé.
 -- Elle reste dans le bucket privé et reçoit delete_after lors de la clôture du retour.
+
+create unique index if not exists etat_des_lieux_fichiers_one_identity_per_reservation_uidx
+  on public.etat_des_lieux_fichiers (reservation_id)
+  where type_fichier = 'piece_identite';
