@@ -49,6 +49,9 @@ Deno.serve(async (req) => {
     const { data: departure, error: departureError } = await admin.from("etats_des_lieux")
       .select("id").eq("reservation_id", reservationId).eq("type", "depart").maybeSingle();
     if (departureError || !departure) return json({ error: "L'état des lieux de départ est manquant." }, 409);
+    const { data: departurePdf, error: pdfError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id").eq("reservation_id", reservationId).eq("etape", "depart").eq("type_fichier", "pdf").maybeSingle();
+    if (pdfError || !departurePdf) return json({ error: "Le PDF de départ doit être enregistré avant le PDF de retour." }, 409);
   }
 
   const { data: existing, error: existingError } = await admin.from("etat_des_lieux_fichiers")
