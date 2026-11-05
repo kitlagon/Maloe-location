@@ -8,7 +8,7 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-async function getAdmin(req: Request) {
+async function getAdmin(req: Request): Promise<{ admin: any } | { error: Response }> {
   const authorization = req.headers.get("Authorization") ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!token) return { error: json({ error: "Connexion requise." }, 401) };
@@ -25,7 +25,7 @@ async function getAdmin(req: Request) {
   return { admin };
 }
 
-function validSignature(value: unknown) {
+function validSignature(value: unknown): value is string {
   return typeof value === "string" &&
     value.length <= 600_000 &&
     /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value);
@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Méthode non autorisée." }, 405);
   const auth = await getAdmin(req);
-  if (auth.error) return auth.error;
-  const admin = auth.admin!;
+  if ("error" in auth) return auth.error;
+  const admin = auth.admin;
 
   if (req.method === "GET") {
     const url = new URL(req.url);
