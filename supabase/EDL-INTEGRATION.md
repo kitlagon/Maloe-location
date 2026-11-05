@@ -37,7 +37,7 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 
 ## Protection des données
 
-La copie d'une pièce d'identité est une donnée personnelle sensible au regard des risques d'usurpation. La collecte doit être justifiée, annoncée au client et limitée au strict nécessaire. Le filigrane réduit les risques de réutilisation mais ne remplace pas ces obligations. L'interface n'intègre pas la copie d'identité au PDF de location. Les fichiers sont privés et le nettoyage est déclenché à la clôture du retour.
+La copie d'une pièce d'identité est une donnée personnelle à risque au regard de l'usurpation. La collecte doit être justifiée, annoncée au client et limitée au strict nécessaire. Le filigrane réduit les risques de réutilisation mais ne remplace pas ces obligations. L'interface n'intègre pas la copie d'identité au PDF de location. Les photos, PDF et copie d'identité sont privés et programmés pour suppression 14 jours après la clôture du retour. Les observations et signatures structurées dans `etats_des_lieux` restent en base après cette échéance dans cette version; leur durée de conservation devra être définie séparément avant mise en service.
 
 ## État actuel
 
