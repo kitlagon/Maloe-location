@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     const { data: removedRecords, error: recordsError } = await supabase
       .from("etats_des_lieux")
       .delete()
-      .eq("reservation_id", reservation.id)
+      .eq("reservation_id", reservationId)
       .select("id");
 
     if (recordsError) {
