@@ -1,6 +1,6 @@
 # États des lieux Maloé Location — intégration à valider
 
-Cette branche prépare l'intégration des états des lieux de départ et de retour. Elle ne déploie rien sur le site public et n'applique aucune modification à Supabase.
+Cette branche contient l'intégration des états des lieux de départ et de retour. La migration SQL correspondante est déjà enregistrée dans Supabase (version 20261105151549). Les fonctions EDL sont déjà actives dans le projet ; la publication du site reste à effectuer.
 
 ## Éléments ajoutés
 
@@ -14,12 +14,10 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 
 ## Ordre de mise en service (après approbation)
 
-1. Faire une sauvegarde de la base et vérifier la configuration du bucket privé `etats-des-lieux`.
-2. Appliquer la migration SQL.
-3. Déployer les fonctions `edl-records`, `edl-id-photo`, puis les versions mises à jour de `edl-documents` et `edl-reservations`.
-4. Garder `edl-photos` et `edl-cleanup` actives; la tâche de nettoyage quotidienne existante doit rester active.
-5. Publier les fichiers du site seulement après les tests.
-6. Effectuer les essais avec une réservation de test explicitement créée à cet effet. Ne pas utiliser la réservation déjà présente dans la base comme donnée de test sans confirmation.
+1. La migration `20261105151549_edl_signatures_and_id_photo` est déjà appliquée.
+2. Les fonctions `edl-reservations`, `edl-photos`, `edl-records`, `edl-id-photo` et `edl-documents` sont déjà actives. `edl-cleanup` et sa tâche quotidienne sont conservées.
+3. Vérifier le comportement complet sur une réservation de test créée à cet effet, puis la supprimer après les essais.
+4. Publier les fichiers du site après validation des essais.
 
 ## Tests à effectuer avant ouverture
 
@@ -42,4 +40,4 @@ La copie d'une pièce d'identité est une donnée personnelle à risque au regar
 
 ## État actuel
 
-Aucune migration n'a été appliquée, aucune fonction n'a été déployée, aucune réservation n'a été modifiée et le site public n'a pas été mis à jour. Les tests d'intégration réels restent à faire après approbation et activation coordonnée de la base et des fonctions.
+La migration est appliquée et les fonctions EDL sont actives. Aucune réservation ni aucun fichier EDL n'est présent actuellement dans la base. Le site public n'a pas encore été mis à jour. Les tests complets dans un navigateur restent à faire.
