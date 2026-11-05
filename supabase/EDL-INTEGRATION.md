@@ -9,7 +9,7 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 - `supabase/migrations/20261105_edl_signatures_and_id_photo.sql` : ajoute la signature du loueur, l'unicité d'un constat par étape et le type de fichier pour la copie d'identité.
 - `supabase/functions/edl-records/index.ts` : lecture et sauvegarde des observations/signatures, contrôle de la copie d'identité et d'au moins une photo au départ, contrôle du PDF de départ avant le retour, accès limité aux comptes avec `app_metadata.edl_access = true`, pas d'écrasement d'un constat déjà enregistré.
 - `supabase/functions/edl-id-photo/index.ts` : stockage privé d'une copie filigranée, une seule copie par réservation, lien de consultation temporaire.
-- `supabase/functions/edl-documents/index.ts` : PDF uniquement après sauvegarde du constat; clôture du retour seulement après PDF.
+- `supabase/functions/edl-documents/index.ts` : PDF uniquement après sauvegarde du constat; clôture du retour seulement après PDF; consultation via liens signés temporaires (5 minutes) pour retrouver les PDF.
 - `supabase/functions/edl-reservations/index.ts` : ajoute la date réelle de clôture au résultat.
 
 ## Ordre de mise en service (après approbation)
@@ -32,6 +32,7 @@ Cette branche prépare l'intégration des états des lieux de départ et de reto
 - Départ : observations et deux signatures sauvegardées, PDF de départ privé.
 - Retour sans départ : refusé.
 - Retour : photos du départ consultables, nouvelles observations/signatures sauvegardées, PDF de retour privé.
+- Documents : PDF de départ accessible après le départ et PDF de départ + retour accessibles après clôture, via liens signés temporaires.
 - Clôture : `retour_effectif_at` rempli après PDF de retour; `delete_after` fixé à 14 jours.
 - Nettoyage : les objets expirés sont supprimés par le cron existant.
 
