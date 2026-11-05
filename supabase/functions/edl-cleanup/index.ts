@@ -77,25 +77,28 @@ Deno.serve(async (req) => {
   // On ne retire les constats que lorsqu'il ne reste plus aucun fichier
   // associé à la réservation (les fichiers sont traités par lots de 100).
   const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: closedReservations, error: reservationsError } = await supabase
-    .from("reservations")
-    .select("id")
-    .not("retour_effectif_at", "is", null)
-    .lte("retour_effectif_at", cutoff)
-    .order("retour_effectif_at", { ascending: true })
+  const { data: expiredRecords, error: reservationsError } = await supabase
+    .from("etats_des_lieux")
+    .select("reservation_id, reservations!inner(retour_effectif_at)")
+    .not("reservations.retour_effectif_at", "is", null)
+    .lte("reservations.retour_effectif_at", cutoff)
     .limit(100);
 
   if (reservationsError) {
-    console.error("EDL cleanup reservation selection failed", reservationsError.message);
+    console.error("EDL cleanup expired-record selection failed", reservationsError.message);
     return json({ error: "Impossible de rechercher les dossiers EDL expirés.", deletedFiles }, 500);
   }
 
+  const expiredReservationIds = [...new Set(
+    (expiredRecords ?? []).map((record) => record.reservation_id),
+  )];
+
   let deletedRecords = 0;
-  for (const reservation of closedReservations ?? []) {
+  for (const reservationId of expiredReservationIds) {
     const { data: remainingFiles, error: remainingError } = await supabase
       .from("etat_des_lieux_fichiers")
       .select("id")
-      .eq("reservation_id", reservation.id)
+      .eq("reservation_id", reservationId)
       .limit(1);
 
     if (remainingError) {
@@ -122,6 +125,6 @@ Deno.serve(async (req) => {
     success: true,
     deletedFiles,
     deletedRecords,
-    checkedReservations: closedReservations?.length ?? 0,
+    checkedReservations: expiredReservationIds.length,
   });
 });
