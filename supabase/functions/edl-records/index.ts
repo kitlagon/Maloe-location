@@ -49,7 +49,11 @@ Deno.serve(async (req) => {
       console.error("EDL records read failed", error.message);
       return json({ error: "Impossible de récupérer les états des lieux." }, 500);
     }
-    return json({ records: data ?? [] });
+    const { data: pdfRows, error: pdfError } = await admin.from("etat_des_lieux_fichiers")
+      .select("etape").eq("reservation_id", reservationId).eq("type_fichier", "pdf");
+    if (pdfError) return json({ error: "Impossible de vérifier les PDF du dossier." }, 500);
+    const pdfs = { depart: (pdfRows ?? []).some((row) => row.etape === "depart"), retour: (pdfRows ?? []).some((row) => row.etape === "retour") };
+    return json({ records: data ?? [], pdfs });
   }
 
   let body: Record<string, unknown>;
@@ -70,11 +74,23 @@ Deno.serve(async (req) => {
   const { data: reservation, error: reservationError } = await admin.from("reservations")
     .select("id,retour_effectif_at").eq("id", reservationId).maybeSingle();
   if (reservationError || !reservation) return json({ error: "Réservation introuvable." }, 404);
-  if (stage === "retour" && !reservation.retour_effectif_at) {
+  if (reservation.retour_effectif_at) return json({ error: "Cette réservation est déjà clôturée." }, 409);
+  if (stage === "depart") {
+    const { count: idCount, error: idError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id", { count: "exact", head: true }).eq("reservation_id", reservationId).eq("type_fichier", "piece_identite");
+    if (idError || (idCount ?? 0) < 1) return json({ error: "La copie d'identité filigranée doit être enregistrée avant le départ." }, 409);
+    const { count: photoCount, error: photoError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id", { count: "exact", head: true }).eq("reservation_id", reservationId).eq("etape", "depart").eq("type_fichier", "photo");
+    if (photoError || (photoCount ?? 0) < 1) return json({ error: "Au moins une photo du matériel doit être enregistrée au départ." }, 409);
+  }
+  if (stage === "retour") {
     const { data: departure, error: departureError } = await admin.from("etats_des_lieux")
       .select("id").eq("reservation_id", reservationId).eq("type", "depart").maybeSingle();
     if (departureError) return json({ error: "Impossible de vérifier l'état des lieux de départ." }, 500);
     if (!departure) return json({ error: "L'état des lieux de départ doit être validé avant le retour." }, 409);
+    const { data: departurePdf, error: pdfError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id").eq("reservation_id", reservationId).eq("etape", "depart").eq("type_fichier", "pdf").maybeSingle();
+    if (pdfError || !departurePdf) return json({ error: "Le PDF de départ doit être enregistré avant le retour." }, 409);
   }
 
   const { data: existing, error: existingError } = await admin.from("etats_des_lieux")
