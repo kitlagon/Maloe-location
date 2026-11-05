@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://maloe-location.re",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -11,7 +11,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Méthode non autorisée." }, 405);
+  if (req.method !== "POST" && req.method !== "GET") return json({ error: "Méthode non autorisée." }, 405);
 
   const authorization = req.headers.get("Authorization") ?? "";
   const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
@@ -25,6 +25,22 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await admin.auth.getUser(token);
   const user = userData?.user;
   if (userError || !user || user.app_metadata?.edl_access !== true) return json({ error: "Compte non autorisé." }, 403);
+
+  if (req.method === "GET") {
+    const reservationId = new URL(req.url).searchParams.get("reservation_id") ?? "";
+    if (!reservationId) return json({ error: "Réservation manquante." }, 400);
+    const { data: rows, error: listError } = await admin.from("etat_des_lieux_fichiers")
+      .select("id,etape,file_name,storage_path,created_at")
+      .eq("reservation_id", reservationId).eq("type_fichier", "pdf")
+      .order("created_at", { ascending: true });
+    if (listError) return json({ error: "Impossible de récupérer les PDF du dossier." }, 500);
+    const documents = await Promise.all((rows ?? []).map(async (row) => {
+      const { data, error } = await admin.storage.from("etats-des-lieux").createSignedUrl(row.storage_path, 300);
+      if (error || !data?.signedUrl) return null;
+      return { id: row.id, etape: row.etape, file_name: row.file_name, created_at: row.created_at, url: data.signedUrl };
+    }));
+    return json({ documents: documents.filter(Boolean) });
+  }
 
   let form: FormData;
   try { form = await req.formData(); } catch { return json({ error: "Formulaire invalide." }, 400); }
