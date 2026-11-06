@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi de votre paiement — Maloé Location</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--deep:#0B4F4A;--bright:#1B8A82;--sand:#F1E6CE;--light:#FAF5E9;--ink:#132420;--soft:rgba(19,36,32,.7);--line:rgba(19,36,32,.14)}
+*{box-sizing:border-box}body{margin:0;background:var(--light);color:var(--ink);font-family:'Work Sans',sans-serif;line-height:1.6}
+header{border-bottom:1px solid var(--line)}.nav{max-width:900px;margin:auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--ink);font-family:'Fraunces',serif;font-weight:600}
+.logo img{width:48px;height:48px;object-fit:cover;border-radius:50%}.back{color:var(--soft);font-size:.9rem;text-decoration:none}
+main{max-width:760px;margin:56px auto;padding:0 22px}.panel{background:white;border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:0 5px 20px rgba(19,36,32,.04)}
+h1,h2{font-family:'Fraunces',serif;color:var(--deep);line-height:1.2}h1{font-size:1.9rem;margin:0 0 12px}.muted{color:var(--soft)}
+.ref{background:var(--light);padding:12px 14px;border-radius:10px;overflow-wrap:anywhere;font-size:.9rem}
+.status{margin:20px 0;padding:14px 16px;border-radius:10px;background:var(--light)}.btn{display:inline-block;border:0;border-radius:100px;padding:12px 20px;background:var(--deep);color:white;font:inherit;text-decoration:none;cursor:pointer;margin:8px 8px 0 0}.btn:disabled{opacity:.55;cursor:wait}
+@media(max-width:520px){main{margin:28px auto}.panel{padding:22px}.nav{padding:12px 16px}.logo img{width:42px;height:42px}}
+</style>
+</head>
+<body>
+<header><div class="nav"><a class="logo" href="index.html"><img src="images/logo.jpg" alt="Maloé Location">Maloé Location</a><a class="back" href="index.html">Accueil</a></div></header>
+<main><section class="panel">
+<h1 id="title">Vérification de votre paiement</h1>
+<p class="muted">Nous vérifions directement auprès de Stancer le résultat de votre paiement. Cette étape peut prendre quelques instants.</p>
+<div class="ref" id="reference" hidden></div>
+<div class="status" id="status" role="status" aria-live="polite">Vérification en cours…</div>
+<button class="btn" id="retry" type="button" hidden>Vérifier à nouveau</button>
+<a class="btn" href="index.html">Retour au site</a>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
+<script>
+(function(){
+  var statusEl=document.getElementById("status");
+  var titleEl=document.getElementById("title");
+  var retry=document.getElementById("retry");
+  var params=new URLSearchParams(window.location.search);
+  var reservationId=params.get("reservation_id");
+  var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  if(!reservationId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reservationId)){
+    titleEl.textContent="Référence de réservation manquante";
+    statusEl.textContent="Nous ne pouvons pas retrouver la réservation. Contactez Maloé Location avant de recommencer un paiement.";
+    return;
+  }
+  var ref=document.getElementById("reference");
+  ref.hidden=false;ref.textContent="Référence : "+reservationId;
+  async function verify(){
+    retry.hidden=true;retry.disabled=true;statusEl.textContent="Vérification sécurisée du paiement auprès de Stancer…";
+    try{
+      var result=await client.functions.invoke("stancer-payment",{body:{action:"confirm",reservation_id:reservationId}});
+      if(result.error){
+        var msg=result.data&&result.data.error?result.data.error:"La vérification n'a pas abouti.";
+        throw new Error(msg);
+      }
+      var data=result.data||{};
+      if(data.paid===true){
+        titleEl.textContent="Votre réservation est confirmée";
+        statusEl.textContent="Votre paiement a été encaissé et votre réservation est confirmée. Conservez votre référence pour le retrait du matériel.";
+        retry.hidden=true;
+      }else{
+        titleEl.textContent="Paiement en cours de traitement";
+        statusEl.textContent="Stancer n'a pas encore confirmé l'encaissement final. Votre réservation n'est pas encore confirmée. Vous pouvez relancer la vérification dans quelques instants.";
+        retry.hidden=false;
+      }
+    }catch(error){
+      titleEl.textContent="Vérification à terminer";
+      statusEl.textContent=(error&&error.message?error.message:"Une erreur est survenue.")+" Si vous avez validé votre carte, ne recommencez pas le paiement : relancez la vérification ou contactez Maloé Location.";
+      retry.hidden=false;
+    }finally{retry.disabled=false;}
+  }
+  retry.addEventListener("click",verify);
+  verify();
+})();
+</script>
+</body></html>
