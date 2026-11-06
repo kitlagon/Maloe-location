@@ -1,0 +1,38 @@
+/* Maloé Location — Charte graphique 2026
+   Feuille de style progressive : ne modifie pas la logique métier. */
+:root {
+  --maloe-navy:#123D70;
+  --maloe-blue:#2878B9;
+  --maloe-sky:#EAF3FB;
+  --maloe-background:#F4F8FC;
+  --maloe-white:#FFFFFF;
+  --maloe-text:#183047;
+  --maloe-muted:#536B80;
+  --maloe-border:#D8E5F1;
+  --maloe-shadow:0 10px 32px rgba(18,61,112,.09);
+  --maloe-radius:18px;
+  --lagoon-deep:var(--maloe-navy);
+  --lagoon-bright:var(--maloe-blue);
+  --sand:var(--maloe-sky);
+  --sand-light:var(--maloe-background);
+  --coral:var(--maloe-blue);
+  --ink:var(--maloe-text);
+  --ink-soft:var(--maloe-muted);
+  --line:var(--maloe-border);
+  --deep:var(--maloe-navy);
+  --bright:var(--maloe-blue);
+  --light:var(--maloe-background);
+  --soft:var(--maloe-muted);
+}
+html{scroll-behavior:smooth}
+body{background:var(--maloe-background);color:var(--maloe-text)}
+:where(button,a,input,select,textarea):focus-visible{outline:3px solid #5CB5E9;outline-offset:3px}
+:where(button,.btn,.nav-cta,.add-btn){transition:background-color .18s ease,transform .18s ease,box-shadow .18s ease}
+:where(button,.btn,.nav-cta,.add-btn):not(:disabled):active{transform:translateY(1px)}
+:where(.booking-panel,.product-card,.contact-panel,.panel,.card,.cart-item,.hero-steps){border-radius:var(--maloe-radius)}
+:where(.booking-panel,.product-card,.contact-panel,.panel,.card,.cart-item){box-shadow:var(--maloe-shadow)}
+:where(input,select,textarea){accent-color:var(--maloe-blue)}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
