@@ -109,3 +109,110 @@ body:has(#catalogue-groups) .cart-bar-inner{
   }
   body:has(#catalogue-groups) .cart-bar-text{font-size:.8rem}
 }
+
+
+/* Refonte accueil : mise en page éditoriale */
+body:has(.benefits-strip){--maloe-radius:22px}
+body:has(.benefits-strip) .wrap{max-width:1200px}
+body:has(.benefits-strip) header{border-bottom:1px solid rgba(18,61,112,.08)}
+body:has(.benefits-strip) .nav{min-height:82px}
+body:has(.benefits-strip) .logo{font-family:'Work Sans',sans-serif;font-weight:600;letter-spacing:-.03em}
+body:has(.benefits-strip) .logo-img{width:56px;height:56px}
+body:has(.benefits-strip) nav a{font-weight:600}
+body:has(.benefits-strip) .hero{
+  min-height:540px;
+  display:flex;
+  align-items:center;
+  padding-block:85px;
+  isolation:isolate;
+}
+body:has(.benefits-strip) .hero::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(10,37,68,.72) 0%,rgba(10,37,68,.36) 65%,rgba(10,37,68,.18) 100%);
+}
+body:has(.benefits-strip) .hero .wrap{grid-template-columns:minmax(0,1.65fr) minmax(290px,.75fr);gap:55px}
+body:has(.benefits-strip) .hero-left-row{align-items:center;gap:28px}
+body:has(.benefits-strip) .hero-logo{width:180px}
+body:has(.benefits-strip) .hero-eyebrow{
+  display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);
+  padding:7px 14px;border-radius:50px;letter-spacing:.07em;text-transform:uppercase;
+  font-size:.68rem;font-weight:600;color:#fff;
+}
+body:has(.benefits-strip) .hero h1{
+  font-family:'Fraunces',serif;font-size:clamp(2.4rem,4.4vw,4.4rem);
+  line-height:1.09;max-width:16ch;letter-spacing:-.035em;
+}
+body:has(.benefits-strip) .hero p:not(.hero-eyebrow){font-size:1rem;line-height:1.75}
+body:has(.benefits-strip) .hero-actions{margin-top:28px}
+body:has(.benefits-strip) .hero-actions .btn{padding:14px 25px;border-radius:12px;font-weight:600}
+body:has(.benefits-strip) .hero-steps{
+  background:rgba(255,255,255,.96);color:var(--maloe-text);
+  border:1px solid rgba(255,255,255,.8);border-radius:24px;
+  box-shadow:0 25px 65px rgba(0,0,0,.16);padding:28px;
+  backdrop-filter:blur(14px);
+}
+body:has(.benefits-strip) .hero-steps-title{color:var(--maloe-navy);font-weight:700;text-shadow:none}
+body:has(.benefits-strip) .hero-step{color:var(--maloe-text)}
+body:has(.benefits-strip) .hero-step-text strong{color:var(--maloe-navy)}
+body:has(.benefits-strip) .hero-step-text span{color:var(--maloe-muted)}
+body:has(.benefits-strip) .hero-step-index{background:var(--maloe-sky);color:var(--maloe-navy)}
+.benefits-strip{background:#fff;border-bottom:1px solid var(--maloe-border)}
+.benefits-inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding-block:24px}
+.benefit{display:flex;align-items:center;gap:14px}
+.benefit-icon{width:46px;height:46px;display:grid;place-items:center;flex:none;background:var(--maloe-sky);color:var(--maloe-blue);border-radius:14px;font-size:1.5rem}
+.benefit strong,.benefit small{display:block}
+.benefit strong{font-size:.88rem;color:var(--maloe-navy)}
+.benefit small{font-size:.75rem;color:var(--maloe-muted);margin-top:2px}
+body:has(.benefits-strip) #dates,body:has(.benefits-strip) #catalogue,body:has(.benefits-strip) #modalites{padding-block:76px}
+body:has(.benefits-strip) #catalogue{background:#EAF3FB!important}
+body:has(.benefits-strip) #modalites{background:#fff}
+body:has(.benefits-strip) .step-tag{font-family:'Work Sans',sans-serif;letter-spacing:.13em;font-size:.72rem;font-weight:700;color:var(--maloe-blue)}
+body:has(.benefits-strip) .section-head{margin-bottom:30px}
+body:has(.benefits-strip) .section-head h2{font-size:clamp(2rem,3.1vw,3rem);color:var(--maloe-navy);letter-spacing:-.03em}
+body:has(.benefits-strip) .section-head p{color:var(--maloe-muted);max-width:650px}
+body:has(.benefits-strip) .booking-panel{max-width:680px;background:#fff;padding:32px;border:1px solid var(--maloe-border);box-shadow:0 22px 60px rgba(18,61,112,.10)}
+body:has(.benefits-strip) .calendar-header{margin-bottom:16px}
+body:has(.benefits-strip) .cal-day{border-radius:12px;font-weight:500}
+body:has(.benefits-strip) .product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+body:has(.benefits-strip) .product-card{padding:16px;background:#fff;border:1px solid var(--maloe-border);border-radius:22px;box-shadow:0 8px 28px rgba(18,61,112,.07)}
+body:has(.benefits-strip) .product-image{aspect-ratio:5/4;border-radius:15px}
+body:has(.benefits-strip) .product-name{font-size:1.08rem;font-weight:700;color:var(--maloe-navy)}
+body:has(.benefits-strip) .product-price .amount{font-size:1.6rem}
+body:has(.benefits-strip) .add-btn{padding:12px 16px;border-radius:12px;font-weight:600}
+body:has(.benefits-strip) .cat-group-title{font-size:1.5rem;color:var(--maloe-navy);border-color:var(--maloe-border);padding-top:24px}
+body:has(.benefits-strip) .info-grid{gap:20px}
+body:has(.benefits-strip) .info-card{border:1px solid var(--maloe-border);border-radius:20px;background:var(--maloe-background);padding:26px;box-shadow:none}
+body:has(.benefits-strip) .info-card h3{font-family:'Work Sans',sans-serif;font-weight:700;color:var(--maloe-navy)}
+body:has(.benefits-strip) footer{background:var(--maloe-navy);color:#fff;border:none}
+body:has(.benefits-strip) footer p,body:has(.benefits-strip) footer a,body:has(.benefits-strip) footer a.mail{color:#E5F2FC}
+@media(max-width:1000px){
+ body:has(.benefits-strip) .hero .wrap{gap:25px;grid-template-columns:1.4fr 1fr}
+ body:has(.benefits-strip) .hero-logo{width:130px}
+ body:has(.benefits-strip) .hero-left-row{gap:16px}
+}
+@media(max-width:860px){
+ body:has(.benefits-strip) .hero .wrap{grid-template-columns:1fr}
+ body:has(.benefits-strip) .hero{padding-block:56px}
+ body:has(.benefits-strip) .hero-steps{max-width:560px}
+ body:has(.benefits-strip) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .benefits-inner{grid-template-columns:1fr;gap:15px}
+ body:has(.benefits-strip) nav ul{display:flex;gap:15px}
+ body:has(.benefits-strip) .menu-toggle{display:none}
+ body:has(.benefits-strip) .nav{flex-wrap:wrap;gap:10px}
+ body:has(.benefits-strip) nav{order:3;width:100%;overflow-x:auto}
+ body:has(.benefits-strip) nav ul{justify-content:center;white-space:nowrap;padding:8px 0}
+}
+@media(max-width:560px){
+ body:has(.benefits-strip) .nav{padding:10px 18px}
+ body:has(.benefits-strip) .logo{font-size:1rem;gap:8px}
+ body:has(.benefits-strip) .logo-img{width:42px;height:42px}
+ body:has(.benefits-strip) .hero{min-height:auto;padding-block:46px}
+ body:has(.benefits-strip) .hero-left-row{align-items:flex-start;flex-direction:column}
+ body:has(.benefits-strip) .hero-logo{width:110px;align-self:flex-start}
+ body:has(.benefits-strip) .hero h1{font-size:clamp(2.2rem,9vw,3.15rem)}
+ body:has(.benefits-strip) .hero-steps{padding:20px;width:100%}
+ body:has(.benefits-strip) #dates,body:has(.benefits-strip) #catalogue,body:has(.benefits-strip) #modalites{padding-block:48px}
+ body:has(.benefits-strip) .booking-panel{padding:18px 14px}
+ body:has(.benefits-strip) .product-grid{grid-template-columns:1fr}
+ body:has(.benefits-strip) .info-card{padding:22px}
+}
