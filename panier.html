@@ -525,11 +525,11 @@
           promoRemoveBtn.addEventListener("click", function () { appliedPromo = null; render(); });
         }
 
-        // Création de réservation en attente, sans déclencher de paiement.
+        // Création de la réservation puis ouverture du paiement sécurisé Stancer.
         var sendBtn = document.getElementById("send-btn");
         if (sendBtn) {
           sendBtn.disabled = false;
-          sendBtn.textContent = "Créer ma réservation (sans paiement)";
+          sendBtn.textContent = "Payer ma réservation par carte";
           sendBtn.addEventListener("click", async function () {
             var statusEl = document.getElementById("reservation-status");
             if (statusEl) statusEl.textContent = "";
@@ -554,7 +554,7 @@
             }
 
             sendBtn.disabled = true;
-            sendBtn.textContent = "Création de la réservation...";
+            sendBtn.textContent = "Préparation du paiement...";
             try {
               var response = await supabaseClient.functions.invoke("create-reservation", {
                 body: {
@@ -577,14 +577,28 @@
               if (!result || result.success !== true || !result.reservation || !result.reservation.reservation_id) {
                 throw new Error("La réponse du serveur est incomplète. Contactez Maloé Location avant de recommencer.");
               }
-              content.innerHTML =
-                '<div class="contact-panel"><h1>Demande de réservation enregistrée</h1>' +
-                '<p>Votre réservation est en attente de paiement. Aucun paiement n’a été effectué.</p>' +
-                '<p><strong>Référence :</strong> ' + result.reservation.reservation_id + '</p>' +
-                '<p><strong>Montant de la location :</strong> ' + result.reservation.total + ' €</p>' +
-                '<p><strong>Caution à prévoir au retrait :</strong> ' + result.reservation.caution + ' €</p>' +
-                '<p class="caution-note">Cette réservation bloque temporairement le matériel pendant 15 minutes. Le paiement en ligne n’est pas encore activé.</p>' +
-                '</div>';
+
+              var reservationId = result.reservation.reservation_id;
+              sendBtn.textContent = "Ouverture de la page de paiement...";
+              var paymentResponse = await supabaseClient.functions.invoke("stancer-payment", {
+                body: { action: "create", reservation_id: reservationId }
+              });
+              if (paymentResponse.error || !paymentResponse.data || paymentResponse.data.success !== true ||
+                  typeof paymentResponse.data.payment_url !== "string" ||
+                  !paymentResponse.data.payment_url.startsWith("https://payment.stancer.com/")) {
+                var paymentMessage = paymentResponse.data && paymentResponse.data.error
+                  ? paymentResponse.data.error
+                  : "La page de paiement n'a pas pu être préparée.";
+                content.innerHTML =
+                  '<div class="contact-panel"><h1>Réservation créée, paiement à terminer</h1>' +
+                  '<p>Votre réservation est temporairement en attente. Aucun encaissement n’est confirmé.</p>' +
+                  '<p><strong>Référence :</strong> ' + reservationId + '</p>' +
+                  '<p>' + paymentMessage + '</p>' +
+                  '<p class="caution-note">Ne créez pas une deuxième réservation pour le même panier. Si besoin, contactez Maloé Location en indiquant cette référence.</p>' +
+                  '<a class="btn btn-primary" href="index.html">Retour au site</a></div>';
+                return;
+              }
+              window.location.assign(paymentResponse.data.payment_url);
             } catch (error) {
               if (statusEl) statusEl.textContent = error && error.message ? error.message : "Une erreur est survenue. Réessayez.";
               turnstileToken = "";
@@ -592,7 +606,7 @@
                 window.turnstile.reset(turnstileWidgetId);
               }
               sendBtn.disabled = false;
-              sendBtn.textContent = "Créer ma réservation (sans paiement)";
+              sendBtn.textContent = "Payer ma réservation par carte";
             }
           });
         }
