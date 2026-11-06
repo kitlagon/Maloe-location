@@ -338,3 +338,85 @@ body:has(.booking-layout) .info-card{padding:19px;border-radius:15px}
  body:has(.booking-layout) .booking-panel{padding:14px}
  body:has(.booking-layout) .cal-day{height:32px;min-height:32px}
 }
+
+
+/* Accueil approuvé — version intégrée, compacte, sans modifier la logique de réservation */
+body:has(.maloe-hero){background:#fff}
+body:has(.maloe-hero) header{background:#fff;position:relative;z-index:20}
+body:has(.maloe-hero) .nav{max-width:1450px;min-height:76px;padding:8px 22px;display:flex;align-items:center;gap:18px}
+body:has(.maloe-hero) .logo{flex:0 0 auto;display:flex;align-items:center;font-size:0}
+body:has(.maloe-hero) .logo-img{width:78px;height:78px;object-fit:contain;border-radius:50%}
+body:has(.maloe-hero) nav{flex:1;min-width:0}
+body:has(.maloe-hero) nav ul{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,28px);flex-wrap:wrap}
+body:has(.maloe-hero) nav a{font-size:.82rem;font-weight:700;color:#123D70;white-space:nowrap}
+body:has(.maloe-hero) nav a:hover{color:#0787CA}
+.maloe-location-label{display:flex;flex-direction:column;align-items:flex-end;color:#123D70;font-size:.9rem;font-weight:800;white-space:nowrap;line-height:1.25}
+.maloe-location-label small{font-size:.65rem;font-weight:500}
+body:has(.maloe-hero) .nav-cta{border-radius:11px;padding:9px 13px;font-size:.78rem}
+body:has(.maloe-hero) .maloe-hero{
+  position:relative;isolation:isolate;min-height:0;
+  padding:clamp(28px,4vw,55px) 0;
+  background:linear-gradient(90deg,rgba(8,40,67,.60),rgba(7,60,90,.06)),url("../images/hero.jpg") center 55%/cover no-repeat;
+}
+body:has(.maloe-hero) .maloe-hero::after{display:none}
+body:has(.maloe-hero) .maloe-hero-grid{max-width:1200px;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,430px);align-items:center;gap:clamp(25px,5vw,70px)}
+.maloe-hero-copy{max-width:580px;color:#fff}
+body:has(.maloe-hero) .maloe-hero-copy .hero-eyebrow{display:inline-block;font-size:.71rem;letter-spacing:.09em;color:#fff;background:rgba(5,46,82,.68);padding:8px 14px;border-radius:100px;margin-bottom:18px}
+body:has(.maloe-hero) .maloe-hero-copy h1{
+  max-width:15ch;font-family:'Fraunces',serif;font-size:clamp(2.1rem,3.6vw,3.65rem);
+  line-height:1.11;color:#fff;text-shadow:0 3px 15px rgba(5,30,50,.35);margin:0 0 16px;
+}
+body:has(.maloe-hero) .maloe-hero-copy p:not(.hero-eyebrow){font-size:clamp(.9rem,1.3vw,1.05rem);line-height:1.6;color:#fff;max-width:38ch;text-shadow:0 2px 8px rgba(5,30,50,.4)}
+.hero-discover{display:inline-flex;gap:14px;align-items:center;margin-top:19px;padding:11px 18px;background:#fff;color:#123D70;border-radius:12px;font-weight:700;font-size:.8rem;box-shadow:0 5px 20px rgba(0,0,0,.14)}
+.hero-discover:hover{background:#EAF3FB}
+.maloe-booking{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 55px rgba(5,32,60,.23);color:#183047;padding-bottom:15px}
+.maloe-booking-title{padding:15px 19px;background:linear-gradient(105deg,#075394,#0898D2);font-size:1rem;font-weight:800;color:#fff}
+.maloe-booking-title span{margin-right:9px}
+body:has(.maloe-hero) .maloe-booking .booking-panel{padding:15px 18px 6px;box-shadow:none;border:0;border-radius:0;background:#fff;max-width:none}
+body:has(.maloe-hero) .maloe-booking .calendar-widget{width:100%;max-width:315px;margin:0 auto}
+body:has(.maloe-hero) .maloe-booking .calendar-header{margin-bottom:5px}
+body:has(.maloe-hero) .maloe-booking .calendar-grid{gap:2px}
+body:has(.maloe-hero) .maloe-booking .cal-day{width:100%;height:30px;min-height:30px;aspect-ratio:auto;font-size:.75rem;border-radius:7px}
+body:has(.maloe-hero) .maloe-booking .dates-selected{margin-top:7px;padding-top:8px}
+body:has(.maloe-hero) .maloe-booking .date-row{margin-top:7px!important;gap:8px}
+body:has(.maloe-hero) .maloe-booking .field select{padding:7px 8px}
+body:has(.maloe-hero) .maloe-booking .dates-hint{font-size:.7rem;margin:7px 0 0}
+.maloe-booking-next{display:flex;justify-content:center;gap:15px;align-items:center;margin:9px 18px 0;padding:11px 15px;background:linear-gradient(100deg,#008BCC,#0756A5);color:#fff;border-radius:30px;font-size:.85rem;font-weight:800}
+.maloe-booking-next:hover{background:#123D70;color:#fff}
+body:has(.maloe-hero) .benefits-strip{background:#fff}
+body:has(.maloe-hero) .benefits-inner{max-width:1180px;padding-block:16px}
+body:has(.maloe-hero) #catalogue{background:#fff!important;padding-block:36px}
+body:has(.maloe-hero) #catalogue .section-head{text-align:center}
+body:has(.maloe-hero) #catalogue .section-head h2{font-size:clamp(1.65rem,2.7vw,2.4rem)}
+body:has(.maloe-hero) #catalogue .section-head p{margin-inline:auto}
+body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+body:has(.maloe-hero) .product-card{padding:9px;border:1px solid #E0EBF5;border-radius:16px;box-shadow:0 5px 16px rgba(18,61,112,.08)}
+body:has(.maloe-hero) .product-image{height:116px;aspect-ratio:auto;width:100%;object-fit:cover;border-radius:10px}
+body:has(.maloe-hero) .product-name{font-size:.9rem}
+body:has(.maloe-hero) .cat-group-title{font-size:1.15rem}
+body:has(.maloe-hero) #modalites{background:#F4F8FC;padding-block:35px}
+@media(max-width:1100px){
+ body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body:has(.maloe-hero) .maloe-location-label{display:none}
+}
+@media(max-width:800px){
+ body:has(.maloe-hero) .maloe-hero-grid{grid-template-columns:1fr;gap:20px}
+ body:has(.maloe-hero) .maloe-hero-copy h1{max-width:19ch}
+ body:has(.maloe-hero) .maloe-booking{max-width:520px;width:100%;margin-inline:auto}
+ body:has(.maloe-hero) nav{order:3;width:100%}
+ body:has(.maloe-hero) .nav{flex-wrap:wrap}
+ body:has(.maloe-hero) nav ul{justify-content:center}
+ body:has(.maloe-hero) .menu-toggle{display:none}
+ body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+ body:has(.maloe-hero) .nav{padding:8px 12px;gap:7px}
+ body:has(.maloe-hero) .logo-img{width:56px;height:56px}
+ body:has(.maloe-hero) nav ul{gap:8px 13px}
+ body:has(.maloe-hero) nav a{font-size:.7rem}
+ body:has(.maloe-hero) .maloe-hero{padding-block:22px}
+ body:has(.maloe-hero) .maloe-hero-copy h1{font-size:2rem}
+ body:has(.maloe-hero) .maloe-booking .booking-panel{padding:12px}
+ body:has(.maloe-hero) .product-grid{gap:10px}
+ body:has(.maloe-hero) .product-image{height:90px}
+}
