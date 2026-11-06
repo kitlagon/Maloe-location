@@ -191,17 +191,19 @@
 
 <header>
   <div class="wrap nav">
-    <a class="logo" href="#main">
+    <a class="logo" href="#main" aria-label="Maloé Location, accueil">
       <img class="logo-img" src="images/logo.jpg" alt="Maloé Location">
-      Maloé Location
     </a>
     <nav aria-label="Navigation principale">
       <ul>
+        <li><a href="#main">Accueil</a></li>
         <li><a href="#dates">Réserver</a></li>
-        <li><a href="#catalogue">Nos produits</a></li>
-        <li><a href="#modalites">Modalités</a></li>
+        <li><a href="#catalogue">Nos équipements</a></li>
+        <li><a href="#modalites">Infos pratiques</a></li>
+        <li><a href="mailto:contact@maloe-location.re">Contact</a></li>
       </ul>
     </nav>
+    <span class="maloe-location-label">La Réunion<small>Plage de l’Ermitage</small></span>
     <button class="nav-cta" id="nav-cart-btn">
       Panier <span class="badge" id="nav-badge" style="display:none;">0</span>
     </button>
@@ -210,54 +212,17 @@
 </header>
 
 <main id="main">
-  <section class="hero" id="hero">
-    <div class="wrap">
-      <div class="hero-left-row">
-        <img class="hero-logo" src="images/logo-hero.webp" alt="Maloé Location">
-        <div>
-          <p class="hero-eyebrow">Saint-Gilles-les-Bains · La Réunion</p>
-          <h1 id="hero-title">Le lagon vous attend, pas besoin de tout apporter</h1>
-          <p id="hero-subtitle">Glacière, parasol, kit snorkeling ou caméra 360° étanche : choisissez vos dates et votre matériel, récupérez-le sur un créneau fixe près de la plage.</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="#dates">Réserver</a>
-            <a class="btn btn-ghost" href="#catalogue">Voir les produits</a>
-          </div>
-        </div>
+  <section class="hero maloe-hero" id="hero">
+    <div class="wrap maloe-hero-grid">
+      <div class="maloe-hero-copy">
+        <p class="hero-eyebrow">Plage de l’Ermitage · Saint-Gilles-les-Bains</p>
+        <h1 id="hero-title">Location de matériel de loisirs à La Réunion</h1>
+        <p id="hero-subtitle">Profitez pleinement de la plage et du lagon, sans vous encombrer !</p>
+        <a class="hero-discover" href="#catalogue">Découvrir nos équipements <span aria-hidden="true">→</span></a>
       </div>
-      <div class="hero-steps">
-        <p class="hero-steps-title">Comment ça marche</p>
-        <div class="hero-step">
-          <div class="hero-step-index">1</div>
-          <div class="hero-step-text"><strong>Choisissez la date</strong><span>Retrait et retour du matériel</span></div>
-        </div>
-        <div class="hero-step">
-          <div class="hero-step-index">2</div>
-          <div class="hero-step-text"><strong>Choix du matériel</strong><span>Ajoutez vos produits au panier</span></div>
-        </div>
-        <div class="hero-step">
-          <div class="hero-step-index">3</div>
-          <div class="hero-step-text"><strong>Récupération</strong><span>Sur votre créneau, à l'Ermitage</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <div class="benefits-strip" aria-label="Les avantages Maloé Location">
-    <div class="wrap benefits-inner">
-      <div class="benefit"><span class="benefit-icon" aria-hidden="true">☀</span><span><strong>Profitez du lagon</strong><small>Du matériel prêt pour votre journée</small></span></div>
-      <div class="benefit"><span class="benefit-icon" aria-hidden="true">⌖</span><span><strong>Retrait à l’Ermitage</strong><small>À proximité de la plage</small></span></div>
-      <div class="benefit"><span class="benefit-icon" aria-hidden="true">✓</span><span><strong>Réservation en ligne</strong><small>Choisissez vos dates et équipements</small></span></div>
-    </div>
-  </div>
-
-  <section id="dates">
-    <div class="wrap">
-      <p class="step-tag">01 / ORGANISEZ VOTRE JOURNÉE</p>
-      <div class="section-head">
-        <h2>Choisissez vos dates</h2>
-        <p>Cliquez d'abord votre date de retrait, puis votre date de retour — le calendrier reste ouvert.</p>
-      </div>
-      <div class="booking-layout"><aside class="booking-aside"><span class="booking-aside-number">01 — VOTRE SORTIE</span><h3>Un jour au lagon, sans vous charger.</h3><p>Sélectionnez votre jour de retrait et de retour, puis choisissez vos équipements.</p><div class="booking-aside-note"><span aria-hidden="true">⌖</span> Retrait à l’Ermitage, La Réunion</div></aside><div class="booking-panel">
+      <div class="maloe-booking" id="dates">
+        <div class="maloe-booking-title"><span aria-hidden="true">▣</span> Vérifier la disponibilité</div>
+        <div class="booking-panel">
         <div class="calendar-widget">
           <div class="calendar-header">
             <button type="button" id="cal-prev" aria-label="Mois précédent">‹</button>
@@ -286,9 +251,19 @@
         <input type="hidden" id="date-retrait">
         <input type="hidden" id="date-retour">
         <p class="dates-hint" id="dates-hint"></p>
-      </div></div>
+      </div>
+        <a class="maloe-booking-next" href="#catalogue">Voir les équipements <span aria-hidden="true">→</span></a>
+      </div>
     </div>
   </section>
+
+  <div class="benefits-strip" aria-label="Les avantages Maloé Location">
+    <div class="wrap benefits-inner">
+      <div class="benefit"><span class="benefit-icon" aria-hidden="true">☀</span><span><strong>Profitez du lagon</strong><small>Du matériel prêt pour votre journée</small></span></div>
+      <div class="benefit"><span class="benefit-icon" aria-hidden="true">⌖</span><span><strong>Retrait à l’Ermitage</strong><small>À proximité de la plage</small></span></div>
+      <div class="benefit"><span class="benefit-icon" aria-hidden="true">✓</span><span><strong>Réservation en ligne</strong><small>Choisissez vos dates et équipements</small></span></div>
+    </div>
+  </div>
 
   <section id="catalogue" style="background:var(--sand);">
     <div class="wrap">
@@ -336,7 +311,7 @@
       <p>Location de matériel de plage et de snorkeling — Saint-Gilles-les-Bains, La Réunion.</p>
     </div>
     <div>
-      <p><a class="mail" href="mailto:contact@kitlagon.re">contact@maloe-location.re</a></p>
+      <p><a class="mail" href="mailto:contact@maloe-location.re">contact@maloe-location.re</a></p>
       <p><a href="mentions-legales.html">Mentions légales</a> · <a href="cgv.html">Conditions générales</a></p>
       <p>© 2026 Maloé Location</p>
     </div>
