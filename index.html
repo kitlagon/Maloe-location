@@ -363,8 +363,16 @@
             });
             html += '</select></div>';
           });
-          html += '<div class="qty-row"><button type="button" class="add-btn size-add-btn" data-product="' + item.id + '">Ajouter au panier</button></div>' +
-            '<div class="size-picker-msg" data-product="' + item.id + '"></div>';
+          var defaultSizes = {};
+          sizedComponents.forEach(function (req) {
+            var comp = findComponent(req.id);
+            defaultSizes[req.id] = comp.sizes[0];
+          });
+          var blockedSized = canAdd(item, defaultSizes, 1, usage);
+          html += '<div class="qty-row"><button type="button" class="add-btn size-add-btn" data-product="' + item.id + '"' + (blockedSized ? ' disabled' : '') + '>Ajouter au panier</button></div>' +
+            '<div class="size-picker-msg' + (blockedSized ? ' is-visible' : '') + '" data-product="' + item.id + '">' +
+            (blockedSized ? 'Stock complet (' + componentLabel(blockedSized.componentId, blockedSized.size) + ') — <a href="' + contactMailto(item.name) + '">nous contacter</a>' : '') +
+            '</div>';
 
           var existingLines = Object.keys(cart)
             .map(parseCartKey)
@@ -411,6 +419,28 @@
     renderCatalogue();
     renderCartBar();
   }
+
+  // Disponibilité affichée immédiatement et actualisée à chaque changement de taille.
+  document.getElementById("catalogue-groups").addEventListener("change", function (e) {
+    if (!e.target.matches(".size-select")) return;
+    var picker = e.target.closest(".size-picker");
+    if (!picker) return;
+    var pid = picker.getAttribute("data-product");
+    var item = findProduct(pid);
+    if (!item) return;
+    var sizesObj = {};
+    picker.querySelectorAll(".size-select").forEach(function (sel) {
+      sizesObj[sel.getAttribute("data-component")] = sel.value;
+    });
+    var blocked = canAdd(item, sizesObj, 1, computeComponentUsage());
+    var msgEl = picker.querySelector(".size-picker-msg");
+    var addBtn = picker.querySelector(".size-add-btn");
+    addBtn.disabled = !!blocked;
+    msgEl.classList.toggle("is-visible", !!blocked);
+    msgEl.innerHTML = blocked
+      ? 'Stock complet (' + componentLabel(blocked.componentId, blocked.size) + ') — <a href="' + contactMailto(item.name) + '">nous contacter</a>'
+      : '';
+  });
 
   document.getElementById("catalogue-groups").addEventListener("click", function (e) {
     var stepBtn = e.target.closest("[data-action]");
