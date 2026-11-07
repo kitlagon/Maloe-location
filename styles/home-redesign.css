@@ -10,3 +10,12 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 @media(max-width:1050px){.product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.maloe-location-label{display:none}}
 @media(max-width:760px){.nav{flex-wrap:wrap;gap:7px;padding-top:8px;padding-bottom:8px}.logo-img{width:58px;height:58px}.nav nav{order:3;flex-basis:100%}.nav ul{gap:10px 17px}.nav nav a{font-size:.72rem}.beach-banner{height:145px}.booking-layout{grid-template-columns:1fr}.booking-summary{min-height:0}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.info-grid{grid-template-columns:1fr}.booking-intro .step-pill{display:none}}
 @media(max-width:480px){.wrap{padding:0 14px}.beach-banner{height:135px}.beach-banner h1{font-size:1.45rem}.beach-banner .banner-location{display:none}.booking-intro{padding:18px 0 12px}.booking-intro h2{font-size:1.3rem}.booking-summary{padding:15px}.booking-benefits{grid-template-columns:1fr;gap:7px;margin-top:12px}.booking-benefits .benefit{flex-direction:row;align-items:center;padding:8px}.product-grid{gap:8px}.product-image{height:90px}.product-card{padding:7px}.nav-cta{padding:8px 12px}}
+
+
+/* Navigation illustrée, conforme à la maquette */
+.nav nav a{display:inline-flex;align-items:center;gap:7px;position:relative;padding:11px 0;color:#0b4d89;transition:color .18s}
+.nav nav a svg{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav nav a[href="#main"]{color:#087dc5}
+.nav nav a[href="#main"]::after{content:"";position:absolute;bottom:2px;left:0;right:0;height:3px;background:#12a9e4;border-radius:3px}
+.nav nav a:hover{color:#0a91cf}
+@media(max-width:760px){.nav nav a{gap:5px;padding:6px 0}.nav nav a svg{width:16px;height:16px}}
