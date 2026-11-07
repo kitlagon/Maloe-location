@@ -250,3 +250,20 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
    padding-bottom:20px!important;
  }
 }
+
+
+/* Éclaircir uniquement la photo derrière le logo, sans perdre le contraste des textes */
+@media(min-width:761px){
+ .beach-banner.beach-banner-expanded{
+   background-image:
+     linear-gradient(90deg,rgba(225,247,255,.38) 0%,rgba(191,234,249,.22) 20%,rgba(4,49,76,.69) 43%,rgba(5,54,74,.16) 100%),
+     url('../images/ermitage.jpg.webp')!important;
+ }
+}
+@media(max-width:760px){
+ .beach-banner.beach-banner-expanded{
+   background-image:
+     linear-gradient(180deg,rgba(226,247,255,.36) 0%,rgba(5,52,80,.62) 36%,rgba(5,54,74,.28) 100%),
+     url('../images/ermitage.jpg.webp')!important;
+ }
+}
