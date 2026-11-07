@@ -19,3 +19,6 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 .nav nav a[href="#main"]::after{content:"";position:absolute;bottom:2px;left:0;right:0;height:3px;background:#12a9e4;border-radius:3px}
 .nav nav a:hover{color:#0a91cf}
 @media(max-width:760px){.nav nav a{gap:5px;padding:6px 0}.nav nav a svg{width:16px;height:16px}}
+
+/* Logo sans encadrement */
+.nav .logo,.nav .logo-img{border:0!important;outline:0;box-shadow:none!important;background:transparent!important;border-radius:0!important;padding:0!important}
