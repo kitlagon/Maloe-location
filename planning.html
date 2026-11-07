@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="same-origin">
+<title>Planning du matériel — Maloé Location</title>
+<link rel="stylesheet" href="planning.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.3/dist/umd/supabase.js" defer></script>
+<script type="module" src="planning.mjs"></script>
+</head>
+<body>
+<header><a class="brand" href="admin.html"><img src="images/logo.jpg" alt="">MALOÉ LOCATION</a><nav aria-label="Gestion"><a href="admin.html">Gestionnaire</a><a href="etat-des-lieux.html">États des lieux</a><button id="logout" hidden>Se déconnecter</button></nav></header>
+<main>
+<div class="heading"><div><span class="eyebrow">ESPACE GESTIONNAIRE</span><h1>Planning des locations</h1><p>Les équipements, les retraits et les retours en un coup d’œil.</p></div><span class="private">Accès administrateur</span></div>
+<section id="login-panel" class="login" hidden><h2>Se connecter au planning</h2><p>Utilise ton compte administrateur Maloé Location.</p><form id="login-form"><label for="email">Adresse e-mail</label><input id="email" name="email" type="email" autocomplete="username" required><label for="password">Mot de passe</label><input id="password" name="password" type="password" autocomplete="current-password" required><button class="primary" id="login-button">Se connecter</button></form></section>
+<p id="status" role="status" aria-live="polite">Vérification de la connexion…</p>
+<section id="app" hidden>
+<div class="toolbar"><div class="buttons"><button id="prev" aria-label="Période précédente">‹</button><button id="today">Aujourd’hui</button><button id="next" aria-label="Période suivante">›</button></div><h2 id="period-title"></h2><div class="buttons" role="group" aria-label="Vue du planning"><button data-view="day" aria-pressed="false">Jour</button><button data-view="week" aria-pressed="true">Semaine</button><button data-view="month" aria-pressed="false">Mois</button><button data-view="quarter" aria-pressed="false">3 mois</button></div><button id="refresh">Actualiser</button></div>
+<div class="filters"><label for="jump">Aller au</label><input type="date" id="jump"><label class="check"><input type="checkbox" id="tests" checked> Inclure les réservations marquées test</label><span id="updated"></span></div>
+<div class="legend" aria-label="Légende"><span class="confirmed">Confirmée</span><span class="out">Matériel retiré</span><span class="pending">Paiement en attente</span><span class="returned">Retourné</span><span class="unknown">À vérifier</span></div>
+<p id="summary" class="summary" aria-live="polite"></p>
+<div id="warnings" class="warnings" hidden></div>
+<div class="calendar-scroll" tabindex="0" role="region" aria-label="Planning du matériel, défilement horizontal et vertical"><div id="calendar" class="calendar"></div></div>
+<p class="note">Les numéros 1, 2… sont des repères visuels, sans attribution physique enregistrée. Le jour du retour reste occupé, comme dans le calcul des stocks du site. Les demandes de paiement expirées et les annulations sont exclues.</p>
+</section>
+</main>
+<dialog id="detail"><div class="dialog-top"><h2>Détail de la location</h2><button id="close-detail" aria-label="Fermer le détail">Fermer</button></div><div id="detail-content"></div><a class="action" href="etat-des-lieux.html">Ouvrir les états des lieux →</a></dialog>
+<noscript><p>Active JavaScript pour utiliser le planning.</p></noscript>
+</body></html>
