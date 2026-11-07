@@ -173,3 +173,35 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
    width:125px!important;max-height:145px!important;
  }
 }
+
+
+/* Logo XXL à gauche du bandeau, sans agrandir la hauteur de la photo */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  grid-template-columns:270px minmax(0,1fr)!important;
+  column-gap:25px!important;
+  max-width:1190px!important;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  width:270px!important;max-height:290px!important;
+}
+@media(max-width:900px) and (min-width:761px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:185px minmax(0,1fr)!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:185px!important;max-height:215px!important;
+ }
+}
+@media(max-width:760px) and (min-width:451px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:130px minmax(0,1fr)!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:130px!important;max-height:155px!important;
+ }
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:145px!important;max-height:165px!important;
+ }
+}
