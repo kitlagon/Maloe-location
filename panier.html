@@ -342,18 +342,9 @@
         var diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return null;
 
-        // Règle spéciale : retrait après 17 h, retour le lendemain jusqu'à 18 h inclus = 1 jour.
-        if (diffDays === 1 && retraitSlot && retourSlot &&
-            toMinutes(retraitSlot) >= 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
-          return 1;
-        }
-        if (retraitSlot && retourSlot){
-          var start = new Date(retrait + "T" + retraitSlot);
-          var end = new Date(retour + "T" + retourSlot);
-          var diffHours = (end - start) / (1000 * 60 * 60);
-          return diffHours > 0 ? Math.max(1, Math.ceil(diffHours / 24)) : null;
-        }
-        return diffDays + 1;
+        // Même règle que sur le calendrier : le jour de départ est offert
+        // pour tout retrait à partir de 17 h 30, avec un minimum d'un jour.
+        return Math.max(1, diffDays + 1 - (retraitSlot && toMinutes(retraitSlot) >= 17 * 60 + 30 ? 1 : 0));
       }
 
       function slotDisplayHtml(date, which){
