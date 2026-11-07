@@ -112,3 +112,11 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
  .beach-banner-expanded .banner-main .banner-logo{width:85px!important;max-height:85px!important}
  .beach-banner-expanded h1{font-size:1.7rem!important}
 }
+
+
+/* Logo placé à gauche du titre, dans le même alignement horizontal */
+.banner-heading-row{display:flex;align-items:center;gap:18px;margin-bottom:7px}
+.banner-heading-text{min-width:0;flex:1}
+.beach-banner-expanded .banner-heading-row .banner-logo{width:118px!important;max-height:118px!important;flex:none;margin:0!important}
+.beach-banner-expanded .banner-heading-row h1{margin-bottom:0!important}
+@media(max-width:760px){.banner-heading-row{gap:11px}.beach-banner-expanded .banner-heading-row .banner-logo{width:82px!important;max-height:82px!important}.beach-banner-expanded .banner-heading-row h1{font-size:clamp(1.4rem,5vw,1.8rem)!important}}
