@@ -82,3 +82,33 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
  .banner-main .banner-logo{width:125px;margin-bottom:12px}
  .beach-banner-expanded .beach-banner-content{min-height:0}
 }
+
+
+/* Bandeau panoramique compact : conserve la photo sans repousser le calendrier */
+.beach-banner.beach-banner-expanded{min-height:0!important;height:auto!important}
+.beach-banner-expanded .beach-banner-content{
+  min-height:350px!important;
+  padding-top:18px!important;
+  padding-bottom:18px!important;
+}
+.beach-banner-expanded .banner-main{max-width:790px}
+.beach-banner-expanded .banner-main .banner-logo{
+  width:105px!important;max-height:105px!important;
+  margin:0 0 5px!important;
+}
+.beach-banner-expanded .eyebrow{margin-bottom:5px!important}
+.beach-banner-expanded h1{font-size:clamp(1.85rem,2.75vw,2.75rem)!important;margin-bottom:6px!important;line-height:1.08!important}
+.beach-banner-expanded .banner-subtitle{font-size:.87rem!important;margin-bottom:10px!important}
+.beach-banner-expanded h2{font-size:1.12rem!important;margin-bottom:4px!important}
+.beach-banner-expanded .banner-description{font-size:.8rem!important;line-height:1.4!important;margin-bottom:11px!important}
+.beach-banner-expanded .banner-benefits{gap:8px}
+.beach-banner-expanded .banner-benefit{padding:7px 10px!important;gap:7px}
+.beach-banner-expanded .banner-benefit .benefit-icon{font-size:1.05rem}
+.beach-banner-expanded .banner-benefit strong{font-size:.71rem}
+.beach-banner-expanded .banner-benefit small{font-size:.62rem}
+.booking-layout.booking-layout-left{padding-top:18px!important}
+@media(max-width:760px){
+ .beach-banner-expanded .beach-banner-content{min-height:0!important;padding-top:18px!important;padding-bottom:18px!important}
+ .beach-banner-expanded .banner-main .banner-logo{width:85px!important;max-height:85px!important}
+ .beach-banner-expanded h1{font-size:1.7rem!important}
+}
