@@ -22,3 +22,44 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 
 /* Logo sans encadrement */
 .nav .logo,.nav .logo-img{border:0!important;outline:0;box-shadow:none!important;background:transparent!important;border-radius:0!important;padding:0!important}
+
+
+/* Grand bandeau Ermitage et étape 1 à gauche */
+.beach-banner.beach-banner-expanded{
+  height:auto;min-height:445px;
+  background-image:linear-gradient(90deg,rgba(4,39,64,.86) 0%,rgba(4,49,76,.69) 43%,rgba(5,54,74,.16) 100%),url('../images/ermitage.jpg.webp');
+  background-position:center center;background-size:cover;
+}
+.beach-banner.beach-banner-expanded::after{display:none}
+.beach-banner-expanded .beach-banner-content{min-height:445px;height:auto;display:flex;align-items:center;padding-top:35px;padding-bottom:35px}
+.beach-banner-expanded .banner-main{max-width:760px}
+.beach-banner-expanded .eyebrow{font-size:.7rem;letter-spacing:.12em;margin-bottom:10px;color:#e6f9ff}
+.beach-banner-expanded h1{max-width:720px;font-size:clamp(2rem,3.25vw,3.3rem);line-height:1.1;letter-spacing:-.025em;margin:0 0 10px;color:white}
+.beach-banner-expanded .banner-subtitle{font-size:1rem;line-height:1.55;color:white;margin:0 0 20px;max-width:610px}
+.beach-banner-expanded h2{font-size:1.35rem;color:white;margin:0 0 7px}
+.beach-banner-expanded .banner-description{font-size:.88rem;line-height:1.55;color:#f2fbff;max-width:650px;margin:0 0 20px}
+.banner-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;max-width:755px}
+.banner-benefit{display:flex;align-items:center;gap:9px;padding:12px 11px;background:rgba(255,255,255,.94);border-radius:12px;min-width:0;color:#12416b;box-shadow:0 3px 12px #062e4326}
+.banner-benefit .benefit-icon{font-size:1.3rem;flex:none}
+.banner-benefit strong,.banner-benefit small{display:block}
+.banner-benefit strong{font-size:.76rem;line-height:1.3}
+.banner-benefit small{font-size:.67rem;color:#4b6b7e;line-height:1.35;margin-top:3px}
+.booking-layout.booking-layout-left{display:grid;grid-template-columns:minmax(0,365px) minmax(0,1fr);gap:0 28px;padding-top:26px;padding-bottom:28px;align-items:start}
+.booking-layout-left .booking-heading{grid-column:1/-1;margin-bottom:14px}
+.booking-heading .step-pill{display:inline-block;border-radius:50px;background:#e8f5fc;color:#0868a7;font-size:.67rem;font-weight:800;letter-spacing:.08em;padding:6px 12px;margin-bottom:7px}
+.booking-heading h2{color:#0c477b;font-size:1.55rem;margin:0 0 3px}
+.booking-heading p{color:#5c7689;font-size:.79rem;margin:0}
+.booking-layout-left .maloe-booking{grid-column:1;grid-row:2;width:100%;max-width:365px}
+.booking-layout-left .maloe-booking-title{font-size:.86rem}
+.booking-layout-left .booking-panel{padding:10px 14px 0}
+.booking-layout-left .calendar-widget{max-width:295px}
+.booking-layout-left .cal-day{height:28px}
+@media(max-width:760px){
+ .beach-banner.beach-banner-expanded{min-height:0}
+ .beach-banner-expanded .beach-banner-content{min-height:0;padding-top:30px;padding-bottom:30px}
+ .beach-banner-expanded h1{font-size:clamp(1.8rem,6vw,2.5rem)}
+ .banner-benefits{grid-template-columns:1fr;gap:7px}
+ .banner-benefit{padding:8px 10px}
+ .booking-layout.booking-layout-left{grid-template-columns:1fr;padding-top:22px}
+ .booking-layout-left .maloe-booking{max-width:400px;grid-column:1;grid-row:auto}
+}
