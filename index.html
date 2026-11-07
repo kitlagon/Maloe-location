@@ -278,12 +278,9 @@
 
     var retraitSlot = document.getElementById("slot-retrait").value;
     var retourSlot = document.getElementById("slot-retour").value;
-    // Règle spéciale : retrait après 17 h, retour le lendemain jusqu'à 18 h inclus = 1 jour.
-    if (diffDays === 1 && retraitSlot && retourSlot &&
-        toMinutes(retraitSlot) >= 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
-      return 1;
-    }
-    return diffDays + 1;
+    // Un retrait à partir de 17 h 30 ne compte pas comme une journée.
+    // Une location est toujours facturée au minimum un jour.
+    return Math.max(1, diffDays + 1 - (retraitSlot && toMinutes(retraitSlot) >= 17 * 60 + 30 ? 1 : 0));
   }
 
   function getTierIndex(days){
