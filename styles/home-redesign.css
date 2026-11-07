@@ -63,3 +63,22 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
  .booking-layout.booking-layout-left{grid-template-columns:1fr;padding-top:22px}
  .booking-layout-left .maloe-booking{max-width:400px;grid-column:1;grid-row:auto}
 }
+
+
+/* Logo original agrandi dans le bandeau, plus de logo dans l'en-tête */
+.nav{justify-content:center}
+.nav nav{flex:1}
+.banner-main .banner-logo{
+  display:block;
+  width:clamp(125px,13vw,195px);
+  height:auto;
+  max-height:200px;
+  object-fit:contain;
+  margin:0 0 15px;
+  filter:drop-shadow(0 6px 14px rgba(3,34,58,.26));
+}
+.beach-banner-expanded .beach-banner-content{min-height:520px}
+@media(max-width:760px){
+ .banner-main .banner-logo{width:125px;margin-bottom:12px}
+ .beach-banner-expanded .beach-banner-content{min-height:0}
+}
