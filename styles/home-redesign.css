@@ -205,3 +205,48 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
    width:145px!important;max-height:165px!important;
  }
 }
+
+
+/* Mobile : logo centré au-dessus de l'ensemble des textes, desktop inchangé */
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   display:flex!important;
+   flex-direction:column!important;
+   align-items:stretch!important;
+   gap:12px!important;
+   width:100%!important;
+   max-width:100%!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   display:block!important;
+   width:clamp(155px,45vw,205px)!important;
+   max-width:205px!important;
+   max-height:none!important;
+   height:auto!important;
+   margin:0 auto 3px!important;
+   align-self:center!important;
+ }
+ .beach-banner-expanded .banner-all-text{
+   width:100%!important;
+   min-width:0!important;
+   text-align:left!important;
+ }
+ .beach-banner-expanded .banner-all-text h1{
+   font-size:clamp(1.65rem,6.2vw,2.2rem)!important;
+   line-height:1.14!important;
+   overflow-wrap:break-word!important;
+ }
+ .beach-banner-expanded .banner-all-text .banner-benefits{
+   grid-template-columns:1fr!important;
+   gap:7px!important;
+   max-width:100%!important;
+ }
+ .beach-banner-expanded .banner-all-text .banner-benefit{
+   width:100%!important;
+   box-sizing:border-box!important;
+ }
+ .beach-banner-expanded .beach-banner-content{
+   padding-top:20px!important;
+   padding-bottom:20px!important;
+ }
+}
