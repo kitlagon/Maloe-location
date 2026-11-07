@@ -144,3 +144,32 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
  .beach-banner-expanded .banner-main.banner-main-side-by-side{grid-template-columns:1fr;gap:9px}
  .beach-banner-expanded .banner-main-side-by-side>.banner-logo{width:85px!important;max-height:85px!important}
 }
+
+
+/* Logo davantage mis en valeur à gauche de tout le contenu du bandeau */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  grid-template-columns:205px minmax(0,1fr)!important;
+  column-gap:24px!important;
+  max-width:1080px!important;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  width:205px!important;
+  max-height:235px!important;
+}
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:115px minmax(0,1fr)!important;
+   column-gap:12px!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:115px!important;max-height:145px!important;
+ }
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:1fr!important;gap:9px!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:125px!important;max-height:145px!important;
+ }
+}
