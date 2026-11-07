@@ -120,3 +120,27 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 .beach-banner-expanded .banner-heading-row .banner-logo{width:118px!important;max-height:118px!important;flex:none;margin:0!important}
 .beach-banner-expanded .banner-heading-row h1{margin-bottom:0!important}
 @media(max-width:760px){.banner-heading-row{gap:11px}.beach-banner-expanded .banner-heading-row .banner-logo{width:82px!important;max-height:82px!important}.beach-banner-expanded .banner-heading-row h1{font-size:clamp(1.4rem,5vw,1.8rem)!important}}
+
+
+/* Le logo accompagne tout le bloc de texte, pas uniquement le titre */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  display:grid;grid-template-columns:145px minmax(0,1fr);align-items:center;
+  column-gap:23px;max-width:970px;width:100%;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  display:block!important;width:145px!important;max-height:190px!important;
+  height:auto!important;object-fit:contain;margin:0!important;
+  align-self:center;filter:drop-shadow(0 7px 13px rgba(2,33,54,.28));
+}
+.beach-banner-expanded .banner-all-text{min-width:0}
+.beach-banner-expanded .banner-all-text h1{max-width:720px}
+.beach-banner-expanded .banner-all-text .banner-benefits{max-width:755px}
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{grid-template-columns:90px minmax(0,1fr);gap:12px}
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{width:90px!important;max-height:125px!important}
+ .beach-banner-expanded .banner-all-text .banner-benefits{grid-template-columns:1fr}
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{grid-template-columns:1fr;gap:9px}
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{width:85px!important;max-height:85px!important}
+}
