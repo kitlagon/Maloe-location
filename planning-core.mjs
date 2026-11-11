@@ -87,8 +87,15 @@ export function buildPlanning({materials,components,reservations,start,end,showT
       if (!g) {warnings.push({reservation:r,message:'Un matériel réservé est absent du catalogue.'});continue;}
       for(let i=0;i<qty;i++) {
         const event={reservation:r,start:a,end:z,state,material:g.material};
-        // Même règle conservatrice que le stock serveur : le jour du retour reste occupé.
-        const lane=g.lanes.find(l=>l.every(e=>e.end<a||e.start>z));
+        // Même délai que le stock serveur : 45 minutes entre deux locations.
+        const startAt=Date.parse(r.date_retrait+'T'+(r.heure_retrait||'00:00')+':00Z');
+        const endAt=Date.parse(r.date_retour+'T'+(r.heure_retour||'23:59')+':00Z');
+        const turnaround=45*60*1000;
+        const lane=g.lanes.find(l=>l.every(e=>
+          Number.isFinite(startAt)&&Number.isFinite(endAt)&&
+          (Date.parse(e.reservation.date_retour+'T'+(e.reservation.heure_retour||'23:59')+':00Z')+turnaround<=startAt ||
+           endAt+turnaround<=Date.parse(e.reservation.date_retrait+'T'+(e.reservation.heure_retrait||'00:00')+':00Z'))
+        ));
         if(lane) lane.push(event); else {g.overflow.push(event);warnings.push({reservation:r,message:'Stock dépassé pour '+g.material.nom+'.'});}
         events.push(event);
       }
