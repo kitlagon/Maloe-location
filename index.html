@@ -509,10 +509,10 @@
         var totalQtyForItem = productTotalQty(item.id);
         var priceBlock;
         if (tierIndex === null){
-          priceBlock = '<span class="from">à partir de</span><span class="amount">' + item.prices[2] + ' €</span><span class="unit">/jour</span>';
+          priceBlock = '<span class="from">à partir de</span><span class="amount">' + (item.pricesTotal ? item.pricesTotal[0] : item.prices[2]) + ' €</span><span class="unit">/jour</span>';
         } else {
-          var unitPrice = item.pricesTotal ? item.pricesTotal[Math.min(days,7)-1] / days : item.prices[tierIndex];
-          var total = item.pricesTotal ? item.pricesTotal[Math.min(days,7)-1] * (totalQtyForItem || 1) : lineTotal(item.id, totalQtyForItem || 1, unitPrice, days);
+          var unitPrice = item.pricesTotal ? (item.pricesTotal[Math.min(days,7)-1] + Math.max(0,days-7)*(item.id === 'cam360' ? 14 : 15)) / days : item.prices[tierIndex];
+          var total = item.pricesTotal ? (item.pricesTotal[Math.min(days,7)-1] + Math.max(0,days-7)*(item.id === 'cam360' ? 14 : 15)) * (totalQtyForItem || 1) : lineTotal(item.id, totalQtyForItem || 1, unitPrice, days);
           priceBlock = '<span class="from">pour ' + days + ' jour' + (days > 1 ? "s" : "") + '</span><span class="amount">' + total + ' €</span>' +
             '<div class="total-line">soit ' + unitPrice + ' € par jour</div>';
         }
