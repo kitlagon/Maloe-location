@@ -511,8 +511,8 @@
         if (tierIndex === null){
           priceBlock = '<span class="from">à partir de</span><span class="amount">' + item.prices[2] + ' €</span><span class="unit">/jour</span>';
         } else {
-          var unitPrice = item.prices[tierIndex];
-          var total = lineTotal(item.id, totalQtyForItem || 1, unitPrice, days);
+          var unitPrice = item.pricesTotal ? item.pricesTotal[Math.min(days,7)-1] / days : item.prices[tierIndex];
+          var total = item.pricesTotal ? item.pricesTotal[Math.min(days,7)-1] * (totalQtyForItem || 1) : lineTotal(item.id, totalQtyForItem || 1, unitPrice, days);
           priceBlock = '<span class="from">pour ' + days + ' jour' + (days > 1 ? "s" : "") + '</span><span class="amount">' + total + ' €</span>' +
             '<div class="total-line">soit ' + unitPrice + ' € par jour</div>';
         }
