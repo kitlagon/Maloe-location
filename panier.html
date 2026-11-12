@@ -394,7 +394,7 @@
         lines.forEach(function (line, idx) {
           var item = findItem(line.id);
           var qty = line.qty;
-          var unit = tierIndex === null ? item.prices[2] : (item.pricesTotal ? item.pricesTotal[Math.min(days,7)-1] / days : item.prices[tierIndex]);
+          var unit = tierIndex === null ? item.prices[2] : (item.pricesTotal ? (item.pricesTotal[Math.min(days,7)-1] + Math.max(0,days-7)*(item.id === 'cam360' ? 14 : 15)) / days : item.prices[tierIndex]);
           var mult = tierIndex === null ? 1 : days;
           var itemLineTotal = computeLineTotal(line.id, idTotalQty(line.id), unit, mult) * (qty / idTotalQty(line.id));
           itemLineTotal = Math.round(itemLineTotal * 100) / 100;
