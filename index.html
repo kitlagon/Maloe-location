@@ -331,7 +331,9 @@
             '<div class="total-line">soit ' + unitPrice + ' € par jour</div>';
         }
         html += '<div class="product-card" data-product="' + item.id + '">' +
-          '<img class="product-image" src="images/kits/' + item.id + '.jpg?v=' + (catalogue.photoVersion || 1) + '" alt="' + item.name + '" onerror="this.remove()">' +
+          ( ['cam360', 'pmt-cam', 'easy-cam'].indexOf(item.id) !== -1
+            ? '<div class="product-image camera-coming-soon" role="img" aria-label="Photo à venir"><span>Photo à venir</span></div>'
+            : '<img class="product-image" src="images/kits/' + item.id + '.jpg?v=' + (catalogue.photoVersion || 1) + '" alt="' + item.name + '" onerror="this.remove()">') +
           '<div class="product-name">' + item.name + '</div>' +
           '<p class="product-desc">' + item.desc + '</p>' +
           '<div class="product-price">' + priceBlock + '</div>';
