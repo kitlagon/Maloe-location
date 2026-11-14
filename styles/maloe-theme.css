@@ -1,0 +1,482 @@
+/* Maloé Location — Charte graphique 2026
+   Feuille de style progressive : ne modifie pas la logique métier. */
+:root {
+  --maloe-navy:#123D70;
+  --maloe-blue:#2878B9;
+  --maloe-sky:#EAF3FB;
+  --maloe-background:#F4F8FC;
+  --maloe-white:#FFFFFF;
+  --maloe-text:#183047;
+  --maloe-muted:#536B80;
+  --maloe-border:#D8E5F1;
+  --maloe-shadow:0 10px 32px rgba(18,61,112,.09);
+  --maloe-radius:18px;
+  --lagoon-deep:var(--maloe-navy);
+  --lagoon-bright:var(--maloe-blue);
+  --sand:var(--maloe-sky);
+  --sand-light:var(--maloe-background);
+  --coral:var(--maloe-blue);
+  --ink:var(--maloe-text);
+  --ink-soft:var(--maloe-muted);
+  --line:var(--maloe-border);
+  --deep:var(--maloe-navy);
+  --bright:var(--maloe-blue);
+  --light:var(--maloe-background);
+  --soft:var(--maloe-muted);
+}
+html{scroll-behavior:smooth}
+body{background:var(--maloe-background);color:var(--maloe-text)}
+:where(button,a,input,select,textarea):focus-visible{outline:3px solid #5CB5E9;outline-offset:3px}
+:where(button,.btn,.nav-cta,.add-btn){transition:background-color .18s ease,transform .18s ease,box-shadow .18s ease}
+:where(button,.btn,.nav-cta,.add-btn):not(:disabled):active{transform:translateY(1px)}
+:where(.booking-panel,.product-card,.contact-panel,.panel,.card,.cart-item,.hero-steps){border-radius:var(--maloe-radius)}
+:where(.booking-panel,.product-card,.contact-panel,.panel,.card,.cart-item){box-shadow:var(--maloe-shadow)}
+:where(input,select,textarea){accent-color:var(--maloe-blue)}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
+}
+
+
+/* Composants communs */
+:where(.btn-primary,.nav-cta,.add-btn,.primary){
+  background:var(--maloe-blue);
+  color:#fff;
+  box-shadow:0 5px 14px rgba(40,120,185,.17);
+}
+:where(.btn-primary,.nav-cta,.add-btn,.primary):hover:not(:disabled){
+  background:var(--maloe-navy);
+  box-shadow:0 8px 22px rgba(18,61,112,.20);
+}
+:where(.booking-panel,.product-card,.contact-panel,.panel,.card,.cart-item){
+  background:#fff;
+  border-color:var(--maloe-border);
+}
+:where(.field input,.field select,.field textarea,input:not([type=checkbox]):not([type=radio]),select,textarea){
+  border-color:var(--maloe-border);
+}
+:where(.section-head h2,.cat-group-title,.product-name,.product-price .amount,.contact-panel h3){
+  color:var(--maloe-navy);
+}
+:where(.step-tag,.in-cart-note,.dates-hint){color:var(--maloe-blue)}
+:where(.product-image,.cart-item-thumb){background:var(--maloe-sky)}
+:where(.product-card,.cart-item){transition:box-shadow .2s ease,transform .2s ease}
+@media(hover:hover){
+  :where(.product-card,.cart-item):hover{
+    transform:translateY(-3px);
+    box-shadow:0 16px 36px rgba(18,61,112,.14);
+  }
+}
+/* Accueil : hiérarchie plus claire sans modifier le calendrier ou le panier */
+body:has(#catalogue-groups) header{
+  background:rgba(255,255,255,.97);
+  box-shadow:0 2px 14px rgba(18,61,112,.06);
+}
+body:has(#catalogue-groups) .hero{
+  padding-block:clamp(52px,7vw,94px);
+  background-color:var(--maloe-navy);
+}
+body:has(#catalogue-groups) .hero h1{
+  font-size:clamp(2rem,3.4vw,3.25rem);
+  max-width:18ch;
+}
+body:has(#catalogue-groups) .hero-steps{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.22);
+  backdrop-filter:blur(6px);
+}
+body:has(#catalogue-groups) .hero-step-index{background:#fff;color:var(--maloe-navy)}
+body:has(#catalogue-groups) .product-grid{gap:22px}
+body:has(#catalogue-groups) .product-card{padding:20px}
+body:has(#catalogue-groups) .product-image{border-radius:13px}
+body:has(#catalogue-groups) .booking-panel{max-width:560px}
+body:has(#catalogue-groups) .calendar-widget{max-width:none}
+body:has(#catalogue-groups) .cal-day.cal-selected{background:var(--maloe-blue);color:#fff}
+body:has(#catalogue-groups) .cal-day.cal-in-range{background:#D7EAF8}
+body:has(#catalogue-groups) .cart-bar-inner{
+  background:var(--maloe-navy);
+  box-shadow:0 12px 28px rgba(18,61,112,.23);
+}
+/* Petits écrans */
+@media(max-width:600px){
+  body:has(#catalogue-groups) .hero{padding-block:42px}
+  body:has(#catalogue-groups) .hero h1{font-size:clamp(1.9rem,7vw,2.5rem)}
+  body:has(#catalogue-groups) .booking-panel{padding:20px 16px}
+  body:has(#catalogue-groups) .cart-bar{bottom:10px}
+  body:has(#catalogue-groups) .cart-bar-inner{
+    width:100%;justify-content:space-between;gap:8px;
+    padding:10px 10px 10px 16px;
+  }
+  body:has(#catalogue-groups) .cart-bar-text{font-size:.8rem}
+}
+
+
+/* Refonte accueil : mise en page éditoriale */
+body:has(.benefits-strip){--maloe-radius:22px}
+body:has(.benefits-strip) .wrap{max-width:1200px}
+body:has(.benefits-strip) header{border-bottom:1px solid rgba(18,61,112,.08)}
+body:has(.benefits-strip) .nav{min-height:82px}
+body:has(.benefits-strip) .logo{font-family:'Work Sans',sans-serif;font-weight:600;letter-spacing:-.03em}
+body:has(.benefits-strip) .logo-img{width:56px;height:56px}
+body:has(.benefits-strip) nav a{font-weight:600}
+body:has(.benefits-strip) .hero{
+  min-height:540px;
+  display:flex;
+  align-items:center;
+  padding-block:85px;
+  isolation:isolate;
+}
+body:has(.benefits-strip) .hero::after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(10,37,68,.72) 0%,rgba(10,37,68,.36) 65%,rgba(10,37,68,.18) 100%);
+}
+body:has(.benefits-strip) .hero .wrap{grid-template-columns:minmax(0,1.65fr) minmax(290px,.75fr);gap:55px}
+body:has(.benefits-strip) .hero-left-row{align-items:center;gap:28px}
+body:has(.benefits-strip) .hero-logo{width:180px}
+body:has(.benefits-strip) .hero-eyebrow{
+  display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);
+  padding:7px 14px;border-radius:50px;letter-spacing:.07em;text-transform:uppercase;
+  font-size:.68rem;font-weight:600;color:#fff;
+}
+body:has(.benefits-strip) .hero h1{
+  font-family:'Fraunces',serif;font-size:clamp(2.4rem,4.4vw,4.4rem);
+  line-height:1.09;max-width:16ch;letter-spacing:-.035em;
+}
+body:has(.benefits-strip) .hero p:not(.hero-eyebrow){font-size:1rem;line-height:1.75}
+body:has(.benefits-strip) .hero-actions{margin-top:28px}
+body:has(.benefits-strip) .hero-actions .btn{padding:14px 25px;border-radius:12px;font-weight:600}
+body:has(.benefits-strip) .hero-steps{
+  background:rgba(255,255,255,.96);color:var(--maloe-text);
+  border:1px solid rgba(255,255,255,.8);border-radius:24px;
+  box-shadow:0 25px 65px rgba(0,0,0,.16);padding:28px;
+  backdrop-filter:blur(14px);
+}
+body:has(.benefits-strip) .hero-steps-title{color:var(--maloe-navy);font-weight:700;text-shadow:none}
+body:has(.benefits-strip) .hero-step{color:var(--maloe-text)}
+body:has(.benefits-strip) .hero-step-text strong{color:var(--maloe-navy)}
+body:has(.benefits-strip) .hero-step-text span{color:var(--maloe-muted)}
+body:has(.benefits-strip) .hero-step-index{background:var(--maloe-sky);color:var(--maloe-navy)}
+.benefits-strip{background:#fff;border-bottom:1px solid var(--maloe-border)}
+.benefits-inner{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;padding-block:24px}
+.benefit{display:flex;align-items:center;gap:14px}
+.benefit-icon{width:46px;height:46px;display:grid;place-items:center;flex:none;background:var(--maloe-sky);color:var(--maloe-blue);border-radius:14px;font-size:1.5rem}
+.benefit strong,.benefit small{display:block}
+.benefit strong{font-size:.88rem;color:var(--maloe-navy)}
+.benefit small{font-size:.75rem;color:var(--maloe-muted);margin-top:2px}
+body:has(.benefits-strip) #dates,body:has(.benefits-strip) #catalogue,body:has(.benefits-strip) #modalites{padding-block:76px}
+body:has(.benefits-strip) #catalogue{background:#EAF3FB!important}
+body:has(.benefits-strip) #modalites{background:#fff}
+body:has(.benefits-strip) .step-tag{font-family:'Work Sans',sans-serif;letter-spacing:.13em;font-size:.72rem;font-weight:700;color:var(--maloe-blue)}
+body:has(.benefits-strip) .section-head{margin-bottom:30px}
+body:has(.benefits-strip) .section-head h2{font-size:clamp(2rem,3.1vw,3rem);color:var(--maloe-navy);letter-spacing:-.03em}
+body:has(.benefits-strip) .section-head p{color:var(--maloe-muted);max-width:650px}
+body:has(.benefits-strip) .booking-panel{max-width:680px;background:#fff;padding:32px;border:1px solid var(--maloe-border);box-shadow:0 22px 60px rgba(18,61,112,.10)}
+body:has(.benefits-strip) .calendar-header{margin-bottom:16px}
+body:has(.benefits-strip) .cal-day{border-radius:12px;font-weight:500}
+body:has(.benefits-strip) .product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+body:has(.benefits-strip) .product-card{padding:16px;background:#fff;border:1px solid var(--maloe-border);border-radius:22px;box-shadow:0 8px 28px rgba(18,61,112,.07)}
+body:has(.benefits-strip) .product-image{aspect-ratio:5/4;border-radius:15px}
+body:has(.benefits-strip) .product-name{font-size:1.08rem;font-weight:700;color:var(--maloe-navy)}
+body:has(.benefits-strip) .product-price .amount{font-size:1.6rem}
+body:has(.benefits-strip) .add-btn{padding:12px 16px;border-radius:12px;font-weight:600}
+body:has(.benefits-strip) .cat-group-title{font-size:1.5rem;color:var(--maloe-navy);border-color:var(--maloe-border);padding-top:24px}
+body:has(.benefits-strip) .info-grid{gap:20px}
+body:has(.benefits-strip) .info-card{border:1px solid var(--maloe-border);border-radius:20px;background:var(--maloe-background);padding:26px;box-shadow:none}
+body:has(.benefits-strip) .info-card h3{font-family:'Work Sans',sans-serif;font-weight:700;color:var(--maloe-navy)}
+body:has(.benefits-strip) footer{background:var(--maloe-navy);color:#fff;border:none}
+body:has(.benefits-strip) footer p,body:has(.benefits-strip) footer a,body:has(.benefits-strip) footer a.mail{color:#E5F2FC}
+@media(max-width:1000px){
+ body:has(.benefits-strip) .hero .wrap{gap:25px;grid-template-columns:1.4fr 1fr}
+ body:has(.benefits-strip) .hero-logo{width:130px}
+ body:has(.benefits-strip) .hero-left-row{gap:16px}
+}
+@media(max-width:860px){
+ body:has(.benefits-strip) .hero .wrap{grid-template-columns:1fr}
+ body:has(.benefits-strip) .hero{padding-block:56px}
+ body:has(.benefits-strip) .hero-steps{max-width:560px}
+ body:has(.benefits-strip) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .benefits-inner{grid-template-columns:1fr;gap:15px}
+ body:has(.benefits-strip) nav ul{display:flex;gap:15px}
+ body:has(.benefits-strip) .menu-toggle{display:none}
+ body:has(.benefits-strip) .nav{flex-wrap:wrap;gap:10px}
+ body:has(.benefits-strip) nav{order:3;width:100%;overflow-x:auto}
+ body:has(.benefits-strip) nav ul{justify-content:center;white-space:nowrap;padding:8px 0}
+}
+@media(max-width:560px){
+ body:has(.benefits-strip) .nav{padding:10px 18px}
+ body:has(.benefits-strip) .logo{font-size:1rem;gap:8px}
+ body:has(.benefits-strip) .logo-img{width:42px;height:42px}
+ body:has(.benefits-strip) .hero{min-height:auto;padding-block:46px}
+ body:has(.benefits-strip) .hero-left-row{align-items:flex-start;flex-direction:column}
+ body:has(.benefits-strip) .hero-logo{width:110px;align-self:flex-start}
+ body:has(.benefits-strip) .hero h1{font-size:clamp(2.2rem,9vw,3.15rem)}
+ body:has(.benefits-strip) .hero-steps{padding:20px;width:100%}
+ body:has(.benefits-strip) #dates,body:has(.benefits-strip) #catalogue,body:has(.benefits-strip) #modalites{padding-block:48px}
+ body:has(.benefits-strip) .booking-panel{padding:18px 14px}
+ body:has(.benefits-strip) .product-grid{grid-template-columns:1fr}
+ body:has(.benefits-strip) .info-card{padding:22px}
+}
+
+
+/* VERSION COMPACTE — refonte créative, priorité au contenu visible sans défilement */
+body:has(.booking-layout) .wrap{max-width:1140px}
+body:has(.booking-layout) .nav{min-height:64px;padding-block:7px}
+body:has(.booking-layout) .logo-img{width:42px;height:42px}
+body:has(.booking-layout) .hero{
+  min-height:0;
+  padding-block:38px;
+  background-position:center 48%;
+}
+body:has(.booking-layout) .hero .wrap{grid-template-columns:minmax(0,1fr) 270px;gap:36px}
+body:has(.booking-layout) .hero-left-row{gap:0}
+body:has(.booking-layout) .hero-logo{display:none}
+body:has(.booking-layout) .hero h1{font-size:clamp(2rem,3.2vw,3.15rem);max-width:20ch}
+body:has(.booking-layout) .hero p:not(.hero-eyebrow){font-size:.87rem;line-height:1.55;max-width:55ch}
+body:has(.booking-layout) .hero-actions{margin-top:16px}
+body:has(.booking-layout) .hero-actions .btn{padding:10px 17px}
+body:has(.booking-layout) .hero-steps{padding:17px 20px;border-radius:18px}
+body:has(.booking-layout) .hero-step{padding:6px 0}
+body:has(.booking-layout) .hero-step-text strong{font-size:.8rem}
+body:has(.booking-layout) .hero-step-text span{font-size:.7rem}
+body:has(.booking-layout) .benefits-inner{padding-block:12px}
+body:has(.booking-layout) .benefit-icon{width:36px;height:36px;font-size:1.05rem;border-radius:10px}
+body:has(.booking-layout) .benefit strong{font-size:.8rem}
+body:has(.booking-layout) .benefit small{font-size:.7rem}
+body:has(.booking-layout) #dates,
+body:has(.booking-layout) #catalogue,
+body:has(.booking-layout) #modalites{padding-block:43px}
+body:has(.booking-layout) .section-head{margin-bottom:18px}
+body:has(.booking-layout) .section-head h2{font-size:clamp(1.65rem,2.5vw,2.35rem)}
+body:has(.booking-layout) .section-head p{font-size:.85rem}
+body:has(.booking-layout) .step-tag{font-size:.65rem;margin-bottom:4px}
+.booking-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:32px;align-items:stretch}
+.booking-aside{
+  border-radius:18px;min-height:0;
+  padding:32px;
+  display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(135deg,#123D70 0%,#1F679F 100%);
+  color:#fff;position:relative;overflow:hidden;
+}
+.booking-aside::after{
+  content:"";position:absolute;width:230px;height:230px;right:-95px;bottom:-115px;
+  border:38px solid rgba(255,255,255,.09);border-radius:50%;pointer-events:none;
+}
+.booking-aside-number{font-size:.69rem;letter-spacing:.17em;color:#BFE4FC;font-weight:700}
+.booking-aside h3{font-family:'Fraunces',serif;font-size:clamp(1.6rem,2.4vw,2.5rem);line-height:1.16;max-width:13ch;margin:22px 0 12px;color:#fff}
+.booking-aside p{font-size:.9rem;max-width:33ch;color:#DCEFFD}
+.booking-aside-note{font-size:.76rem;margin-top:26px;padding-top:18px;border-top:1px solid rgba(255,255,255,.25);color:#EAF7FF}
+body:has(.booking-layout) .booking-panel{
+  width:100%;max-width:none;min-width:0;padding:17px 19px;
+  border-radius:18px;box-shadow:0 12px 36px rgba(18,61,112,.08);
+}
+body:has(.booking-layout) .calendar-widget{width:100%;max-width:320px;margin-inline:auto}
+body:has(.booking-layout) .calendar-header{margin-bottom:5px}
+body:has(.booking-layout) .calendar-header span{font-size:.91rem}
+body:has(.booking-layout) .calendar-header button{width:28px;height:28px}
+body:has(.booking-layout) .calendar-weekdays{font-size:.65rem;margin-bottom:2px}
+body:has(.booking-layout) .calendar-grid{gap:1px}
+body:has(.booking-layout) .cal-day{
+  aspect-ratio:auto;
+  width:100%;height:33px;min-height:33px;
+  font-size:.76rem;border-radius:8px;
+}
+body:has(.booking-layout) .dates-selected{margin-top:9px;padding-top:9px;gap:12px;justify-content:space-between}
+body:has(.booking-layout) .dates-selected div span{font-size:.79rem}
+body:has(.booking-layout) .dates-selected div strong{font-size:.68rem}
+body:has(.booking-layout) .date-row{gap:9px;margin-top:9px!important}
+body:has(.booking-layout) .field label{font-size:.7rem;margin-bottom:4px}
+body:has(.booking-layout) .field select{padding:8px 9px;font-size:.76rem}
+body:has(.booking-layout) .dates-hint{font-size:.73rem;margin:8px 0 0}
+body:has(.booking-layout) .product-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+body:has(.booking-layout) .product-card{
+  border-radius:15px;padding:10px;gap:6px;
+  box-shadow:0 4px 18px rgba(18,61,112,.06);
+}
+body:has(.booking-layout) .product-image{
+  width:100%;height:125px;aspect-ratio:auto;
+  object-fit:cover;border-radius:10px;
+}
+body:has(.booking-layout) .product-name{font-size:.92rem}
+body:has(.booking-layout) .product-desc{font-size:.74rem;min-height:0}
+body:has(.booking-layout) .product-price .amount{font-size:1.25rem}
+body:has(.booking-layout) .product-card .add-btn{padding:8px 10px;font-size:.75rem}
+body:has(.booking-layout) .cat-group-title{font-size:1.2rem;margin-bottom:12px;padding-top:13px}
+body:has(.booking-layout) .info-grid{gap:13px}
+body:has(.booking-layout) .info-card{padding:19px;border-radius:15px}
+@media(max-width:1050px){
+ body:has(.booking-layout) .product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .booking-layout{grid-template-columns:minmax(0,1fr) 370px;gap:18px}
+}
+@media(max-width:860px){
+ body:has(.booking-layout) .hero .wrap{grid-template-columns:1fr}
+ body:has(.booking-layout) .hero-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:none}
+ body:has(.booking-layout) .hero-steps-title{grid-column:1/-1;margin:0}
+ body:has(.booking-layout) .hero-step{border:0}
+ .booking-layout{grid-template-columns:1fr;gap:12px}
+ .booking-aside{padding:20px;min-height:0}
+ .booking-aside h3{font-size:1.45rem;max-width:none;margin:8px 0}
+ .booking-aside p{margin:0;max-width:none}
+ .booking-aside-note{margin-top:12px;padding-top:10px}
+ body:has(.booking-layout) .booking-panel{max-width:500px;margin-inline:auto}
+ body:has(.booking-layout) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ body:has(.booking-layout) .hero{padding-block:28px}
+ body:has(.booking-layout) .hero h1{font-size:2rem}
+ body:has(.booking-layout) .hero-steps{display:none}
+ body:has(.booking-layout) .benefits-inner{gap:9px}
+ body:has(.booking-layout) .benefit:nth-child(3){display:none}
+ body:has(.booking-layout) #dates,
+ body:has(.booking-layout) #catalogue,
+ body:has(.booking-layout) #modalites{padding-block:30px}
+ body:has(.booking-layout) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ body:has(.booking-layout) .product-card{padding:8px}
+ body:has(.booking-layout) .product-image{height:92px}
+ body:has(.booking-layout) .product-name{font-size:.82rem}
+ body:has(.booking-layout) .product-desc{font-size:.7rem}
+ body:has(.booking-layout) .product-price .amount{font-size:1.1rem}
+ body:has(.booking-layout) .booking-panel{padding:14px}
+ body:has(.booking-layout) .cal-day{height:32px;min-height:32px}
+}
+
+
+/* Accueil approuvé — version intégrée, compacte, sans modifier la logique de réservation */
+body:has(.maloe-hero){background:#fff}
+body:has(.maloe-hero) header{background:#fff;position:relative;z-index:20}
+body:has(.maloe-hero) .nav{max-width:1450px;min-height:76px;padding:8px 22px;display:flex;align-items:center;gap:18px}
+body:has(.maloe-hero) .logo{flex:0 0 auto;display:flex;align-items:center;font-size:0}
+body:has(.maloe-hero) .logo-img{width:78px;height:78px;object-fit:contain;border-radius:50%}
+body:has(.maloe-hero) nav{flex:1;min-width:0}
+body:has(.maloe-hero) nav ul{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,28px);flex-wrap:wrap}
+body:has(.maloe-hero) nav a{font-size:.82rem;font-weight:700;color:#123D70;white-space:nowrap}
+body:has(.maloe-hero) nav a:hover{color:#0787CA}
+.maloe-location-label{display:flex;flex-direction:column;align-items:flex-end;color:#123D70;font-size:.9rem;font-weight:800;white-space:nowrap;line-height:1.25}
+.maloe-location-label small{font-size:.65rem;font-weight:500}
+body:has(.maloe-hero) .nav-cta{border-radius:11px;padding:9px 13px;font-size:.78rem}
+body:has(.maloe-hero) .maloe-hero{
+  position:relative;isolation:isolate;min-height:0;
+  padding:clamp(28px,4vw,55px) 0;
+  background:linear-gradient(90deg,rgba(8,40,67,.60),rgba(7,60,90,.06)),url("../images/hero.jpg") center 55%/cover no-repeat;
+}
+body:has(.maloe-hero) .maloe-hero::after{display:none}
+body:has(.maloe-hero) .maloe-hero-grid{max-width:1200px;display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,430px);align-items:center;gap:clamp(25px,5vw,70px)}
+.maloe-hero-copy{max-width:580px;color:#fff}
+body:has(.maloe-hero) .maloe-hero-copy .hero-eyebrow{display:inline-block;font-size:.71rem;letter-spacing:.09em;color:#fff;background:rgba(5,46,82,.68);padding:8px 14px;border-radius:100px;margin-bottom:18px}
+body:has(.maloe-hero) .maloe-hero-copy h1{
+  max-width:15ch;font-family:'Fraunces',serif;font-size:clamp(2.1rem,3.6vw,3.65rem);
+  line-height:1.11;color:#fff;text-shadow:0 3px 15px rgba(5,30,50,.35);margin:0 0 16px;
+}
+body:has(.maloe-hero) .maloe-hero-copy p:not(.hero-eyebrow){font-size:clamp(.9rem,1.3vw,1.05rem);line-height:1.6;color:#fff;max-width:38ch;text-shadow:0 2px 8px rgba(5,30,50,.4)}
+.hero-discover{display:inline-flex;gap:14px;align-items:center;margin-top:19px;padding:11px 18px;background:#fff;color:#123D70;border-radius:12px;font-weight:700;font-size:.8rem;box-shadow:0 5px 20px rgba(0,0,0,.14)}
+.hero-discover:hover{background:#EAF3FB}
+.maloe-booking{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 55px rgba(5,32,60,.23);color:#183047;padding-bottom:15px}
+.maloe-booking-title{padding:15px 19px;background:linear-gradient(105deg,#075394,#0898D2);font-size:1rem;font-weight:800;color:#fff}
+.maloe-booking-title span{margin-right:9px}
+body:has(.maloe-hero) .maloe-booking .booking-panel{padding:15px 18px 6px;box-shadow:none;border:0;border-radius:0;background:#fff;max-width:none}
+body:has(.maloe-hero) .maloe-booking .calendar-widget{width:100%;max-width:315px;margin:0 auto}
+body:has(.maloe-hero) .maloe-booking .calendar-header{margin-bottom:5px}
+body:has(.maloe-hero) .maloe-booking .calendar-grid{gap:2px}
+body:has(.maloe-hero) .maloe-booking .cal-day{width:100%;height:30px;min-height:30px;aspect-ratio:auto;font-size:.75rem;border-radius:7px}
+body:has(.maloe-hero) .maloe-booking .dates-selected{margin-top:7px;padding-top:8px}
+body:has(.maloe-hero) .maloe-booking .date-row{margin-top:7px!important;gap:8px}
+body:has(.maloe-hero) .maloe-booking .field select{padding:7px 8px}
+body:has(.maloe-hero) .maloe-booking .dates-hint{font-size:.7rem;margin:7px 0 0}
+.maloe-booking-next{display:flex;justify-content:center;gap:15px;align-items:center;margin:9px 18px 0;padding:11px 15px;background:linear-gradient(100deg,#008BCC,#0756A5);color:#fff;border-radius:30px;font-size:.85rem;font-weight:800}
+.maloe-booking-next:hover{background:#123D70;color:#fff}
+body:has(.maloe-hero) .benefits-strip{background:#fff}
+body:has(.maloe-hero) .benefits-inner{max-width:1180px;padding-block:16px}
+body:has(.maloe-hero) #catalogue{background:#fff!important;padding-block:36px}
+body:has(.maloe-hero) #catalogue .section-head{text-align:center}
+body:has(.maloe-hero) #catalogue .section-head h2{font-size:clamp(1.65rem,2.7vw,2.4rem)}
+body:has(.maloe-hero) #catalogue .section-head p{margin-inline:auto}
+body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+body:has(.maloe-hero) .product-card{padding:9px;border:1px solid #E0EBF5;border-radius:16px;box-shadow:0 5px 16px rgba(18,61,112,.08)}
+body:has(.maloe-hero) .product-image{height:116px;aspect-ratio:auto;width:100%;object-fit:cover;border-radius:10px}
+body:has(.maloe-hero) .product-name{font-size:.9rem}
+body:has(.maloe-hero) .cat-group-title{font-size:1.15rem}
+body:has(.maloe-hero) #modalites{background:#F4F8FC;padding-block:35px}
+@media(max-width:1100px){
+ body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body:has(.maloe-hero) .maloe-location-label{display:none}
+}
+@media(max-width:800px){
+ body:has(.maloe-hero) .maloe-hero-grid{grid-template-columns:1fr;gap:20px}
+ body:has(.maloe-hero) .maloe-hero-copy h1{max-width:19ch}
+ body:has(.maloe-hero) .maloe-booking{max-width:520px;width:100%;margin-inline:auto}
+ body:has(.maloe-hero) nav{order:3;width:100%}
+ body:has(.maloe-hero) .nav{flex-wrap:wrap}
+ body:has(.maloe-hero) nav ul{justify-content:center}
+ body:has(.maloe-hero) .menu-toggle{display:none}
+ body:has(.maloe-hero) .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+ body:has(.maloe-hero) .nav{padding:8px 12px;gap:7px}
+ body:has(.maloe-hero) .logo-img{width:56px;height:56px}
+ body:has(.maloe-hero) nav ul{gap:8px 13px}
+ body:has(.maloe-hero) nav a{font-size:.7rem}
+ body:has(.maloe-hero) .maloe-hero{padding-block:22px}
+ body:has(.maloe-hero) .maloe-hero-copy h1{font-size:2rem}
+ body:has(.maloe-hero) .maloe-booking .booking-panel{padding:12px}
+ body:has(.maloe-hero) .product-grid{gap:10px}
+ body:has(.maloe-hero) .product-image{height:90px}
+}
+
+
+/* Correctifs de rendu suite au contrôle réel de la prévisualisation */
+body:has(.maloe-hero) .maloe-hero{
+  padding:26px 0!important;
+  min-height:0!important;
+  height:auto!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  background-position:center center!important;
+}
+body:has(.maloe-hero) .maloe-hero-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(330px,390px)!important;
+  gap:36px!important;
+  align-items:center!important;
+}
+body:has(.maloe-hero) .maloe-hero-copy h1{
+  font-size:clamp(2rem,3.1vw,3.15rem)!important;
+  line-height:1.1!important;
+  max-width:17ch!important;
+}
+body:has(.maloe-hero) .maloe-booking{
+  padding:0 0 12px!important;
+  align-self:center!important;
+  overflow:hidden!important;
+}
+body:has(.maloe-hero) .maloe-booking-title{padding:11px 17px!important}
+body:has(.maloe-hero) .maloe-booking .booking-panel{
+  padding:10px 16px 2px!important;
+  background:#fff!important;
+  min-height:0!important;
+  margin:0!important;
+  width:100%!important;
+  max-width:none!important;
+}
+body:has(.maloe-hero) .maloe-booking .calendar-widget{max-width:295px!important;margin:0 auto!important}
+body:has(.maloe-hero) .maloe-booking .calendar-grid{gap:0!important}
+body:has(.maloe-hero) .maloe-booking .cal-day{
+  height:27px!important;min-height:27px!important;
+  padding:0!important;font-size:.72rem!important;
+  aspect-ratio:auto!important;
+}
+body:has(.maloe-hero) .maloe-booking .calendar-header{padding:0!important;margin:0 0 3px!important}
+body:has(.maloe-hero) .maloe-booking .calendar-weekdays{margin:0!important}
+body:has(.maloe-hero) .maloe-booking .dates-selected{margin-top:5px!important;padding-top:6px!important}
+body:has(.maloe-hero) .maloe-booking .date-row{margin-top:5px!important}
+body:has(.maloe-hero) .maloe-booking .dates-hint{
+  color:#536B80!important;
+  text-shadow:none!important;
+  font-size:.69rem!important;
+  line-height:1.3!important;
+}
+body:has(.maloe-hero) .maloe-booking-next{margin-top:6px!important;padding:9px 14px!important}
+body:has(.maloe-hero) .maloe-hero-copy{align-self:center}
+body:has(.maloe-hero) .benefits-strip{position:relative}
+@media(max-width:800px){
+ body:has(.maloe-hero) .maloe-hero-grid{grid-template-columns:1fr!important;gap:18px!important}
+ body:has(.maloe-hero) .maloe-booking{max-width:460px!important;width:100%!important;margin:0 auto!important}
+}
