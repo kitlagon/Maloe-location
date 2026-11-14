@@ -1,0 +1,311 @@
+:root{--lagoon-deep:#103e70;--lagoon-bright:#148ac0;--sand:#eaf5fb;--sand-light:#fff;--coral:#0867b1;--ink:#143657;--ink-soft:#60778c;--line:#d9e7f1}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:88px}body{margin:0;background:#fff;color:var(--ink);font-family:'Work Sans',Arial,sans-serif;line-height:1.5}h1,h2,h3,p{margin-top:0}h1,h2,h3{font-family:'Work Sans',sans-serif}a{color:inherit}.wrap{max-width:1200px;margin:auto;padding:0 24px}.skip-link{position:absolute;left:-9999px}.skip-link:focus{left:12px;top:12px;z-index:100;background:#fff;padding:8px}
+header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;display:flex;align-items:center;justify-content:space-between;gap:24px}.logo{display:flex;align-items:center;text-decoration:none;flex:none}.logo-img{width:76px;height:76px;object-fit:contain}.nav nav{flex:1}.nav ul{display:flex;align-items:center;justify-content:center;gap:clamp(12px,2.5vw,32px);padding:0;margin:0;list-style:none;flex-wrap:wrap}.nav nav a{text-decoration:none;font-size:.82rem;font-weight:600}.nav nav a:hover{color:var(--lagoon-bright)}.nav-cta{background:#086ab3;color:#fff;border:0;border-radius:12px;padding:10px 18px;font:600 .85rem 'Work Sans',sans-serif;cursor:pointer;position:relative}.nav-cta .badge{position:absolute;top:-8px;right:-8px;border-radius:50%;width:20px;height:20px;display:grid;place-items:center;background:#e65b4c;color:white;font-size:.7rem}.menu-toggle{display:none}.maloe-location-label{display:flex;flex-direction:column;align-items:flex-end;font-size:.82rem;font-weight:700;white-space:nowrap}.maloe-location-label small{font-weight:400;font-size:.7rem}
+.beach-banner{height:176px;position:relative;background:#c9edf3 url('../images/ermitage.jpg.webp') center 54%/cover no-repeat;overflow:hidden}.beach-banner::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,58,92,.5),transparent 80%)}.beach-banner .wrap{height:100%;display:flex;align-items:center;position:relative;z-index:1}.beach-banner h1{color:#fff;font-size:clamp(1.45rem,2.7vw,2.45rem);font-weight:700;max-width:580px;line-height:1.15;text-shadow:0 2px 9px #15415c;margin:0}.beach-banner .eyebrow{display:block;color:#fff;font-size:.73rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:9px}.beach-banner .banner-location{margin-left:auto;align-self:flex-end;margin-bottom:20px;background:#fffdf2ed;border-radius:40px;padding:8px 15px;font-size:.75rem;font-weight:700;color:#12527e}
+.wave-line{height:6px;background:linear-gradient(90deg,#49c6dc,#087ebc,#49c6dc)}
+.booking-intro{padding:27px 0 17px}.booking-intro .wrap{display:flex;align-items:center;justify-content:space-between;gap:22px}.booking-intro h2{font-size:1.6rem;color:#0b4778;margin:0}.booking-intro p{font-size:.83rem;color:var(--ink-soft);margin:4px 0 0}.booking-intro .step-pill{background:#eaf6fc;color:#0a639f;border-radius:50px;padding:8px 14px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.booking-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:25px;align-items:start}.booking-summary{border:1px solid var(--line);border-radius:16px;background:#f6fbff;padding:23px 26px;min-height:270px}.booking-summary h3{font-size:1.3rem;margin:0 0 11px}.booking-summary p{font-size:.86rem;color:var(--ink-soft);max-width:55ch}.booking-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:26px}.booking-benefits .benefit{border:1px solid #dcebf5;border-radius:12px;background:white;padding:14px;display:flex;flex-direction:column;gap:5px}.benefit-icon{font-size:1.3rem;color:#098ac5}.benefit strong{font-size:.77rem}.benefit small{font-size:.7rem;color:var(--ink-soft)}.maloe-booking{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 30px #123d7010;overflow:hidden}.maloe-booking-title{background:#0d5b99;color:white;padding:10px 16px;font-size:.9rem;font-weight:700}.booking-panel{padding:11px 14px 0}.calendar-widget{max-width:290px;margin:0 auto}.calendar-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}.calendar-header span{font-weight:700;font-size:.86rem;text-transform:capitalize}.calendar-header button{width:28px;height:28px;border-radius:50%;background:#edf6fc;color:#0d5b99;border:0;cursor:pointer}.calendar-header button:disabled{opacity:.3}.calendar-weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}.calendar-weekdays{font-size:.64rem;color:var(--ink-soft);margin-bottom:3px}.calendar-grid{gap:2px}.cal-day{display:flex;justify-content:center;align-items:center;height:28px;min-width:0;background:none;border:0;border-radius:7px;font:.72rem 'Work Sans',sans-serif;color:var(--ink);cursor:pointer}.cal-day:hover:not(:disabled):not(.cal-empty){background:#d9f0fa}.cal-day:disabled{opacity:.32;cursor:not-allowed}.cal-day.cal-empty{cursor:default}.cal-day.cal-selected{background:#086ab3;color:#fff;font-weight:700}.cal-day.cal-in-range{background:#cfeaf7}.cal-day.cal-today{box-shadow:inset 0 0 0 1px #0b7fc0}.cal-day.cal-closed{text-decoration:line-through;color:#d85d4c}.dates-selected{display:flex;gap:20px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.dates-selected div{flex:1}.dates-selected strong{display:block;font-size:.68rem;color:var(--ink-soft)}.dates-selected span{font-size:.78rem}.date-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px!important}.field{min-width:0}.field label{display:block;font-size:.68rem;margin-bottom:4px}.field select,.field input{width:100%;min-width:0;border:1px solid var(--line);border-radius:7px;background:white;color:var(--ink);padding:7px 5px;font:.72rem 'Work Sans',sans-serif}.dates-hint{font-size:.7rem;color:var(--ink-soft);margin:7px 0}.maloe-booking-next{display:block;text-align:center;background:#0872b8;color:white;text-decoration:none;font-size:.78rem;font-weight:700;padding:10px;margin:8px 14px 13px;border-radius:10px}
+#catalogue{background:#fff!important;padding:29px 0 36px}.section-head{margin-bottom:18px}.section-head h2{font-size:1.6rem;color:#0d4779;margin:0}.section-head p{font-size:.82rem;color:var(--ink-soft);margin:5px 0 0}.step-tag{font-size:.7rem;letter-spacing:.11em;color:#087bb6;font-weight:700;margin-bottom:4px}.cat-group{margin-bottom:23px}.cat-group-title{font-size:1.02rem;border-bottom:1px solid var(--line);padding:8px 0;margin:0 0 13px;color:#0c477b}.product-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px}.product-card{border:1px solid var(--line);background:#fff;border-radius:13px;padding:9px;display:flex;flex-direction:column;gap:6px;min-width:0;overflow:hidden;box-shadow:0 3px 13px #0d44700b}.product-image{width:100%;height:108px;object-fit:cover;border-radius:9px;background:#eef7fc}.product-name{font-size:.85rem;font-weight:700}.product-desc{font-size:.7rem;color:var(--ink-soft);margin:0}.product-price{margin-top:auto}.product-price .from,.product-price .unit,.product-price .total-line,.product-caution{font-size:.7rem;color:var(--ink-soft)}.product-price .amount{font-size:1.15rem;font-weight:700;color:#0b5791}.qty-row{display:flex;align-items:center;justify-content:space-between;gap:5px}.in-cart-note{font-size:.7rem}.add-btn,.btn-primary{background:#086db2;color:white;border:0;border-radius:9px;padding:8px 10px;font:.73rem 'Work Sans',sans-serif;cursor:pointer}.product-card .add-btn{width:100%}.qty-control{display:flex;align-items:center;border:1px solid var(--line);border-radius:20px;overflow:hidden}.qty-control button{border:0;background:#f0f7fc;width:26px;height:28px;cursor:pointer}.qty-control span{min-width:20px;text-align:center;font-size:.75rem}.size-rows,.size-picker{border-top:1px solid var(--line);padding-top:8px}.size-row,.size-cart-line{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.72rem}.size-picker select{max-width:100%}.size-select-row label{font-size:.7rem}.size-select-row select{width:100%;padding:7px;border:1px solid var(--line);border-radius:7px}.size-picker-msg{font-size:.72rem;color:#ad504b}.size-cart-lines{display:grid;gap:6px}.cart-bar{position:sticky;bottom:10px;z-index:8;display:flex;justify-content:center;margin-top:10px}.cart-bar-inner{background:#103e70;color:#fff;display:flex;align-items:center;gap:15px;padding:9px 10px 9px 18px;border-radius:50px;box-shadow:0 7px 22px #123d7030}.cart-bar-text{font-size:.8rem}.cart-bar-text strong{color:#8ce4f5}.cart-bar .btn{border-radius:40px;padding:9px 15px}
+#modalites{background:#f4f9fd;padding:30px 0}.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.info-card{background:#fff;border:1px solid var(--line);border-radius:13px;padding:17px}.info-card h3{font-size:.94rem;margin:0 0 7px}.info-card p{font-size:.78rem;color:var(--ink-soft);margin:0}footer{padding:23px 0;background:#0b3f70;color:#fff}.footer-grid{display:flex;justify-content:space-between;gap:25px;flex-wrap:wrap}footer p{font-size:.75rem;margin:4px 0;color:#e4f4fd}footer a{color:#fff}.footer-grid .logo{font-size:1.1rem;font-weight:700}
+@media(max-width:1050px){.product-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.maloe-location-label{display:none}}
+@media(max-width:760px){.nav{flex-wrap:wrap;gap:7px;padding-top:8px;padding-bottom:8px}.logo-img{width:58px;height:58px}.nav nav{order:3;flex-basis:100%}.nav ul{gap:10px 17px}.nav nav a{font-size:.72rem}.beach-banner{height:145px}.booking-layout{grid-template-columns:1fr}.booking-summary{min-height:0}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.info-grid{grid-template-columns:1fr}.booking-intro .step-pill{display:none}}
+@media(max-width:480px){.wrap{padding:0 14px}.beach-banner{height:135px}.beach-banner h1{font-size:1.45rem}.beach-banner .banner-location{display:none}.booking-intro{padding:18px 0 12px}.booking-intro h2{font-size:1.3rem}.booking-summary{padding:15px}.booking-benefits{grid-template-columns:1fr;gap:7px;margin-top:12px}.booking-benefits .benefit{flex-direction:row;align-items:center;padding:8px}.product-grid{gap:8px}.product-image{height:90px}.product-card{padding:7px}.nav-cta{padding:8px 12px}}
+
+
+/* Navigation illustrée, conforme à la maquette */
+.nav nav a{display:inline-flex;align-items:center;gap:7px;position:relative;padding:11px 0;color:#0b4d89;transition:color .18s}
+.nav nav a svg{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nav nav a[href="#main"]{color:#087dc5}
+.nav nav a[href="#main"]::after{content:"";position:absolute;bottom:2px;left:0;right:0;height:3px;background:#12a9e4;border-radius:3px}
+.nav nav a:hover{color:#0a91cf}
+@media(max-width:760px){.nav nav a{gap:5px;padding:6px 0}.nav nav a svg{width:16px;height:16px}}
+
+/* Logo sans encadrement */
+.nav .logo,.nav .logo-img{border:0!important;outline:0;box-shadow:none!important;background:transparent!important;border-radius:0!important;padding:0!important}
+
+
+/* Grand bandeau Ermitage et étape 1 à gauche */
+.beach-banner.beach-banner-expanded{
+  height:auto;min-height:445px;
+  background-image:linear-gradient(90deg,rgba(4,39,64,.86) 0%,rgba(4,49,76,.69) 43%,rgba(5,54,74,.16) 100%),url('../images/ermitage.jpg.webp');
+  background-position:center center;background-size:cover;
+}
+.beach-banner.beach-banner-expanded::after{display:none}
+.beach-banner-expanded .beach-banner-content{min-height:445px;height:auto;display:flex;align-items:center;padding-top:35px;padding-bottom:35px}
+.beach-banner-expanded .banner-main{max-width:760px}
+.beach-banner-expanded .eyebrow{font-size:.7rem;letter-spacing:.12em;margin-bottom:10px;color:#e6f9ff}
+.beach-banner-expanded h1{max-width:720px;font-size:clamp(2rem,3.25vw,3.3rem);line-height:1.1;letter-spacing:-.025em;margin:0 0 10px;color:white}
+.beach-banner-expanded .banner-subtitle{font-size:1rem;line-height:1.55;color:white;margin:0 0 20px;max-width:610px}
+.beach-banner-expanded h2{font-size:1.35rem;color:white;margin:0 0 7px}
+.beach-banner-expanded .banner-description{font-size:.88rem;line-height:1.55;color:#f2fbff;max-width:650px;margin:0 0 20px}
+.banner-benefits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;max-width:755px}
+.banner-benefit{display:flex;align-items:center;gap:9px;padding:12px 11px;background:rgba(255,255,255,.94);border-radius:12px;min-width:0;color:#12416b;box-shadow:0 3px 12px #062e4326}
+.banner-benefit .benefit-icon{font-size:1.3rem;flex:none}
+.banner-benefit strong,.banner-benefit small{display:block}
+.banner-benefit strong{font-size:.76rem;line-height:1.3}
+.banner-benefit small{font-size:.67rem;color:#4b6b7e;line-height:1.35;margin-top:3px}
+.booking-layout.booking-layout-left{display:grid;grid-template-columns:minmax(0,365px) minmax(0,1fr);gap:0 28px;padding-top:26px;padding-bottom:28px;align-items:start}
+.booking-layout-left .booking-heading{grid-column:1/-1;margin-bottom:14px}
+.booking-heading .step-pill{display:inline-block;border-radius:50px;background:#e8f5fc;color:#0868a7;font-size:.67rem;font-weight:800;letter-spacing:.08em;padding:6px 12px;margin-bottom:7px}
+.booking-heading h2{color:#0c477b;font-size:1.55rem;margin:0 0 3px}
+.booking-heading p{color:#5c7689;font-size:.79rem;margin:0}
+.booking-layout-left .maloe-booking{grid-column:1;grid-row:2;width:100%;max-width:365px}
+.booking-layout-left .maloe-booking-title{font-size:.86rem}
+.booking-layout-left .booking-panel{padding:10px 14px 0}
+.booking-layout-left .calendar-widget{max-width:295px}
+.booking-layout-left .cal-day{height:28px}
+@media(max-width:760px){
+ .beach-banner.beach-banner-expanded{min-height:0}
+ .beach-banner-expanded .beach-banner-content{min-height:0;padding-top:30px;padding-bottom:30px}
+ .beach-banner-expanded h1{font-size:clamp(1.8rem,6vw,2.5rem)}
+ .banner-benefits{grid-template-columns:1fr;gap:7px}
+ .banner-benefit{padding:8px 10px}
+ .booking-layout.booking-layout-left{grid-template-columns:1fr;padding-top:22px}
+ .booking-layout-left .maloe-booking{max-width:400px;grid-column:1;grid-row:auto}
+}
+
+
+/* Logo original agrandi dans le bandeau, plus de logo dans l'en-tête */
+.nav{justify-content:center}
+.nav nav{flex:1}
+.banner-main .banner-logo{
+  display:block;
+  width:clamp(125px,13vw,195px);
+  height:auto;
+  max-height:200px;
+  object-fit:contain;
+  margin:0 0 15px;
+  filter:drop-shadow(0 6px 14px rgba(3,34,58,.26));
+}
+.beach-banner-expanded .beach-banner-content{min-height:520px}
+@media(max-width:760px){
+ .banner-main .banner-logo{width:125px;margin-bottom:12px}
+ .beach-banner-expanded .beach-banner-content{min-height:0}
+}
+
+
+/* Bandeau panoramique compact : conserve la photo sans repousser le calendrier */
+.beach-banner.beach-banner-expanded{min-height:0!important;height:auto!important}
+.beach-banner-expanded .beach-banner-content{
+  min-height:350px!important;
+  padding-top:18px!important;
+  padding-bottom:18px!important;
+}
+.beach-banner-expanded .banner-main{max-width:790px}
+.beach-banner-expanded .banner-main .banner-logo{
+  width:105px!important;max-height:105px!important;
+  margin:0 0 5px!important;
+}
+.beach-banner-expanded .eyebrow{margin-bottom:5px!important}
+.beach-banner-expanded h1{font-size:clamp(1.85rem,2.75vw,2.75rem)!important;margin-bottom:6px!important;line-height:1.08!important}
+.beach-banner-expanded .banner-subtitle{font-size:.87rem!important;margin-bottom:10px!important}
+.beach-banner-expanded h2{font-size:1.12rem!important;margin-bottom:4px!important}
+.beach-banner-expanded .banner-description{font-size:.8rem!important;line-height:1.4!important;margin-bottom:11px!important}
+.beach-banner-expanded .banner-benefits{gap:8px}
+.beach-banner-expanded .banner-benefit{padding:7px 10px!important;gap:7px}
+.beach-banner-expanded .banner-benefit .benefit-icon{font-size:1.05rem}
+.beach-banner-expanded .banner-benefit strong{font-size:.71rem}
+.beach-banner-expanded .banner-benefit small{font-size:.62rem}
+.booking-layout.booking-layout-left{padding-top:18px!important}
+@media(max-width:760px){
+ .beach-banner-expanded .beach-banner-content{min-height:0!important;padding-top:18px!important;padding-bottom:18px!important}
+ .beach-banner-expanded .banner-main .banner-logo{width:85px!important;max-height:85px!important}
+ .beach-banner-expanded h1{font-size:1.7rem!important}
+}
+
+
+/* Logo placé à gauche du titre, dans le même alignement horizontal */
+.banner-heading-row{display:flex;align-items:center;gap:18px;margin-bottom:7px}
+.banner-heading-text{min-width:0;flex:1}
+.beach-banner-expanded .banner-heading-row .banner-logo{width:118px!important;max-height:118px!important;flex:none;margin:0!important}
+.beach-banner-expanded .banner-heading-row h1{margin-bottom:0!important}
+@media(max-width:760px){.banner-heading-row{gap:11px}.beach-banner-expanded .banner-heading-row .banner-logo{width:82px!important;max-height:82px!important}.beach-banner-expanded .banner-heading-row h1{font-size:clamp(1.4rem,5vw,1.8rem)!important}}
+
+
+/* Le logo accompagne tout le bloc de texte, pas uniquement le titre */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  display:grid;grid-template-columns:145px minmax(0,1fr);align-items:center;
+  column-gap:23px;max-width:970px;width:100%;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  display:block!important;width:145px!important;max-height:190px!important;
+  height:auto!important;object-fit:contain;margin:0!important;
+  align-self:center;filter:drop-shadow(0 7px 13px rgba(2,33,54,.28));
+}
+.beach-banner-expanded .banner-all-text{min-width:0}
+.beach-banner-expanded .banner-all-text h1{max-width:720px}
+.beach-banner-expanded .banner-all-text .banner-benefits{max-width:755px}
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{grid-template-columns:90px minmax(0,1fr);gap:12px}
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{width:90px!important;max-height:125px!important}
+ .beach-banner-expanded .banner-all-text .banner-benefits{grid-template-columns:1fr}
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{grid-template-columns:1fr;gap:9px}
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{width:85px!important;max-height:85px!important}
+}
+
+
+/* Logo davantage mis en valeur à gauche de tout le contenu du bandeau */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  grid-template-columns:205px minmax(0,1fr)!important;
+  column-gap:24px!important;
+  max-width:1080px!important;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  width:205px!important;
+  max-height:235px!important;
+}
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:115px minmax(0,1fr)!important;
+   column-gap:12px!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:115px!important;max-height:145px!important;
+ }
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:1fr!important;gap:9px!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:125px!important;max-height:145px!important;
+ }
+}
+
+
+/* Logo XXL à gauche du bandeau, sans agrandir la hauteur de la photo */
+.beach-banner-expanded .banner-main.banner-main-side-by-side{
+  grid-template-columns:270px minmax(0,1fr)!important;
+  column-gap:25px!important;
+  max-width:1190px!important;
+}
+.beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+  width:270px!important;max-height:290px!important;
+}
+@media(max-width:900px) and (min-width:761px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:185px minmax(0,1fr)!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:185px!important;max-height:215px!important;
+ }
+}
+@media(max-width:760px) and (min-width:451px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   grid-template-columns:130px minmax(0,1fr)!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:130px!important;max-height:155px!important;
+ }
+}
+@media(max-width:450px){
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   width:145px!important;max-height:165px!important;
+ }
+}
+
+
+/* Mobile : logo centré au-dessus de l'ensemble des textes, desktop inchangé */
+@media(max-width:760px){
+ .beach-banner-expanded .banner-main.banner-main-side-by-side{
+   display:flex!important;
+   flex-direction:column!important;
+   align-items:stretch!important;
+   gap:12px!important;
+   width:100%!important;
+   max-width:100%!important;
+ }
+ .beach-banner-expanded .banner-main-side-by-side>.banner-logo{
+   display:block!important;
+   width:clamp(155px,45vw,205px)!important;
+   max-width:205px!important;
+   max-height:none!important;
+   height:auto!important;
+   margin:0 auto 3px!important;
+   align-self:center!important;
+ }
+ .beach-banner-expanded .banner-all-text{
+   width:100%!important;
+   min-width:0!important;
+   text-align:left!important;
+ }
+ .beach-banner-expanded .banner-all-text h1{
+   font-size:clamp(1.65rem,6.2vw,2.2rem)!important;
+   line-height:1.14!important;
+   overflow-wrap:break-word!important;
+ }
+ .beach-banner-expanded .banner-all-text .banner-benefits{
+   grid-template-columns:1fr!important;
+   gap:7px!important;
+   max-width:100%!important;
+ }
+ .beach-banner-expanded .banner-all-text .banner-benefit{
+   width:100%!important;
+   box-sizing:border-box!important;
+ }
+ .beach-banner-expanded .beach-banner-content{
+   padding-top:20px!important;
+   padding-bottom:20px!important;
+ }
+}
+
+
+/* Éclaircir uniquement la photo derrière le logo, sans perdre le contraste des textes */
+@media(min-width:761px){
+ .beach-banner.beach-banner-expanded{
+   background-image:
+     linear-gradient(90deg,rgba(225,247,255,.38) 0%,rgba(191,234,249,.22) 20%,rgba(4,49,76,.69) 43%,rgba(5,54,74,.16) 100%),
+     url('../images/ermitage.jpg.webp')!important;
+ }
+}
+@media(max-width:760px){
+ .beach-banner.beach-banner-expanded{
+   background-image:
+     linear-gradient(180deg,rgba(226,247,255,.36) 0%,rgba(5,52,80,.62) 36%,rgba(5,54,74,.28) 100%),
+     url('../images/ermitage.jpg.webp')!important;
+ }
+}
+
+
+/* Éclaircissement uniforme de la photo sur toute la largeur du bandeau */
+.beach-banner.beach-banner-expanded{
+  background-image:
+    linear-gradient(rgba(199,238,251,.32),rgba(199,238,251,.32)),
+    url('../images/ermitage.jpg.webp')!important;
+  background-position:center center!important;
+  background-size:cover!important;
+}
+.beach-banner-expanded .banner-all-text .eyebrow,
+.beach-banner-expanded .banner-all-text h1,
+.beach-banner-expanded .banner-all-text h2,
+.beach-banner-expanded .banner-all-text .banner-subtitle,
+.beach-banner-expanded .banner-all-text .banner-description{
+  text-shadow:0 2px 5px rgba(0,35,65,.82),0 1px 2px rgba(0,35,65,.8);
+}
+
+
+/* Messages de disponibilité : contraste net et présentation homogène */
+.product-card .product-caution,
+.product-card .size-picker-msg.is-visible{
+  display:block;
+  color:#92400e!important;
+  background:#fff7e6;
+  border:1px solid #f2d5a2;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:.72rem;
+  font-weight:600;
+  line-height:1.45;
+  margin-top:7px;
+}
+.product-card .product-caution a,
+.product-card .size-picker-msg.is-visible a{
+  color:#075b9b!important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+  font-weight:700;
+}
+.product-card .size-picker-msg:not(.is-visible){display:none}
+.product-card .add-btn:disabled{background:#dbe5ed!important;color:#647b8c!important;cursor:not-allowed!important;opacity:1}
