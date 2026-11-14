@@ -338,7 +338,11 @@
           '<p class="product-desc">' + item.desc + '</p>' +
           '<div class="product-price">' + priceBlock + '</div>';
 
+        var comingSoon = ["cam360", "pmt-cam", "easy-cam"].indexOf(item.id) !== -1;
         var sizedComponents = (item.components || []).filter(function (c) { return c.needsSize; });
+        if (comingSoon) {
+          html += '<div class="camera-coming-soon-note">Disponible prochainement à la location</div>';
+        } else
 
         if (sizedComponents.length === 0){
           var inCartQty = cart[cartKey(item.id, {})] || 0;
@@ -403,7 +407,7 @@
 
   function changeQty(productId, sizes, delta){
     var item = findProduct(productId);
-    if (!item) return;
+    if (!item || ["cam360", "pmt-cam", "easy-cam"].indexOf(productId) !== -1) return;
     var usage = computeComponentUsage();
     if (delta > 0){
       var blocked = canAdd(item, sizes, delta, usage);
@@ -483,7 +487,7 @@
   }
 
   function goToCart(){
-    var keys = Object.keys(cart);
+    var keys = Object.keys(cart).filter(function(key){ return ["cam360", "pmt-cam", "easy-cam"].indexOf(parseCartKey(key).productId) === -1; });
     if (keys.length === 0) return;
     var lines = keys.map(function (key) {
       var parsed = parseCartKey(key);
