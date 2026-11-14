@@ -309,3 +309,6 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 }
 .product-card .size-picker-msg:not(.is-visible){display:none}
 .product-card .add-btn:disabled{background:#dbe5ed!important;color:#647b8c!important;cursor:not-allowed!important;opacity:1}
+
+/* Photos catalogue : montrer le matériel entier sans découpe. */
+#catalogue .product-image{object-fit:contain;background:#f5f9fc;padding:4px;}
