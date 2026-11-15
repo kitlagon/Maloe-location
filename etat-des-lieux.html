@@ -28,7 +28,7 @@ label{display:block;font-size:13px;color:#52645e;margin:0 0 6px}input,select,tex
 <body>
 <header><div class="nav"><a class="logo" href="index.html"><img src="images/logo.jpg" alt="Maloé Location">Maloé Location</a><a href="index.html">← Retour au site</a></div></header>
 <main>
-<section class="hero"><h1>État des lieux du matériel</h1><p>Départ et retour · Maloé Location, La Réunion</p></section>
+<section class="hero"><h1>État des lieux du matériel</h1><p>Retrait et retour sur rendez-vous · Rue des Maldives, à proximité du centre équestre · L’Ermitage-les-Bains</p></section>
 <div class="steps"><div class="step active" id="s1">1 · Réservation</div><div class="step" id="s2">2 · Départ</div><div class="step" id="s3">3 · Retour</div><div class="step" id="s4">4 · Documents</div></div>
 <section class="card" id="login-card"><h2>Accès gestionnaire</h2><p class="muted">Connexion réservée au compte administrateur autorisé pour les états des lieux.</p>
 <div class="field"><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password"></div><button class="btn primary" id="login">Se connecter</button><p class="status" id="login-status"></p></section>
@@ -105,6 +105,8 @@ async function makePdf(){
  info('N° de réservation',selected.id,M,y);info('Date du constat',new Date().toLocaleString('fr-FR'),M+col,y);y+=17;
  info('Client',((selected.client?.prenom||'')+' '+(selected.client?.nom||'')).trim()||'—',M,y);info('Téléphone',selected.client?.telephone||'—',M+col,y);y+=17;
  info('Retrait',date(selected.date_retrait)+' '+(selected.heure_retrait||''),M,y);info('Retour prévu',date(selected.date_retour)+' '+(selected.heure_retour||''),M+col,y);y+=19;
+ add('Point de retrait et de retour (sur rendez-vous)',M,y,7,muted,true);y+=6;
+ y+=add('Rue des Maldives, à proximité du centre équestre, L’Ermitage-les-Bains.',M,y,9,ink,false,C)+8;
  section('MATÉRIEL CONCERNÉ');
  const rows=selected.items||[],x1=M+3,x2=M+C-22;
  pdf.setFillColor(...navy);pdf.roundedRect(M,y-4,C,9,1.5,1.5,'F');add('DÉSIGNATION',x1,y+2,7,[255,255,255],true,C-35);add('QTÉ',x2,y+2,7,[255,255,255],true,18);y+=10;
