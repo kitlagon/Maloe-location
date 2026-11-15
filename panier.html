@@ -347,12 +347,10 @@
             toMinutes(retraitSlot) >= 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
           return 1;
         }
-        if (retraitSlot && retourSlot){
-          var start = new Date(retrait + "T" + retraitSlot);
-          var end = new Date(retour + "T" + retourSlot);
-          var diffHours = (end - start) / (1000 * 60 * 60);
-          return diffHours > 0 ? Math.max(1, Math.ceil(diffHours / 24)) : null;
-        }
+        // Même décompte que le catalogue : jours calendaires inclusifs,
+        // sauf exception du retrait tardif ci-dessus.
+        if (diffDays === 0 && retraitSlot && retourSlot &&
+            toMinutes(retourSlot) <= toMinutes(retraitSlot)) return null;
         return diffDays + 1;
       }
 
