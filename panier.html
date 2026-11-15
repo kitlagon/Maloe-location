@@ -582,7 +582,7 @@
               var reservationId = result.reservation.reservation_id;
               sendBtn.textContent = "Ouverture de la page de paiement...";
               var paymentResponse = await supabaseClient.functions.invoke("stancer-payment", {
-                body: { action: "create", reservation_id: reservationId }
+                body: { action: "create", reservation_id: reservationId, expected_amount_cents: Math.round(total * 100) }
               });
               if (paymentResponse.error || !paymentResponse.data || paymentResponse.data.success !== true ||
                   typeof paymentResponse.data.payment_url !== "string" ||
