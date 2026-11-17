@@ -22,13 +22,13 @@ stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra re
 plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>À venir</span></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
 };
 function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard()}));show('accueil');
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning()}));show('accueil');
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
  const panel=document.getElementById('auth-panel'),view=document.getElementById('view'),nav=document.querySelector('nav.nav'),status=document.getElementById('auth-status'),form=document.getElementById('auth-form');
  let client;
- function lock(message=''){window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
+ function lock(message=''){window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
  function unlock(){panel.hidden=true;view.hidden=false;nav.hidden=false;if(!document.getElementById('logout')){const b=document.createElement('button');b.id='logout';b.className='logout';b.textContent='Se déconnecter';view.prepend(b);b.addEventListener('click',async()=>{lock();try{await client.auth.signOut()}catch{lock('Déconnexion non confirmée. Réessaie.')}})}}
  async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();await loadDashboard()}
 
@@ -66,6 +66,36 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   }catch(error){if(ticket!==window.maloeDashboardTicket||view.hidden)return;screen.innerHTML='<h2>Tableau de bord</h2><div class="notice">Impossible de charger les réservations. Aucune donnée fictive n’est affichée. Vérifie ta connexion et réessaie.</div><button id="retry-dashboard" class="logout">Réessayer</button>';document.getElementById('retry-dashboard').onclick=loadDashboard;}
  }
  window.refreshMaloeDashboard=loadDashboard;
+
+
+ let planningAnchor=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),planningMode='day';
+ const safePlanning=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\'':'&#39;'}[ch]));
+ function moveDay(date,amount){const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+amount);return d.toISOString().slice(0,10)}
+ function dayLabel(date){return new Date(date+'T00:00:00Z').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'})}
+ async function loadPlanning(){
+  const ticket=window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');if(view.hidden||!screen||!document.querySelector('[data-page="planning"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Planning</h2><p class="muted">Chargement des locations…</p>';
+  try{
+   const {data:who,error:authError}=await client.auth.getUser();if(authError||!who.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const start=planningMode==='day'?planningAnchor:moveDay(planningAnchor,-((new Date(planningAnchor+'T00:00:00Z').getUTCDay()+6)%7));
+   const end=moveDay(start,planningMode==='day'?0:6);
+   const rows=[];for(let i=0;i<10000;i+=500){const {data,error}=await client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,mode_test,retour_effectif_at,client:clients(nom,prenom),reservation_items(quantite,produit:produits(nom)),etats_des_lieux(type)').lte('date_retrait',end).gte('date_retour',start).order('date_retrait').range(i,i+499);if(error)throw error;rows.push(...data);if(data.length<500)break;if(i===9500)throw Error('Trop de réservations')}
+   if(ticket!==window.maloePlanningTicket||view.hidden||!document.querySelector('[data-page="planning"][aria-current="page"]'))return;
+   const active=r=>{const s=(r.statut||'').toLowerCase();return !r.mode_test&&!/annul|cancel|refus|expir/.test(s)&&!(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))};
+   const list=rows.filter(active);
+   const dates=[];for(let d=start;d<=end;d=moveDay(d,1))dates.push(d);
+   const entries=dates.map(d=>{const events=[];for(const r of list){const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');if(r.date_retrait===d)events.push({time:r.heure_retrait||'--:--',kind:'Départ',name,gear});if(r.date_retour===d)events.push({time:r.heure_retour||'--:--',kind:'Retour',name,gear})}events.sort((a,b)=>a.time.localeCompare(b.time));return '<section class="panel"><h3>'+safePlanning(dayLabel(d))+'</h3>'+(events.length?events.map(e=>'<div class="item"><div><b>'+safePlanning(e.time)+' · '+safePlanning(e.kind)+'</b><div>'+safePlanning(e.name)+'</div><small>'+safePlanning(e.gear||'Matériel non renseigné')+'</small></div></div>').join(''):'<p class="muted">Aucun départ ni retour prévu.</p>')+'</section>'}).join('');
+   screen.innerHTML='<h2>Planning des locations</h2><div class="panel"><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="plan-day" class="logout" aria-pressed="'+(planningMode==='day')+'">Jour</button><button id="plan-week" class="logout" aria-pressed="'+(planningMode==='week')+'">Semaine</button></div><div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><button id="plan-prev" class="logout" aria-label="Précédent">‹</button><b>'+safePlanning(dayLabel(start))+(planningMode==='week'?' – '+safePlanning(dayLabel(end)):'')+'</b><button id="plan-next" class="logout" aria-label="Suivant">›</button></div><button id="plan-today" class="logout">Aujourd’hui</button></div>'+entries+'<p class="muted">Lecture seule · réservations de test et annulations exclues. Le délai de 45 minutes reste appliqué côté serveur pour la disponibilité du matériel.</p>';
+   document.getElementById('plan-day').onclick=()=>{planningMode='day';loadPlanning()};
+   document.getElementById('plan-week').onclick=()=>{planningMode='week';loadPlanning()};
+   document.getElementById('plan-prev').onclick=()=>{planningAnchor=moveDay(planningAnchor,planningMode==='day'?-1:-7);loadPlanning()};
+   document.getElementById('plan-next').onclick=()=>{planningAnchor=moveDay(planningAnchor,planningMode==='day'?1:7);loadPlanning()};
+   document.getElementById('plan-today').onclick=()=>{planningAnchor=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());loadPlanning()};
+  }catch(e){if(ticket!==window.maloePlanningTicket||view.hidden)return;screen.innerHTML='<h2>Planning</h2><div class="notice">Impossible de charger le planning. Aucune donnée fictive n’est affichée.</div><button id="plan-retry" class="logout">Réessayer</button>';document.getElementById('plan-retry').onclick=loadPlanning}
+ }
+ window.refreshMaloePlanning=loadPlanning;
 
  form.addEventListener('submit',async event=>{event.preventDefault();if(!client){lock('Connexion indisponible.');return}status.textContent='Vérification en cours…';const {error}=await client.auth.signInWithPassword({email:document.getElementById('auth-email').value.trim(),password:document.getElementById('auth-password').value});if(error){lock('Connexion impossible. Vérifie tes identifiants.');return}await verify()});
  (async()=>{if(!window.supabase?.createClient){lock('Service de connexion indisponible. Actualise la page.');return}client=window.supabase.createClient('https://kyzixknnlgdgvxkewmzd.supabase.co','sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL');await verify();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')lock()})})().catch(()=>lock('Service temporairement indisponible.'));
