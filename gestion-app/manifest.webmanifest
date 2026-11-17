@@ -1,0 +1,19 @@
+{
+  "name": "Maloé Gestion — Démonstration",
+  "short_name": "Maloé Gestion",
+  "description": "Prototype de l'application de gestion Maloé Location, sans données réelles",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f8fb",
+  "theme_color": "#0a537a",
+  "icons": [
+    {
+      "src": "../images/logo-hero.webp",
+      "sizes": "any",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}
