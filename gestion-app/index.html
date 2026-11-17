@@ -22,7 +22,7 @@ stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra re
 plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>À venir</span></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
 };
 function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning()}));show('accueil');
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations()}));show('accueil');
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -96,6 +96,44 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   }catch(e){if(ticket!==window.maloePlanningTicket||view.hidden)return;screen.innerHTML='<h2>Planning</h2><div class="notice">Impossible de charger le planning. Aucune donnée fictive n’est affichée.</div><button id="plan-retry" class="logout">Réessayer</button>';document.getElementById('plan-retry').onclick=loadPlanning}
  }
  window.refreshMaloePlanning=loadPlanning;
+
+
+ let locationsData=[],locationsFilter='actives';
+ const escLocation=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]||'&#39;'));
+ function locationStatus(r){
+  const s=(r.statut||'').toLowerCase();
+  if(/annul|cancel|refus|expir/.test(s))return 'Annulée';
+  if(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))return 'Expirée';
+  if(r.retour_effectif_at||(r.etats_des_lieux||[]).some(x=>x.type==='retour'))return 'Retournée';
+  if(s==='en_cours'||(r.etats_des_lieux||[]).some(x=>x.type==='depart'))return 'En cours';
+  if(r.paiement_confirme_at)return 'Confirmée · payée';
+  return r.statut||'À vérifier';
+ }
+ function renderLocations(){
+  const screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="locations"][aria-current="page"]'))return;
+  const selected=locationsData.filter(r=>locationsFilter==='toutes'||(locationsFilter==='actives'&&!/annul|cancel|refus|expir/.test((r.statut||'').toLowerCase())&&locationStatus(r)!=='Expirée')||(locationsFilter==='tests'&&r.mode_test));
+  const rows=(locationsFilter==='tests'?selected:selected.filter(r=>!r.mode_test)).slice(0,100);
+  screen.innerHTML='<h2>Locations</h2><p class="muted">Les 100 dernières réservations affichables · lecture seule</p><div class="panel"><label for="location-filter"><b>Afficher</b></label> <select id="location-filter" style="padding:10px;max-width:100%;border:1px solid #b4c9d5;border-radius:8px"><option value="actives">Réservations actives</option><option value="toutes">Toutes (hors tests)</option><option value="tests">Réservations de test</option></select></div>'+(rows.length?rows.map(r=>{const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>String(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');const euro=Number.isFinite(Number(r.total))?new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(r.total)):'Montant non renseigné';return '<section class="panel"><h3>'+escLocation(name)+'</h3><p class="muted">'+escLocation(r.date_retrait||'?')+' → '+escLocation(r.date_retour||'?')+'</p><p>'+escLocation(gear||'Matériel non renseigné')+'</p><div class="item"><b>'+escLocation(locationStatus(r))+'</b><span>'+escLocation(euro)+'</span></div><details><summary>Voir les détails</summary><p>Départ : '+escLocation(r.heure_retrait||'—')+' · Retour : '+escLocation(r.heure_retour||'—')+'</p><p>Paiement : '+escLocation(r.paiement_confirme_at?'Confirmé':'Non confirmé')+'</p><p>Référence : '+escLocation(r.id)+'</p></details></section>'}).join(''):'<div class="panel"><p class="muted">Aucune réservation pour ce filtre.</p></div>')+'<button id="location-refresh" class="logout">Actualiser</button>';
+  document.getElementById('location-filter').value=locationsFilter;
+  document.getElementById('location-filter').onchange=e=>{locationsFilter=e.target.value;renderLocations()};
+  document.getElementById('location-refresh').onclick=loadLocations;
+ }
+ async function loadLocations(){
+  const ticket=window.maloeLocationsTicket=(window.maloeLocationsTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="locations"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Locations</h2><p class="muted">Chargement des réservations…</p>';
+  try{
+   const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const {data,error}=await client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,total,statut,expires_at,paiement_confirme_at,mode_test,retour_effectif_at,client:clients(nom,prenom),reservation_items(quantite,produit:produits(nom)),etats_des_lieux(type)').order('date_retrait',{ascending:false}).limit(100);
+   if(error)throw error;
+   if(ticket!==window.maloeLocationsTicket||view.hidden)return;
+   locationsData=data||[];renderLocations();
+  }catch(error){if(ticket!==window.maloeLocationsTicket||view.hidden)return;locationsData=[];screen.innerHTML='<h2>Locations</h2><div class="notice">Impossible de charger les réservations. Réessaie après avoir vérifié ta connexion.</div><button id="location-retry" class="logout">Réessayer</button>';document.getElementById('location-retry').onclick=loadLocations}
+ }
+ window.refreshMaloeLocations=loadLocations;
 
  form.addEventListener('submit',async event=>{event.preventDefault();if(!client){lock('Connexion indisponible.');return}status.textContent='Vérification en cours…';const {error}=await client.auth.signInWithPassword({email:document.getElementById('auth-email').value.trim(),password:document.getElementById('auth-password').value});if(error){lock('Connexion impossible. Vérifie tes identifiants.');return}await verify()});
  (async()=>{if(!window.supabase?.createClient){lock('Service de connexion indisponible. Actualise la page.');return}client=window.supabase.createClient('https://kyzixknnlgdgvxkewmzd.supabase.co','sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL');await verify();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')lock()})})().catch(()=>lock('Service temporairement indisponible.'));
