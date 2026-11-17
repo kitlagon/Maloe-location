@@ -5,7 +5,7 @@
 .auth{max-width:420px;margin:24px auto;background:#fff;padding:22px;border:1px solid #dce8ee;border-radius:16px}.auth label{display:block;font-weight:600;font-size:13px;margin:14px 0 5px}.auth input{width:100%;padding:12px;border:1px solid #b4c9d5;border-radius:8px;font:inherit}.auth button,.logout{background:#0a537a;color:white;border:0;border-radius:8px;padding:12px 16px;font:inherit;margin-top:15px;cursor:pointer}.logout{margin:0 0 15px}#auth-status{color:#a12727;font-size:13px}[hidden]{display:none!important}</style></head><body>
 <header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Votre espace de gestion · Version 1</p></div></div></header>
 <div class="demo">MODE DÉMONSTRATION — connexion administrateur, données fictives</div>
-<section class="auth" id="auth-panel"><h2>Connexion administrateur</h2><p class="muted">Accès réservé au gestionnaire de Maloé Location.</p><form id="auth-form"><label for="auth-email">Adresse e-mail</label><input id="auth-email" type="email" autocomplete="username" required><label for="auth-password">Mot de passe</label><input id="auth-password" type="password" autocomplete="current-password" required><button type="submit">Se connecter</button></form><p id="auth-status" role="status"></p></section><main id="view" aria-live="polite" hidden></main>
+<section class="auth" id="auth-panel"><h2>Connexion administrateur</h2><p class="muted">Accès réservé au gestionnaire de Maloé Location.</p><form id="auth-form"><label for="auth-email">Adresse e-mail</label><input id="auth-email" type="email" autocomplete="username" required><label for="auth-password">Mot de passe</label><input id="auth-password" type="password" autocomplete="current-password" required><button type="submit">Se connecter</button></form><p id="auth-status" role="status"></p></section><main id="view" aria-live="polite" hidden><div id="dashboard-screen"></div></main>
 <nav class="nav" aria-label="Navigation de l'application" hidden>
 <button type="button" data-page="accueil" aria-current="page"><b>⌂</b>Accueil</button>
 <button type="button" data-page="planning"><b>▦</b>Planning</button>
@@ -21,16 +21,52 @@ locations:`<h2>Locations</h2><div class="notice">Les réservations, paiements, �
 stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra respecter les stocks réels et le délai de 45 minutes entre retour et nouveau départ.</div><section class="panel"><h3>Familles de matériel</h3><div class="item">Palmes et masques <span>À connecter</span></div><div class="item">Glacières et parasols <span>À connecter</span></div><div class="item">Caméras et packs <span>À connecter</span></div></section>`,
 plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>À venir</span></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
 };
-function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('view').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.page)));show('accueil');
+function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard()}));show('accueil');
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
  const panel=document.getElementById('auth-panel'),view=document.getElementById('view'),nav=document.querySelector('nav.nav'),status=document.getElementById('auth-status'),form=document.getElementById('auth-form');
  let client;
- function lock(message=''){view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
+ function lock(message=''){window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
  function unlock(){panel.hidden=true;view.hidden=false;nav.hidden=false;if(!document.getElementById('logout')){const b=document.createElement('button');b.id='logout';b.className='logout';b.textContent='Se déconnecter';view.prepend(b);b.addEventListener('click',async()=>{lock();try{await client.auth.signOut()}catch{lock('Déconnexion non confirmée. Réessaie.')}})}}
- async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock()}
+ async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();await loadDashboard()}
+
+ async function loadDashboard(){
+  const ticket=window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');
+  if(!screen||view.hidden)return;
+  screen.innerHTML='<h2>Tableau de bord</h2><p class="muted">Chargement des réservations…</p>';
+  try{
+   const {data:who,error:authError}=await client.auth.getUser();
+   if(authError||!who.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');
+   if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+   const month=today.slice(0,7);
+   const end=new Date(Date.parse(month+'-01T00:00:00Z'));end.setUTCMonth(end.getUTCMonth()+1);
+   const endMonth=new Date(end.getTime()-86400000).toISOString().slice(0,10);
+   async function all(make){const out=[];for(let i=0;i<10000;i+=500){const {data,error}=await make().range(i,i+499);if(error)throw error;out.push(...data);if(data.length<500)return out}throw Error('Trop de réservations pour ce tableau de bord')}
+   const [daily,monthly]=await Promise.all([
+    all(()=>client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,retour_effectif_at,paiement_confirme_at,mode_test,stancer_payment_status,etats_des_lieux(type)').lte('date_retrait',today).gte('date_retour',today)),
+    all(()=>client.from('reservations').select('id,total,date_retrait,statut,paiement_confirme_at,mode_test,stancer_payment_status').gte('date_retrait',month+'-01').lte('date_retrait',endMonth))
+   ]);
+   if(ticket!==window.maloeDashboardTicket||view.hidden)return;
+   const active=r=>{const s=(r.statut||'').toLowerCase();return !/annul|cancel|refus|expir/.test(s)&&!(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))};
+   const valid=daily.filter(r=>!r.mode_test&&active(r));
+   const departs=valid.filter(r=>r.date_retrait===today&&!r.retour_effectif_at).length;
+   const retours=valid.filter(r=>r.date_retour===today&&!r.retour_effectif_at).length;
+   const enCours=valid.filter(r=>r.date_retrait<=today&&r.date_retour>=today&&(r.statut==='en_cours'||(r.etats_des_lieux||[]).some(x=>x.type==='depart'))&&!r.retour_effectif_at).length;
+   const paid=monthly.filter(r=>!r.mode_test&&active(r)&&!!r.paiement_confirme_at);
+   const revenue=paid.reduce((sum,r)=>sum+(Number(r.total)||0),0);
+   const euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(revenue);
+   const safe=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+   const ops=valid.filter(r=>r.date_retrait===today||r.date_retour===today).sort((a,b)=>(a.heure_retrait||'').localeCompare(b.heure_retrait||'')).slice(0,12);
+   screen.innerHTML='<h2>Tableau de bord · '+safe(today.split('-').reverse().join('/'))+'</h2><div class="cards"><div class="card"><strong>'+valid.length+'</strong><small>Locations prévues aujourd’hui</small></div><div class="card"><strong>'+departs+'</strong><small>Départs prévus</small></div><div class="card"><strong>'+retours+'</strong><small>Retours prévus</small></div><div class="card"><strong>'+enCours+'</strong><small>Locations en cours (estimées)</small></div></div><section class="panel"><h3>Réservations payées · mois en cours</h3><strong>'+safe(euro)+'</strong><p class="muted">Total des réservations confirmées payées, classées par date de retrait. Hors tests et remboursements éventuels.</p></section><section class="panel"><h3>Opérations du jour</h3>'+(ops.length?ops.map(r=>'<div class="item"><b>'+safe(r.date_retrait===today?'Départ '+(r.heure_retrait||''):'Retour '+(r.heure_retour||''))+'</b><span>Réservation '+safe(String(r.id).slice(0,8))+'</span></div>').join(''):'<p class="muted">Aucune opération prévue aujourd’hui.</p>')+'</section><p class="muted">Lecture seule · actualisation à chaque ouverture de l’accueil. Les réservations de test sont exclues.</p>';
+  }catch(error){if(ticket!==window.maloeDashboardTicket||view.hidden)return;screen.innerHTML='<h2>Tableau de bord</h2><div class="notice">Impossible de charger les réservations. Aucune donnée fictive n’est affichée. Vérifie ta connexion et réessaie.</div><button id="retry-dashboard" class="logout">Réessayer</button>';document.getElementById('retry-dashboard').onclick=loadDashboard;}
+ }
+ window.refreshMaloeDashboard=loadDashboard;
+
  form.addEventListener('submit',async event=>{event.preventDefault();if(!client){lock('Connexion indisponible.');return}status.textContent='Vérification en cours…';const {error}=await client.auth.signInWithPassword({email:document.getElementById('auth-email').value.trim(),password:document.getElementById('auth-password').value});if(error){lock('Connexion impossible. Vérifie tes identifiants.');return}await verify()});
  (async()=>{if(!window.supabase?.createClient){lock('Service de connexion indisponible. Actualise la page.');return}client=window.supabase.createClient('https://kyzixknnlgdgvxkewmzd.supabase.co','sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL');await verify();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')lock()})})().catch(()=>lock('Service temporairement indisponible.'));
 })();
