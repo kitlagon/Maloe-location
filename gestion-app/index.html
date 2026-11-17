@@ -22,7 +22,7 @@ stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra re
 plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>À venir</span></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
 };
 function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations()}));show('accueil');
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations();if(b.dataset.page==='stock'&&window.refreshMaloeStock)window.refreshMaloeStock()}));show('accueil');
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -134,6 +134,27 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
   }catch(error){if(ticket!==window.maloeLocationsTicket||view.hidden)return;locationsData=[];screen.innerHTML='<h2>Locations</h2><div class="notice">Impossible de charger les réservations. Réessaie après avoir vérifié ta connexion.</div><button id="location-retry" class="logout">Réessayer</button>';document.getElementById('location-retry').onclick=loadLocations}
  }
  window.refreshMaloeLocations=loadLocations;
+
+
+ const escapeStock=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]||'&#39;'));
+ async function loadStock(){
+  const ticket=window.maloeStockTicket=(window.maloeStockTicket||0)+1,screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="stock"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Stock et matériel</h2><p class="muted">Chargement du stock enregistré…</p>';
+  try{
+   const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const items=[];
+   for(let i=0;i<10000;i+=500){const {data,error}=await client.from('materiels').select('id,code,nom,stock,actif,famille_code,taille').order('nom').order('id').range(i,i+499);if(error)throw error;items.push(...data);if(data.length<500)break;if(i===9500)throw Error('Limite de lecture atteinte')}
+   if(ticket!==window.maloeStockTicket||view.hidden||!document.querySelector('[data-page="stock"][aria-current="page"]'))return;
+   const families=new Map();
+   for(const item of items){const family=item.famille_code||'Autres';if(!families.has(family))families.set(family,[]);families.get(family).push(item)}
+   const count=items.reduce((n,x)=>n+Math.max(0,Number(x.stock)||0),0);
+   screen.innerHTML='<h2>Stock et matériel</h2><div class="cards"><div class="card"><strong>'+items.length+'</strong><small>Références matérielles</small></div><div class="card"><strong>'+count+'</strong><small>Unités enregistrées</small></div></div><div class="notice" style="margin-top:16px">Quantités enregistrées dans Supabase, pas disponibilités à une date donnée. Les réservations en cours ne sont pas déduites ici.</div>'+(items.length?[...families].sort((a,b)=>a[0].localeCompare(b[0])).map(([family,rows])=>'<section class="panel"><h3>'+escapeStock(family)+'</h3>'+rows.map(m=>'<div class="item"><div><b>'+escapeStock(m.nom||m.code||'Matériel')+'</b>'+(m.taille?'<div class="muted">Taille '+escapeStock(m.taille)+'</div>':'')+(!m.actif?'<div class="muted">Inactif</div>':'')+'</div><span>'+escapeStock(m.stock??0)+' unité(s)</span></div>').join('')+'</section>').join(''):'<section class="panel"><p class="muted">Aucun matériel enregistré.</p></section>')+'<button id="stock-refresh" class="logout">Actualiser</button><p class="muted">Lecture seule : aucun stock ne peut être modifié ici.</p>';
+   document.getElementById('stock-refresh').onclick=loadStock;
+  }catch(e){if(ticket!==window.maloeStockTicket||view.hidden)return;screen.innerHTML='<h2>Stock et matériel</h2><div class="notice">Impossible de charger les stocks. Aucune quantité fictive n’est affichée.</div><button id="stock-retry" class="logout">Réessayer</button>';document.getElementById('stock-retry').onclick=loadStock}
+ }
+ window.refreshMaloeStock=loadStock;
 
  form.addEventListener('submit',async event=>{event.preventDefault();if(!client){lock('Connexion indisponible.');return}status.textContent='Vérification en cours…';const {error}=await client.auth.signInWithPassword({email:document.getElementById('auth-email').value.trim(),password:document.getElementById('auth-password').value});if(error){lock('Connexion impossible. Vérifie tes identifiants.');return}await verify()});
  (async()=>{if(!window.supabase?.createClient){lock('Service de connexion indisponible. Actualise la page.');return}client=window.supabase.createClient('https://kyzixknnlgdgvxkewmzd.supabase.co','sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL');await verify();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')lock()})})().catch(()=>lock('Service temporairement indisponible.'));
