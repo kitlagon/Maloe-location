@@ -113,8 +113,30 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  const screen=document.getElementById('dashboard-screen');if(!screen||view.hidden)return;
  screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">Formulaire de préparation : l’enregistrement sécurisé et le blocage du stock ne sont pas encore activés. Aucune réservation ne sera créée depuis cet écran.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><label>Départ <input type="date" style="width:100%;padding:10px"></label><label>Heure de départ <input type="time" style="width:100%;padding:10px"></label><label>Retour <input type="date" style="width:100%;padding:10px"></label><label>Heure de retour <input type="time" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><label>Mode de paiement <select style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
  document.getElementById('new-reservation-back').onclick=()=>{window.maloeNewReservationOpen=false;renderLocations()};
+ for(const input of screen.querySelectorAll('input[type=date],input[type=time]'))input.addEventListener('change',updateNewReservationPricing);
  loadNewReservationCatalog();
 
+ }
+ function updateNewReservationPricing(){
+ const output=document.getElementById('new-total'),host=document.getElementById('new-catalog');if(!output||!host)return;
+ const dates=Array.from(document.querySelectorAll('#dashboard-screen input[type=date]')),times=Array.from(document.querySelectorAll('#dashboard-screen input[type=time]'));
+ if(dates.length!==2||times.length!==2||!dates[0].value||!dates[1].value||!times[0].value||!times[1].value){output.textContent='Renseigne les dates et horaires pour afficher le tarif estimé.';return}
+ const start=Date.parse(dates[0].value+'T00:00:00Z'),end=Date.parse(dates[1].value+'T00:00:00Z');
+ if(!Number.isFinite(start)||!Number.isFinite(end)||end<start||(end===start&&times[1].value<=times[0].value)){output.textContent='Dates ou horaires invalides.';return}
+ const days=Math.max(1,Math.round((end-start)/86400000)+1-(times[0].value>='17:30'?1:0));
+ let total=0,caution=0,qty=0;
+ const camera360=[40,75,107,137,164,186,200],cameraPack=[50,87,122,153,181,205,220];
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const n=Number(input.value)||0;if(n<=0)continue;
+ const p=(window.maloePricingProducts||[]).find(p=>p.id===input.dataset.product);if(!p)continue;
+ let unit;
+ if(p.nom==='Caméra 360° + accessoires aquatiques')unit=camera360[Math.min(days,7)-1]+Math.max(0,days-7)*15;
+ else if(p.nom==='Kit PMT + caméra'||p.nom==='Palmes + Easybreath + caméra')unit=cameraPack[Math.min(days,7)-1]+Math.max(0,days-7)*15;
+ else unit=days*Number(days<=2?p.prix_1_2j:days<=5?p.prix_3_5j:p.prix_5j_plus);
+ total+=unit*n;caution+=Number(p.caution||0)*n;qty+=n;
+ }
+ const euros=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n);
+ output.textContent=qty?'Estimation : '+days+' jour(s) facturé(s) · '+qty+' article(s) · location '+euros(total)+' · caution '+euros(caution)+'. À confirmer côté serveur ; disponibilité non vérifiée.':'Durée facturée : '+days+' jour(s). Sélectionne des articles pour afficher le total.';
  }
  async function loadNewReservationCatalog(){
  const host=document.getElementById('new-catalog');if(!host)return;
@@ -128,6 +150,8 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  ]);
  for(const response of [products,components,materials])if(response.error)throw response.error;
  if(!host.isConnected)return;
+ window.maloePricingProducts=products.data||[];
+ const pricingUpdate=()=>updateNewReservationPricing();
  const sizeMap={};
  for(const m of materials.data||[]){if((Number(m.stock)||0)<1)continue;(sizeMap[m.famille_code]??=new Set()).add(m.taille)}
  const names={'palmes':'Palmes','easybreath':'Easybreath','masque-tuba':'Masque + tuba'};
@@ -140,9 +164,9 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  const qty=Math.max(0,Math.min(20,Math.floor(Number(input.value)||0))),families=[...new Set(productComponents[productId]||[])];
  container.innerHTML=Array.from({length:qty},(_,i)=>families.length?'<div style="margin-top:10px;padding:10px;border:1px solid #dce8ee;border-radius:8px"><b>Article '+(i+1)+'</b>'+families.map(f=>'<label style="display:block;margin-top:8px">'+escLocation(names[f]||f)+' — taille <select data-family="'+escLocation(f)+'" data-unit="'+i+'" style="display:block;width:100%;padding:10px"><option value="">Choisir une taille</option>'+[...(sizeMap[f]||[])].sort().map(t=>'<option value="'+escLocation(t)+'">'+escLocation(t)+'</option>').join('')+'</select></label>').join('')+'</div>':'').join('');
  };
- input.addEventListener('change',render);input.addEventListener('input',render);
+ input.addEventListener('change',()=>{render();pricingUpdate()});input.addEventListener('input',()=>{render();pricingUpdate()});
  }
- document.getElementById('new-total').textContent='Les tailles correspondent au stock enregistré, mais leur disponibilité aux dates choisies reste à vérifier.';
+ document.getElementById('new-total').textContent='Choisis les dates et le matériel pour afficher une estimation.';pricingUpdate();
  }catch(e){if(host.isConnected)host.textContent='Catalogue indisponible : '+e.message}
  }
  function renderLocations(){
