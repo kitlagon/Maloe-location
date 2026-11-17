@@ -121,10 +121,28 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  try{
  const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
  const {data:admin,error:adminError}=await client.rpc('is_admin');if(adminError||admin!==true)throw Error('Accès administrateur refusé');
- const {data,error}=await client.from('produits').select('id,nom,actif,prix_1_2j,prix_3_5j,prix_5j_plus,caution').eq('actif',true).order('nom');
- if(error)throw error;if(!host.isConnected)return;
- host.innerHTML=(data||[]).map(p=>'<div class="item"><div><b>'+escLocation(p.nom)+'</b><div class="muted">Tarif de base : '+escLocation(p.prix_1_2j??'—')+' €/jour · caution '+escLocation(p.caution??'—')+' €</div></div><label>Qté <input type="number" min="0" max="20" value="0" data-product="'+escLocation(p.id)+'" style="width:66px;padding:8px"></label></div>').join('')||'<p>Aucun produit actif.</p>';
- document.getElementById('new-total').textContent='Sélectionne les articles. Le calcul définitif sera ajouté après vérification des règles tarifaires.';
+ const [products,components,materials]=await Promise.all([
+ client.from('produits').select('id,nom,actif,prix_1_2j,prix_3_5j,prix_5j_plus,caution').eq('actif',true).order('nom'),
+ client.from('produit_composants').select('produit_id,composant_code,taille_requise').eq('taille_requise',true),
+ client.from('materiels').select('famille_code,taille,stock').eq('actif',true).not('taille','is',null)
+ ]);
+ for(const response of [products,components,materials])if(response.error)throw response.error;
+ if(!host.isConnected)return;
+ const sizeMap={};
+ for(const m of materials.data||[]){if((Number(m.stock)||0)<1)continue;(sizeMap[m.famille_code]??=new Set()).add(m.taille)}
+ const names={'palmes':'Palmes','easybreath':'Easybreath','masque-tuba':'Masque + tuba'};
+ const productComponents={};
+ for(const c of components.data||[])(productComponents[c.produit_id]??=[]).push(c.composant_code);
+ host.innerHTML=(products.data||[]).map(p=>'<div class="item" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>'+escLocation(p.nom)+'</b><div class="muted">Tarif de base : '+escLocation(p.prix_1_2j??'—')+' €/jour · caution '+escLocation(p.caution??'—')+' €</div></div><label>Qté <input type="number" min="0" max="20" value="0" data-product="'+escLocation(p.id)+'" style="width:66px;padding:8px"></label></div><div data-sizes-for="'+escLocation(p.id)+'"></div></div>').join('')||'<p>Aucun produit actif.</p>';
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const productId=input.dataset.product,container=Array.from(host.querySelectorAll('[data-sizes-for]')).find(x=>x.dataset.sizesFor===productId);
+ const render=()=>{
+ const qty=Math.max(0,Math.min(20,Math.floor(Number(input.value)||0))),families=[...new Set(productComponents[productId]||[])];
+ container.innerHTML=Array.from({length:qty},(_,i)=>families.length?'<div style="margin-top:10px;padding:10px;border:1px solid #dce8ee;border-radius:8px"><b>Article '+(i+1)+'</b>'+families.map(f=>'<label style="display:block;margin-top:8px">'+escLocation(names[f]||f)+' — taille <select data-family="'+escLocation(f)+'" data-unit="'+i+'" style="display:block;width:100%;padding:10px"><option value="">Choisir une taille</option>'+[...(sizeMap[f]||[])].sort().map(t=>'<option value="'+escLocation(t)+'">'+escLocation(t)+'</option>').join('')+'</select></label>').join('')+'</div>':'').join('');
+ };
+ input.addEventListener('change',render);input.addEventListener('input',render);
+ }
+ document.getElementById('new-total').textContent='Les tailles correspondent au stock enregistré, mais leur disponibilité aux dates choisies reste à vérifier.';
  }catch(e){if(host.isConnected)host.textContent='Catalogue indisponible : '+e.message}
  }
  function renderLocations(){
