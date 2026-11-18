@@ -111,11 +111,48 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  }
  function renderNewReservationForm(){
  const screen=document.getElementById('dashboard-screen');if(!screen||view.hidden)return;
- screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">Formulaire de préparation : l’enregistrement sécurisé et le blocage du stock ne sont pas encore activés. Aucune réservation ne sera créée depuis cet écran.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><label>Départ <input type="date" style="width:100%;padding:10px"></label><label>Heure de départ <input type="time" style="width:100%;padding:10px"></label><label>Retour <input type="date" style="width:100%;padding:10px"></label><label>Heure de retour <input type="time" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><label>Mode de paiement <select style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
+ screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">Formulaire de préparation : l’enregistrement sécurisé et le blocage du stock ne sont pas encore activés. Aucune réservation ne sera créée depuis cet écran.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><label>Départ <input type="date" style="width:100%;padding:10px"></label><label>Heure de départ <input type="time" style="width:100%;padding:10px"></label><label>Retour <input type="date" style="width:100%;padding:10px"></label><label>Heure de retour <input type="time" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><button type="button" id="new-check" class="logout">Vérifier les disponibilités</button><p id="new-check-result" role="status"></p><label>Mode de paiement <select style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
  document.getElementById('new-reservation-back').onclick=()=>{window.maloeNewReservationOpen=false;renderLocations()};
  for(const input of screen.querySelectorAll('input[type=date],input[type=time]'))input.addEventListener('change',updateNewReservationPricing);
+ document.getElementById("new-check").onclick=checkNewAvailability;
  loadNewReservationCatalog();
 
+ }
+ async function checkNewAvailability(){
+ const out=document.getElementById('new-check-result'),host=document.getElementById('new-catalog');out.textContent='Vérification en cours…';
+ try{
+ const ds=[...document.querySelectorAll('#dashboard-screen input[type=date]')],ts=[...document.querySelectorAll('#dashboard-screen input[type=time]')];
+ if(!ds.every(x=>x.value)||!ts.every(x=>x.value))throw Error('Renseigne les dates et horaires.');
+ const start=Date.parse(ds[0].value+'T'+ts[0].value+':00+04:00'),end=Date.parse(ds[1].value+'T'+ts[1].value+':00+04:00');
+ if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)throw Error('Dates ou horaires invalides.');
+ const {data:admin,error:authErr}=await client.rpc('is_admin');if(authErr||admin!==true)throw Error('Accès refusé.');
+ const [cs,ms,rs]=await Promise.all([client.from('produit_composants').select('produit_id,materiel_id,quantite,taille_requise,composant_code'),client.from('materiels').select('id,nom,famille_code,taille,stock,actif'),client.from('reservations').select('date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,reservation_items(details)').lte('date_retrait',ds[1].value).gte('date_retour',ds[0].value).limit(1000)]);
+ for(const r of [cs,ms,rs])if(r.error)throw r.error;
+ if(rs.data.length>=1000)throw Error('Limite de consultation atteinte.');
+ const need=new Map(),used=new Map();
+ for(const input of host.querySelectorAll('[data-product]')){
+ const n=Number(input.value);if(!Number.isInteger(n)||n<0||n>20)throw Error('Quantité invalide.');if(!n)continue;
+ const box=host.querySelector('[data-sizes-for="'+input.dataset.product+'"]');
+ const selects=[...box.querySelectorAll('select[data-family]')];
+ if(selects.some(x=>!x.value))throw Error('Choisis toutes les tailles.');
+ for(const c of cs.data.filter(x=>x.produit_id===input.dataset.product))for(let i=0;i<n;i++){
+ const size=selects.find(x=>Number(x.dataset.unit)===i&&x.dataset.family===c.composant_code)?.value;
+ const m=c.taille_requise?ms.data.find(x=>x.actif&&x.famille_code===c.composant_code&&x.taille===size):ms.data.find(x=>x.actif&&x.id===c.materiel_id);
+ if(!m)throw Error('Matériel ou taille introuvable.');
+ need.set(m.id,(need.get(m.id)||0)+Number(c.quantite||1));
+ }
+ }
+ if(!need.size)throw Error('Sélectionne au moins un article.');
+ for(const r of rs.data){
+ if(!['confirmee','payee','payée','en_cours','en_attente_paiement'].includes(r.statut))continue;
+ if(r.statut==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))continue;
+ const a=Date.parse(r.date_retrait+'T'+(r.heure_retrait||'00:00')+':00+04:00'),b=Date.parse(r.date_retour+'T'+(r.heure_retour||'23:59')+':00+04:00');
+ if(!(a<end+2700000&&b+2700000>start))continue;
+ for(const item of r.reservation_items||[])for(const allocation of item.details?.allocations||[])used.set(allocation.materiel_id,(used.get(allocation.materiel_id)||0)+Number(allocation.qty||0));
+ }
+ const errors=[];for(const [id,qty] of need){const m=ms.data.find(x=>x.id===id);if(!m||qty+(used.get(id)||0)>Number(m.stock||0))errors.push((m?.nom||'Matériel')+' : stock insuffisant');}
+ out.textContent=errors.length?'Indisponible : '+errors.join(' ; '):'Aucun conflit détecté. Résultat indicatif : contrôle définitif nécessaire au moment de la création.';
+ }catch(e){out.textContent='Vérification impossible : '+e.message}
  }
  function updateNewReservationPricing(){
  const output=document.getElementById('new-total'),host=document.getElementById('new-catalog');if(!output||!host)return;
