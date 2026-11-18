@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a537a"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="../images/logo-hero.webp"><title>Maloé Gestion</title>
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#12334a;background:#f3f8fb}*{box-sizing:border-box}body{margin:0}header{background:#0a537a;color:white;padding:22px 18px 18px}header .top{display:flex;align-items:center;gap:12px;max-width:650px;margin:auto}header img{width:60px;height:60px;object-fit:contain}h1{font-size:22px;margin:0}header p{margin:4px 0 0;color:#d5edf7;font-size:13px}.demo{background:#fff0ca;color:#684b00;text-align:center;padding:10px;font-weight:650;font-size:13px}main{max-width:650px;margin:auto;padding:18px 16px 105px}h2{font-size:20px;margin:6px 0 16px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card,.panel{background:white;border:1px solid #e0eaf0;border-radius:16px;padding:17px;box-shadow:0 2px 10px #15334b08}.card small{display:block;color:#607b8a;font-size:12px;margin-top:9px}.card strong{font-size:27px}.panel{margin-top:16px}.panel h3{margin:0 0 14px;font-size:16px}.item{padding:13px 0;border-top:1px solid #e9eff3;display:flex;justify-content:space-between;gap:10px}.item:first-of-type{border-top:0}.item span{color:#557486;font-size:13px}.pill{border-radius:99px;padding:5px 9px;background:#e3f2fb;color:#07547b;font-size:12px;white-space:nowrap;align-self:center}.muted{color:#637d8c;font-size:14px;line-height:1.5}.nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #dce8ee;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}.nav button{flex:1;max-width:130px;border:0;background:transparent;padding:12px 2px 10px;color:#5b7482;font-size:11px;cursor:pointer}.nav button[aria-current=page]{color:#07547b;font-weight:750;background:#e9f5fb}.nav b{display:block;font-size:22px;margin-bottom:3px}.notice{border-left:4px solid #0b6b9d;background:#e8f4fb;padding:12px;border-radius:8px;font-size:13px;line-height:1.5}button:focus-visible{outline:3px solid #f1b743;outline-offset:-3px}
+.auth{max-width:420px;margin:24px auto;background:#fff;padding:22px;border:1px solid #dce8ee;border-radius:16px}.auth label{display:block;font-weight:600;font-size:13px;margin:14px 0 5px}.auth input{width:100%;padding:12px;border:1px solid #b4c9d5;border-radius:8px;font:inherit}.auth button,.logout{background:#0a537a;color:white;border:0;border-radius:8px;padding:12px 16px;font:inherit;margin-top:15px;cursor:pointer}.logout{margin:0 0 15px}#auth-status{color:#a12727;font-size:13px}[hidden]{display:none!important}</style></head><body>
+<header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Votre espace de gestion · Version 1</p></div></div></header>
+<div class="demo">ESPACE ADMINISTRATEUR — Maloé Location</div>
+<section class="auth" id="auth-panel"><h2>Connexion administrateur</h2><p class="muted">Accès réservé au gestionnaire de Maloé Location.</p><form id="auth-form"><label for="auth-email">Adresse e-mail</label><input id="auth-email" type="email" autocomplete="username" required><label for="auth-password">Mot de passe</label><input id="auth-password" type="password" autocomplete="current-password" required><button type="submit">Se connecter</button></form><p id="auth-status" role="status"></p></section><main id="view" aria-live="polite" hidden><div id="dashboard-screen"></div></main>
+<nav class="nav" aria-label="Navigation de l'application" hidden>
+<button type="button" data-page="accueil" aria-current="page"><b>⌂</b>Accueil</button>
+<button type="button" data-page="planning"><b>▦</b>Planning</button>
+<button type="button" data-page="locations"><b>✓</b>Locations</button>
+<button type="button" data-page="stock"><b>▣</b>Stock</button>
+<button type="button" data-page="plus"><b>☰</b>Plus</button>
+</nav>
+<script>
+const screens={
+accueil:`<h2>Tableau de bord</h2><div class="cards"><div class="card"><strong>3</strong><small>Réservations du jour</small></div><div class="card"><strong>2</strong><small>Départs prévus</small></div><div class="card"><strong>1</strong><small>Retours prévus</small></div><div class="card"><strong>425 €</strong><small>CA du mois</small></div></div><section class="panel"><h3>Prochaines opérations</h3><div class="item"><div><b>09:00 · Départ PMT</b><br><span>Client fictif A</span></div><span class="pill">Départ</span></div><div class="item"><div><b>17:00 · Retour parasol</b><br><span>Client fictif B</span></div><span class="pill">Retour</span></div></section>`,
+planning:`<h2>Planning</h2><div class="notice">Le calendrier sera relié aux réservations Supabase après validation de la connexion sécurisée.</div><section class="panel"><h3>Exemples d'opérations</h3><div class="item"><b>09:00 · PMT</b><span>Départ fictif</span></div><div class="item"><b>17:00 · Parasol</b><span>Retour fictif</span></div></section>`,
+locations:`<h2>Locations</h2><div class="notice">Les réservations, paiements, états des lieux et documents seront accessibles ici après connexion au serveur.</div><section class="panel"><h3>Parcours prévu</h3><div class="item">Réservation <span>→</span></div><div class="item">Départ et photos <span>→</span></div><div class="item">Retour et PDF <span>→</span></div></section>`,
+stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra respecter les stocks réels et le délai de 45 minutes entre retour et nouveau départ.</div><section class="panel"><h3>Familles de matériel</h3><div class="item">Palmes et masques <span>À connecter</span></div><div class="item">Glacières et parasols <span>À connecter</span></div><div class="item">Caméras et packs <span>À connecter</span></div></section>`,
+plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>Activation</span></div><div style="padding:12px 0"><p class="muted">Alertes souhaitées : nouvelles réservations payées, annulations et retours prévus. Les e-mails de réservation sont déjà configurés. Active ton téléphone pour recevoir les notifications automatiques en arrière-plan.</p><button type="button" onclick="window.maloeSubscribePush()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700;margin-bottom:8px">Activer les alertes automatiques</button><button type="button" onclick="window.maloeTestNotification()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700">Autoriser et tester les notifications Android</button><p id="maloe-notif-status" role="status" class="muted"></p></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Accès réservé à l'administration de Maloé Location.</p>`
+};
+async function maloeTestNotification(){
+ const msg=document.getElementById('maloe-notif-status');
+ const say=t=>{if(msg)msg.textContent=t};
+ if(!('Notification' in window)||!('serviceWorker' in navigator)){say('Notifications non prises en charge par ce navigateur.');return}
+ try{
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted'){say('Notifications non autorisées. Vérifie les paramètres Android de Maloé Gestion.');return}
+  const registration=await navigator.serviceWorker.ready;
+  await registration.showNotification('Maloé Gestion — Notification de test',{body:'Les notifications sont autorisées sur cet appareil. Aucun client ni paiement réel.',icon:'../images/logo-hero.webp',badge:'../images/logo-hero.webp',tag:'maloe-notification-test',data:{url:'./index.html'}});
+  say('Notification de test envoyée à Android. Les alertes automatiques nécessitent encore la connexion au serveur.');
+ }catch(e){say('Test impossible : '+(e?.message||'erreur inconnue'))}
+}
+window.maloeTestNotification=maloeTestNotification;
+function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations();if(b.dataset.page==='stock'&&window.refreshMaloeStock)window.refreshMaloeStock()}));show('accueil');
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+ const panel=document.getElementById('auth-panel'),view=document.getElementById('view'),nav=document.querySelector('nav.nav'),status=document.getElementById('auth-status'),form=document.getElementById('auth-form');
+ let client;
+ async function subscribeMaloePush(){
+  const el=document.getElementById('maloe-notif-status');
+  const say=t=>{if(el)el.textContent=t};
+  try{
+   if(!client)throw Error('Connecte-toi avant de continuer.');
+   const {data:user,error:authError}=await client.auth.getUser();
+   if(authError||!user.user)throw Error('Session expirée.');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');
+   if(permissionError||allowed!==true)throw Error('Accès administrateur requis.');
+   if(!('PushManager' in window)||!('serviceWorker' in navigator))throw Error('Notifications push non prises en charge.');
+   if(await Notification.requestPermission()!=='granted')throw Error('Autorisation Android refusée.');
+   const registration=await navigator.serviceWorker.ready;
+   const key='BEIpS9MQXtopL62RYYE-gLnBBBh4kRTCfhaljbg-j2ZIX29lWPtPbTxtEkimfpfAHJZC1NHp4BK2fCJzxcyaGLc';
+   const b64=key.replace(/-/g,'+').replace(/_/g,'/');
+   const bytes=Uint8Array.from(atob(b64+'='.repeat((4-b64.length%4)%4)),c=>c.charCodeAt(0));
+   let sub=await registration.pushManager.getSubscription();
+   if(sub){const existing=new Uint8Array(sub.options.applicationServerKey||[]);if(existing.length!==bytes.length||existing.some((v,i)=>v!==bytes[i])){await sub.unsubscribe();sub=null}}
+   if(!sub)sub=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});
+   const json=sub.toJSON();
+   const {error}=await client.from('admin_push_subscriptions').upsert({user_id:user.user.id,endpoint:sub.endpoint,p256dh:json.keys.p256dh,auth_secret:json.keys.auth,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+   if(error)throw error;
+   say('Téléphone inscrit aux notifications automatiques. Tu peux fermer Maloé Gestion.');
+  }catch(e){say('Activation impossible : '+(e?.message||'erreur inconnue'))}
+ }
+ window.maloeSubscribePush=subscribeMaloePush;
+ function lock(message=''){window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
+ function unlock(){panel.hidden=true;view.hidden=false;nav.hidden=false;if(!document.getElementById('logout')){const b=document.createElement('button');b.id='logout';b.className='logout';b.textContent='Se déconnecter';view.prepend(b);b.addEventListener('click',async()=>{lock();try{await client.auth.signOut()}catch{lock('Déconnexion non confirmée. Réessaie.')}})}}
+ async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();await loadDashboard()}
+
+ async function loadDashboard(){
+  const ticket=window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');
+  if(!screen||view.hidden)return;
+  screen.innerHTML='<h2>Tableau de bord</h2><p class="muted">Chargement des réservations…</p>';
+  try{
+   const {data:who,error:authError}=await client.auth.getUser();
+   if(authError||!who.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');
+   if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+   const month=today.slice(0,7);
+   const end=new Date(Date.parse(month+'-01T00:00:00Z'));end.setUTCMonth(end.getUTCMonth()+1);
+   const endMonth=new Date(end.getTime()-86400000).toISOString().slice(0,10);
+   async function all(make){const out=[];for(let i=0;i<10000;i+=500){const {data,error}=await make().range(i,i+499);if(error)throw error;out.push(...data);if(data.length<500)return out}throw Error('Trop de réservations pour ce tableau de bord')}
+   const [daily,monthly]=await Promise.all([
+    all(()=>client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,retour_effectif_at,paiement_confirme_at,mode_test,stancer_payment_status,etats_des_lieux(type)').lte('date_retrait',today).gte('date_retour',today)),
+    all(()=>client.from('reservations').select('id,total,date_retrait,statut,paiement_confirme_at,mode_test,stancer_payment_status').gte('date_retrait',month+'-01').lte('date_retrait',endMonth))
+   ]);
+   if(ticket!==window.maloeDashboardTicket||view.hidden)return;
+   const active=r=>{const s=(r.statut||'').toLowerCase();return !/annul|cancel|refus|expir/.test(s)&&!(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))};
+   const valid=daily.filter(r=>!r.mode_test&&active(r));
+   const departs=valid.filter(r=>r.date_retrait===today&&!r.retour_effectif_at).length;
+   const retours=valid.filter(r=>r.date_retour===today&&!r.retour_effectif_at).length;
+   const enCours=valid.filter(r=>r.date_retrait<=today&&r.date_retour>=today&&(r.statut==='en_cours'||(r.etats_des_lieux||[]).some(x=>x.type==='depart'))&&!r.retour_effectif_at).length;
+   const paid=monthly.filter(r=>!r.mode_test&&active(r)&&!!r.paiement_confirme_at);
+   const revenue=paid.reduce((sum,r)=>sum+(Number(r.total)||0),0);
+   const euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(revenue);
+   const safe=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+   const ops=valid.filter(r=>r.date_retrait===today||r.date_retour===today).sort((a,b)=>(a.heure_retrait||'').localeCompare(b.heure_retrait||'')).slice(0,12);
+   screen.innerHTML='<h2>Tableau de bord · '+safe(today.split('-').reverse().join('/'))+'</h2><div class="cards"><div class="card"><strong>'+valid.length+'</strong><small>Locations prévues aujourd’hui</small></div><div class="card"><strong>'+departs+'</strong><small>Départs prévus</small></div><div class="card"><strong>'+retours+'</strong><small>Retours prévus</small></div><div class="card"><strong>'+enCours+'</strong><small>Locations en cours (estimées)</small></div></div><section class="panel"><h3>Réservations payées · mois en cours</h3><strong>'+safe(euro)+'</strong><p class="muted">Total des réservations confirmées payées, classées par date de retrait. Hors tests et remboursements éventuels.</p></section><section class="panel"><h3>Opérations du jour</h3>'+(ops.length?ops.map(r=>'<div class="item"><b>'+safe(r.date_retrait===today?'Départ '+(r.heure_retrait||''):'Retour '+(r.heure_retour||''))+'</b><span>Réservation '+safe(String(r.id).slice(0,8))+'</span></div>').join(''):'<p class="muted">Aucune opération prévue aujourd’hui.</p>')+'</section><p class="muted">Lecture seule · actualisation à chaque ouverture de l’accueil. Les réservations de test sont exclues.</p>';
+  }catch(error){if(ticket!==window.maloeDashboardTicket||view.hidden)return;screen.innerHTML='<h2>Tableau de bord</h2><div class="notice">Impossible de charger les réservations. Aucune donnée fictive n’est affichée. Vérifie ta connexion et réessaie.</div><button id="retry-dashboard" class="logout">Réessayer</button>';document.getElementById('retry-dashboard').onclick=loadDashboard;}
+ }
+ window.refreshMaloeDashboard=loadDashboard;
+
+
+ let planningAnchor=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),planningMode='day';
+ const safePlanning=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]||'&#39;'));
+ function moveDay(date,amount){const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+amount);return d.toISOString().slice(0,10)}
+ function dayLabel(date){return new Date(date+'T00:00:00Z').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'})}
+ async function loadPlanning(){
+  const ticket=window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');if(view.hidden||!screen||!document.querySelector('[data-page="planning"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Planning</h2><p class="muted">Chargement des locations…</p>';
+  try{
+   const {data:who,error:authError}=await client.auth.getUser();if(authError||!who.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const start=planningMode==='day'?planningAnchor:moveDay(planningAnchor,-((new Date(planningAnchor+'T00:00:00Z').getUTCDay()+6)%7));
+   const end=moveDay(start,planningMode==='day'?0:6);
+   const rows=[];for(let i=0;i<10000;i+=500){const {data,error}=await client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,mode_test,retour_effectif_at,client:clients(nom,prenom),reservation_items(quantite,produit:produits(nom)),etats_des_lieux(type)').lte('date_retrait',end).gte('date_retour',start).order('date_retrait').range(i,i+499);if(error)throw error;rows.push(...data);if(data.length<500)break;if(i===9500)throw Error('Trop de réservations')}
+   if(ticket!==window.maloePlanningTicket||view.hidden||!document.querySelector('[data-page="planning"][aria-current="page"]'))return;
+   const active=r=>{const s=(r.statut||'').toLowerCase();return !/annul|cancel|refus|expir/.test(s)&&!(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))};
+   const list=rows.filter(active);
+   const dates=[];for(let d=start;d<=end;d=moveDay(d,1))dates.push(d);
+   const entries=dates.map(d=>{const events=[];for(const r of list){const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');if(r.date_retrait===d)events.push({time:r.heure_retrait||'--:--',kind:'Départ',name,gear});if(r.date_retour===d)events.push({time:r.heure_retour||'--:--',kind:'Retour',name,gear})}events.sort((a,b)=>a.time.localeCompare(b.time));return '<section class="panel"><h3>'+safePlanning(dayLabel(d))+'</h3>'+(events.length?events.map(e=>'<div class="item"><div><b>'+safePlanning(e.time)+' · '+safePlanning(e.kind)+'</b><div>'+safePlanning(e.name)+'</div><small>'+safePlanning(e.gear||'Matériel non renseigné')+'</small></div></div>').join(''):'<p class="muted">Aucun départ ni retour prévu.</p>')+'</section>'}).join('');
+   screen.innerHTML='<h2>Planning des locations</h2><div class="panel"><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="plan-day" class="logout" aria-pressed="'+(planningMode==='day')+'">Jour</button><button id="plan-week" class="logout" aria-pressed="'+(planningMode==='week')+'">Semaine</button></div><div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><button id="plan-prev" class="logout" aria-label="Précédent">‹</button><b>'+safePlanning(dayLabel(start))+(planningMode==='week'?' – '+safePlanning(dayLabel(end)):'')+'</b><button id="plan-next" class="logout" aria-label="Suivant">›</button></div><button id="plan-today" class="logout">Aujourd’hui</button></div>'+entries+'<p class="muted">Lecture seule · réservations réelles et de test affichées ; annulations exclues. Le délai de 45 minutes reste appliqué côté serveur pour la disponibilité du matériel.</p>';
+   document.getElementById('plan-day').onclick=()=>{planningMode='day';loadPlanning()};
+   document.getElementById('plan-week').onclick=()=>{planningMode='week';loadPlanning()};
+   document.getElementById('plan-prev').onclick=()=>{planningAnchor=moveDay(planningAnchor,planningMode==='day'?-1:-7);loadPlanning()};
+   document.getElementById('plan-next').onclick=()=>{planningAnchor=moveDay(planningAnchor,planningMode==='day'?1:7);loadPlanning()};
+   document.getElementById('plan-today').onclick=()=>{planningAnchor=new Intl.DateTimeFormat('en-CA',{timeZone:'Indian/Reunion',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());loadPlanning()};
+  }catch(e){if(ticket!==window.maloePlanningTicket||view.hidden)return;screen.innerHTML='<h2>Planning</h2><div class="notice">Impossible de charger le planning. Aucune donnée fictive n’est affichée.</div><button id="plan-retry" class="logout">Réessayer</button>';document.getElementById('plan-retry').onclick=loadPlanning}
+ }
+ window.refreshMaloePlanning=loadPlanning;
+
+
+ let locationsData=[],locationsFilter='actives';
+ const frenchBookingDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))?String(s).slice(8,10)+'/'+String(s).slice(5,7)+'/'+String(s).slice(0,4):(s||'?');
+ const escLocation=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]||'&#39;'));
+ function locationStatus(r){
+  const s=(r.statut||'').toLowerCase();
+  if(/annul|cancel|refus|expir/.test(s))return 'Annulée';
+  if(s==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))return 'Expirée';
+  if(r.retour_effectif_at||(r.etats_des_lieux||[]).some(x=>x.type==='retour'))return 'Retournée';
+  if(s==='en_cours'||(r.etats_des_lieux||[]).some(x=>x.type==='depart'))return 'En cours';
+  if(r.paiement_confirme_at)return 'Confirmée · payée';
+  if(r.mode_test&&s==='confirmee')return 'TEST · À encaisser';return r.statut||'À vérifier';
+ }
+ function renderNewReservationForm(){
+ const screen=document.getElementById('dashboard-screen');if(!screen||view.hidden)return;
+ screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">MODE TEST : une réservation créée ici sera enregistrée dans Supabase et bloquera réellement le matériel. Utilise uniquement des données fictives pour les essais.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><p class="muted">Choisis une date, puis l’heure directement dans la liste.</p><label>Départ <input id="new-start-date" type="date" style="width:100%;padding:10px"></label><label>Heure de départ <select data-booking-time id="new-start-time" style="width:100%;padding:10px"></select></label><p class="muted" style="margin-bottom:5px">Durée rapide</p><div id="new-duration-shortcuts" style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" data-days="1">1 jour</button><button type="button" data-days="2">2 jours</button><button type="button" data-days="3">3 jours</button><button type="button" data-days="7">7 jours</button></div><label>Retour <input id="new-end-date" type="date" style="width:100%;padding:10px"></label><label>Heure de retour <select data-booking-time id="new-end-time" style="width:100%;padding:10px"></select></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><button type="button" id="new-check" class="logout">Vérifier les disponibilités</button><p id="new-check-result" role="status"></p><button type="button" id="new-create-booking" class="logout">Créer une réservation TEST — paiement sur place</button><p id="new-create-result" role="status" class="muted">Cette action crée une réservation de test confirmée et bloque le matériel. Le paiement Stancer n’est pas encore activé ici.</p><label>Mode de paiement <select id="new-payment-mode" style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
+ document.getElementById('new-reservation-back').onclick=()=>{window.maloeNewReservationOpen=false;renderLocations()};
+ const options=Array.from({length:96},(_,i)=>{const t=String(Math.floor(i/4)).padStart(2,'0')+':'+String((i%4)*15).padStart(2,'0');return '<option value="'+t+'">'+t+'</option>'}).join('');
+ for(const select of screen.querySelectorAll('select[data-booking-time]'))select.innerHTML=options;
+ document.getElementById('new-start-time').value='09:00';document.getElementById('new-end-time').value='17:00';
+ const startDate=document.getElementById('new-start-date'),endDate=document.getElementById('new-end-date');
+ const shiftDate=(date,days)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
+ for(const btn of screen.querySelectorAll('[data-days]'))btn.onclick=()=>{if(!startDate.value){startDate.focus();return}endDate.value=shiftDate(startDate.value,Number(btn.dataset.days)-1);updateNewReservationPricing()};
+ for(const input of screen.querySelectorAll('input[type=date],select[data-booking-time]'))input.addEventListener('change',()=>{const result=document.getElementById('new-check-result');if(result)result.textContent='';updateNewReservationPricing()});
+
+ document.getElementById("new-check").onclick=checkNewAvailability;
+ document.getElementById("new-create-booking").onclick=createManualTestBooking;
+ document.getElementById("new-payment-mode").onchange=()=>{const onSite=document.getElementById("new-payment-mode").selectedIndex===0;const btn=document.getElementById("new-create-booking");btn.disabled=!onSite;btn.textContent=onSite?"Créer une réservation TEST — paiement sur place":"Lien Stancer — pas encore disponible"};
+ loadNewReservationCatalog();
+
+ }
+ async function createManualTestBooking(){
+ const btn=document.getElementById('new-create-booking'),out=document.getElementById('new-create-result'),host=document.getElementById('new-catalog');
+ if(btn.disabled||document.getElementById('new-payment-mode').selectedIndex!==0)return;
+ try{
+ const fields=['new-first','new-last','new-phone','new-email','new-start-date','new-end-date','new-start-time','new-end-time'].map(id=>document.getElementById(id).value.trim());
+ if(fields.some(x=>!x))throw Error('Complète les coordonnées, les dates et les horaires.');
+ const [prenom,nom,telephone,email,dateRetrait,dateRetour,heureRetrait,heureRetour]=fields;
+ if(Date.parse(dateRetrait+'T'+heureRetrait+':00+04:00')>=Date.parse(dateRetour+'T'+heureRetour+':00+04:00'))throw Error('La date de retour doit être après le départ.');
+ const lines=[];
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const qty=Number(input.value);if(!Number.isInteger(qty)||qty<0||qty>20)throw Error('Quantité invalide.');
+ if(!qty)continue;
+ const container=host.querySelector('[data-sizes-for="'+input.dataset.product+'"]');
+ for(let i=0;i<qty;i++){
+ const sizes={};for(const select of container.querySelectorAll('select[data-unit="'+i+'"]')){if(!select.value)throw Error('Choisis toutes les tailles.');sizes[select.dataset.family]=select.value}
+ lines.push({product_id:input.dataset.product,qty:1,sizes});
+ }
+ }
+ if(!lines.length)throw Error('Choisis au moins un article.');
+ if(!confirm('ATTENTION : créer cette réservation TEST bloquera immédiatement le stock réel aux dates choisies. Confirmer ?'))return;
+ btn.disabled=true;out.textContent='Création sécurisée en cours…';
+ const {data,error}=await client.rpc('admin_create_manual_reservation_test',{p_client:{prenom,nom,telephone,email},p_date_retrait:dateRetrait,p_date_retour:dateRetour,p_heure_retrait:heureRetrait,p_heure_retour:heureRetour,p_lines:lines});
+ if(error)throw error;
+ out.textContent='Réservation TEST créée et stock bloqué. Référence : '+data.reservation_id+' · montant '+data.total+' € · caution '+data.caution+' € · paiement à encaisser.';
+ btn.textContent='Réservation test créée';window.maloeNewReservationCreated=true;
+ }catch(e){out.textContent='Création impossible : '+e.message;if(!window.maloeNewReservationCreated)btn.disabled=false}
+ }
+ async function checkNewAvailability(){
+ const out=document.getElementById('new-check-result'),host=document.getElementById('new-catalog');out.textContent='Vérification en cours…';
+ try{
+ const ds=[...document.querySelectorAll('#dashboard-screen input[type=date]')],ts=[...document.querySelectorAll('#dashboard-screen select[data-booking-time]')];
+ if(!ds.every(x=>x.value)||!ts.every(x=>x.value))throw Error('Renseigne les dates et horaires.');
+ const start=Date.parse(ds[0].value+'T'+ts[0].value+':00+04:00'),end=Date.parse(ds[1].value+'T'+ts[1].value+':00+04:00');
+ if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)throw Error('Dates ou horaires invalides.');
+ const {data:admin,error:authErr}=await client.rpc('is_admin');if(authErr||admin!==true)throw Error('Accès refusé.');
+ const [cs,ms,rs]=await Promise.all([client.from('produit_composants').select('produit_id,materiel_id,quantite,taille_requise,composant_code'),client.from('materiels').select('id,nom,famille_code,taille,stock,actif'),client.from('reservations').select('date_retrait,date_retour,heure_retrait,heure_retour,statut,expires_at,reservation_items(details)').lte('date_retrait',ds[1].value).gte('date_retour',ds[0].value).limit(1000)]);
+ for(const r of [cs,ms,rs])if(r.error)throw r.error;
+ if(rs.data.length>=1000)throw Error('Limite de consultation atteinte.');
+ const need=new Map(),used=new Map();
+ for(const input of host.querySelectorAll('[data-product]')){
+ const n=Number(input.value);if(!Number.isInteger(n)||n<0||n>20)throw Error('Quantité invalide.');if(!n)continue;
+ const box=host.querySelector('[data-sizes-for="'+input.dataset.product+'"]');
+ const selects=[...box.querySelectorAll('select[data-family]')];
+ if(selects.some(x=>!x.value))throw Error('Choisis toutes les tailles.');
+ for(const c of cs.data.filter(x=>x.produit_id===input.dataset.product))for(let i=0;i<n;i++){
+ const size=selects.find(x=>Number(x.dataset.unit)===i&&x.dataset.family===c.composant_code)?.value;
+ const m=c.taille_requise?ms.data.find(x=>x.actif&&x.famille_code===c.composant_code&&x.taille===size):ms.data.find(x=>x.actif&&x.id===c.materiel_id);
+ if(!m)throw Error('Matériel ou taille introuvable.');
+ need.set(m.id,(need.get(m.id)||0)+Number(c.quantite||1));
+ }
+ }
+ if(!need.size)throw Error('Sélectionne au moins un article.');
+ for(const r of rs.data){
+ if(!['confirmee','payee','payée','en_cours','en_attente_paiement'].includes(r.statut))continue;
+ if(r.statut==='en_attente_paiement'&&(!r.expires_at||Date.parse(r.expires_at)<=Date.now()))continue;
+ const a=Date.parse(r.date_retrait+'T'+(r.heure_retrait||'00:00')+':00+04:00'),b=Date.parse(r.date_retour+'T'+(r.heure_retour||'23:59')+':00+04:00');
+ if(!(a<end+2700000&&b+2700000>start))continue;
+ for(const item of r.reservation_items||[])for(const allocation of item.details?.allocations||[])used.set(allocation.materiel_id,(used.get(allocation.materiel_id)||0)+Number(allocation.qty||0));
+ }
+ const errors=[];for(const [id,qty] of need){const m=ms.data.find(x=>x.id===id);if(!m||qty+(used.get(id)||0)>Number(m.stock||0))errors.push((m?.nom||'Matériel')+' : stock insuffisant');}
+ out.textContent=errors.length?'Indisponible : '+errors.join(' ; '):'Aucun conflit détecté. Résultat indicatif : contrôle définitif nécessaire au moment de la création.';
+ }catch(e){out.textContent='Vérification impossible : '+e.message}
+ }
+ function updateNewReservationPricing(){
+ const output=document.getElementById('new-total'),host=document.getElementById('new-catalog');if(!output||!host)return;
+ const dates=Array.from(document.querySelectorAll('#dashboard-screen input[type=date]')),times=Array.from(document.querySelectorAll('#dashboard-screen select[data-booking-time]'));
+ if(dates.length!==2||times.length!==2||!dates[0].value||!dates[1].value||!times[0].value||!times[1].value){output.textContent='Renseigne les dates et horaires pour afficher le tarif estimé.';return}
+ const start=Date.parse(dates[0].value+'T00:00:00Z'),end=Date.parse(dates[1].value+'T00:00:00Z');
+ if(!Number.isFinite(start)||!Number.isFinite(end)||end<start||(end===start&&times[1].value<=times[0].value)){output.textContent='Dates ou horaires invalides.';return}
+ const days=Math.max(1,Math.round((end-start)/86400000)+1-(times[0].value>='17:30'?1:0));
+ let total=0,caution=0,qty=0;
+ const camera360=[40,75,107,137,164,186,200],cameraPack=[50,87,122,153,181,205,220];
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const n=Number(input.value)||0;if(n<=0)continue;
+ const p=(window.maloePricingProducts||[]).find(p=>p.id===input.dataset.product);if(!p)continue;
+ let unit;
+ if(p.nom==='Caméra 360° + accessoires aquatiques')unit=camera360[Math.min(days,7)-1]+Math.max(0,days-7)*15;
+ else if(p.nom==='Kit PMT + caméra'||p.nom==='Palmes + Easybreath + caméra')unit=cameraPack[Math.min(days,7)-1]+Math.max(0,days-7)*15;
+ else unit=days*Number(days<=2?p.prix_1_2j:days<=5?p.prix_3_5j:p.prix_5j_plus);
+ total+=unit*n;caution+=Number(p.caution||0)*n;qty+=n;
+ }
+ const euros=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n);
+ output.textContent=qty?'Estimation : '+days+' jour(s) facturé(s) · '+qty+' article(s) · location '+euros(total)+' · caution '+euros(caution)+'. À confirmer côté serveur ; disponibilité non vérifiée.':'Durée facturée : '+days+' jour(s). Sélectionne des articles pour afficher le total.';
+ }
+ async function loadNewReservationCatalog(){
+ const host=document.getElementById('new-catalog');if(!host)return;
+ try{
+ const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
+ const {data:admin,error:adminError}=await client.rpc('is_admin');if(adminError||admin!==true)throw Error('Accès administrateur refusé');
+ const [products,components,materials]=await Promise.all([
+ client.from('produits').select('id,nom,actif,prix_1_2j,prix_3_5j,prix_5j_plus,caution').eq('actif',true).order('nom'),
+ client.from('produit_composants').select('produit_id,composant_code,taille_requise').eq('taille_requise',true),
+ client.from('materiels').select('famille_code,taille,stock').eq('actif',true).not('taille','is',null)
+ ]);
+ for(const response of [products,components,materials])if(response.error)throw response.error;
+ if(!host.isConnected)return;
+ window.maloePricingProducts=products.data||[];
+ const pricingUpdate=()=>updateNewReservationPricing();
+ const sizeMap={};
+ for(const m of materials.data||[]){if((Number(m.stock)||0)<1)continue;(sizeMap[m.famille_code]??=new Set()).add(m.taille)}
+ const names={'palmes':'Palmes','easybreath':'Easybreath','masque-tuba':'Masque + tuba'};
+ const productComponents={};
+ for(const c of components.data||[])(productComponents[c.produit_id]??=[]).push(c.composant_code);
+ host.innerHTML=(products.data||[]).map(p=>'<div class="item" style="display:block"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>'+escLocation(p.nom)+'</b><div class="muted">Tarif de base : '+escLocation(p.prix_1_2j??'—')+' €/jour · caution '+escLocation(p.caution??'—')+' €</div></div><label>Qté <input type="number" min="0" max="20" value="0" data-product="'+escLocation(p.id)+'" style="width:66px;padding:8px"></label></div><div data-sizes-for="'+escLocation(p.id)+'"></div></div>').join('')||'<p>Aucun produit actif.</p>';
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const productId=input.dataset.product,container=Array.from(host.querySelectorAll('[data-sizes-for]')).find(x=>x.dataset.sizesFor===productId);
+ const render=()=>{
+ const qty=Math.max(0,Math.min(20,Math.floor(Number(input.value)||0))),families=[...new Set(productComponents[productId]||[])];
+ container.innerHTML=Array.from({length:qty},(_,i)=>families.length?'<div style="margin-top:10px;padding:10px;border:1px solid #dce8ee;border-radius:8px"><b>Article '+(i+1)+'</b>'+families.map(f=>'<label style="display:block;margin-top:8px">'+escLocation(names[f]||f)+' — taille <select data-family="'+escLocation(f)+'" data-unit="'+i+'" style="display:block;width:100%;padding:10px"><option value="">Choisir une taille</option>'+[...(sizeMap[f]||[])].sort().map(t=>'<option value="'+escLocation(t)+'">'+escLocation(t)+'</option>').join('')+'</select></label>').join('')+'</div>':'').join('');
+ };
+ input.addEventListener('change',()=>{render();pricingUpdate()});input.addEventListener('input',()=>{render();pricingUpdate()});
+ }
+ document.getElementById('new-total').textContent='Choisis les dates et le matériel pour afficher une estimation.';pricingUpdate();
+ }catch(e){if(host.isConnected)host.textContent='Catalogue indisponible : '+e.message}
+ }
+ function renderLocations(){
+  const screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="locations"][aria-current="page"]'))return;
+  const selected=locationsData.filter(r=>locationsFilter==='toutes'||(locationsFilter==='actives'&&!/annul|cancel|refus|expir/.test((r.statut||'').toLowerCase())&&locationStatus(r)!=='Expirée')||(locationsFilter==='tests'&&r.mode_test));
+  const rows=(locationsFilter==='tests'?selected:selected.filter(r=>!r.mode_test)).slice(0,100);
+  if(window.maloeNewReservationOpen){renderNewReservationForm();return}
+  screen.innerHTML='<h2>Locations</h2><button type="button" id="location-create" class="logout" style="display:block;width:100%;margin:0 0 16px">+ Nouvelle réservation</button><p class="muted">Les 100 dernières réservations affichables · lecture seule</p><div class="panel"><label for="location-filter"><b>Afficher</b></label> <select id="location-filter" style="padding:10px;max-width:100%;border:1px solid #b4c9d5;border-radius:8px"><option value="actives">Réservations actives</option><option value="toutes">Toutes (hors tests)</option><option value="tests">Réservations de test</option></select></div>'+(rows.length?rows.map(r=>{const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>String(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');const euro=Number.isFinite(Number(r.total))?new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(r.total)):'Montant non renseigné';return '<section class="panel"><h3>'+escLocation(name)+'</h3><p class="muted">'+escLocation(frenchBookingDate(r.date_retrait))+' → '+escLocation(frenchBookingDate(r.date_retour))+'</p><p>'+escLocation(gear||'Matériel non renseigné')+'</p><div class="item"><b>'+escLocation(locationStatus(r))+'</b><span>'+escLocation(euro)+'</span></div><details><summary>Voir les détails</summary><p>Départ : '+escLocation(r.heure_retrait||'—')+' · Retour : '+escLocation(r.heure_retour||'—')+'</p><p>Paiement : '+escLocation(r.paiement_confirme_at?'Confirmé':'Non confirmé')+'</p><p>Référence : '+escLocation(r.id)+'</p><p><a class="logout" style="display:inline-block;text-decoration:none" href="../etat-des-lieux.html?reservation_id='+encodeURIComponent(r.id)+'" target="_blank" rel="noopener noreferrer">Ouvrir les états des lieux</a></p><p class="muted">La page sécurisée s’ouvre séparément : connecte-toi si demandé, puis sélectionne cette réservation.</p>'+(r.mode_test&&r.statut==='confirmee'&&!r.stancer_payment_intent_id?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="logout" data-test-action="encaisser" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at?'disabled':'')+'>Marquer encaissée (TEST)</button><button type="button" class="logout" data-test-action="annuler" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at||r.retour_effectif_at?'disabled':'')+'>Annuler (TEST)</button></div>':'')+'</details></section>'}).join(''):'<div class="panel"><p class="muted">Aucune réservation pour ce filtre.</p></div>')+'<button id="location-refresh" class="logout">Actualiser</button>';
+  document.getElementById('location-create').onclick=()=>{window.maloeNewReservationOpen=true;renderNewReservationForm()};
+  for(const btn of screen.querySelectorAll('[data-test-action]'))btn.onclick=async()=>{const action=btn.dataset.testAction,id=btn.dataset.reservation;if(!confirm(action==='annuler'?'Annuler cette réservation TEST et libérer le stock ?':'Marquer cette réservation TEST comme encaissée ?'))return;btn.disabled=true;try{const {error}=await client.rpc('admin_manage_test_reservation',{p_reservation_id:id,p_action:action});if(error)throw error;await loadLocations()}catch(e){alert('Action refusée : '+e.message);btn.disabled=false}};
+  document.getElementById('location-filter').value=locationsFilter;
+  document.getElementById('location-filter').onchange=e=>{locationsFilter=e.target.value;renderLocations()};
+  document.getElementById('location-refresh').onclick=loadLocations;
+ }
+ async function loadLocations(){
+  const ticket=window.maloeLocationsTicket=(window.maloeLocationsTicket||0)+1;
+  const screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="locations"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Locations</h2><p class="muted">Chargement des réservations…</p>';
+  try{
+   const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const {data,error}=await client.from('reservations').select('id,date_retrait,date_retour,heure_retrait,heure_retour,total,statut,expires_at,paiement_confirme_at,mode_test,retour_effectif_at,stancer_payment_intent_id,client:clients(nom,prenom),reservation_items(quantite,produit:produits(nom)),etats_des_lieux(type)').order('date_retrait',{ascending:false}).limit(100);
+   if(error)throw error;
+   if(ticket!==window.maloeLocationsTicket||view.hidden)return;
+   locationsData=data||[];renderLocations();
+  }catch(error){if(ticket!==window.maloeLocationsTicket||view.hidden)return;locationsData=[];screen.innerHTML='<h2>Locations</h2><div class="notice">Impossible de charger les réservations. Réessaie après avoir vérifié ta connexion.</div><button id="location-retry" class="logout">Réessayer</button>';document.getElementById('location-retry').onclick=loadLocations}
+ }
+ window.refreshMaloeLocations=loadLocations;
+
+
+ const escapeStock=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]||'&#39;'));
+ async function loadStock(){
+  const ticket=window.maloeStockTicket=(window.maloeStockTicket||0)+1,screen=document.getElementById('dashboard-screen');
+  if(view.hidden||!document.querySelector('[data-page="stock"][aria-current="page"]'))return;
+  screen.innerHTML='<h2>Stock et matériel</h2><p class="muted">Chargement du stock enregistré…</p>';
+  try{
+   const {data:user,error:authError}=await client.auth.getUser();if(authError||!user.user)throw Error('Session expirée');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true)throw Error('Accès administrateur refusé');
+   const items=[];
+   for(let i=0;i<10000;i+=500){const {data,error}=await client.from('materiels').select('id,code,nom,stock,actif,famille_code,taille').order('nom').order('id').range(i,i+499);if(error)throw error;items.push(...data);if(data.length<500)break;if(i===9500)throw Error('Limite de lecture atteinte')}
+   if(ticket!==window.maloeStockTicket||view.hidden||!document.querySelector('[data-page="stock"][aria-current="page"]'))return;
+   const families=new Map();
+   for(const item of items){const family=item.famille_code||'Autres';if(!families.has(family))families.set(family,[]);families.get(family).push(item)}
+   const count=items.reduce((n,x)=>n+Math.max(0,Number(x.stock)||0),0);
+   screen.innerHTML='<h2>Stock et matériel</h2><div class="cards"><div class="card"><strong>'+items.length+'</strong><small>Références matérielles</small></div><div class="card"><strong>'+count+'</strong><small>Unités enregistrées</small></div></div><div class="notice" style="margin-top:16px">Quantités enregistrées dans Supabase, pas disponibilités à une date donnée. Les réservations en cours ne sont pas déduites ici.</div>'+(items.length?[...families].sort((a,b)=>a[0].localeCompare(b[0])).map(([family,rows])=>'<section class="panel"><h3>'+escapeStock(family)+'</h3>'+rows.map(m=>'<div class="item"><div><b>'+escapeStock(m.nom||m.code||'Matériel')+'</b>'+(m.taille?'<div class="muted">Taille '+escapeStock(m.taille)+'</div>':'')+(!m.actif?'<div class="muted">Inactif</div>':'')+'</div><span>'+escapeStock(m.stock??0)+' unité(s)</span></div>').join('')+'</section>').join(''):'<section class="panel"><p class="muted">Aucun matériel enregistré.</p></section>')+'<button id="stock-refresh" class="logout">Actualiser</button><p class="muted">Lecture seule : aucun stock ne peut être modifié ici.</p>';
+   document.getElementById('stock-refresh').onclick=loadStock;
+  }catch(e){if(ticket!==window.maloeStockTicket||view.hidden)return;screen.innerHTML='<h2>Stock et matériel</h2><div class="notice">Impossible de charger les stocks. Aucune quantité fictive n’est affichée.</div><button id="stock-retry" class="logout">Réessayer</button>';document.getElementById('stock-retry').onclick=loadStock}
+ }
+ window.refreshMaloeStock=loadStock;
+
+ form.addEventListener('submit',async event=>{event.preventDefault();if(!client){lock('Connexion indisponible.');return}status.textContent='Vérification en cours…';const {error}=await client.auth.signInWithPassword({email:document.getElementById('auth-email').value.trim(),password:document.getElementById('auth-password').value});if(error){lock('Connexion impossible. Vérifie tes identifiants.');return}await verify()});
+ (async()=>{if(!window.supabase?.createClient){lock('Service de connexion indisponible. Actualise la page.');return}client=window.supabase.createClient('https://kyzixknnlgdgvxkewmzd.supabase.co','sb_publishable_E8d7sbrlOLOfs3Q9Fn30Uw_X5QqHVuL');await verify();client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')lock()})})().catch(()=>lock('Service temporairement indisponible.'));
+})();
+</script></body></html>
