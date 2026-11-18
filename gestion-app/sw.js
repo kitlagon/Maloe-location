@@ -5,3 +5,4 @@ self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(e
 if(event.request.mode==='navigate'||new URL(event.request.url).pathname.endsWith('/gestion-app/index.html')){event.respondWith(fetch(event.request,{cache:'no-store'}));return}
 event.respondWith(fetch(event.request).catch(()=>caches.match(event.request)));
 });
+self.addEventListener('notificationclick',event=>{event.notification.close();const url=new URL('./index.html',self.registration.scope).href;event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async windows=>{for(const w of windows){if(w.url.startsWith(self.registration.scope)){await w.focus();return}}await self.clients.openWindow(url)}))});
