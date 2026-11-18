@@ -1,0 +1,19 @@
+{
+  "name": "Maloé Gestion",
+  "short_name": "Maloé Gestion",
+  "description": "Application de gestion des locations Maloé Location",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f8fb",
+  "theme_color": "#0a537a",
+  "icons": [
+    {
+      "src": "../images/logo-hero.webp",
+      "sizes": "any",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}
