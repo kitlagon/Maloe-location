@@ -19,7 +19,7 @@ accueil:`<h2>Tableau de bord</h2><div class="cards"><div class="card"><strong>3<
 planning:`<h2>Planning</h2><div class="notice">Le calendrier sera relié aux réservations Supabase après validation de la connexion sécurisée.</div><section class="panel"><h3>Exemples d'opérations</h3><div class="item"><b>09:00 · PMT</b><span>Départ fictif</span></div><div class="item"><b>17:00 · Parasol</b><span>Retour fictif</span></div></section>`,
 locations:`<h2>Locations</h2><div class="notice">Les réservations, paiements, états des lieux et documents seront accessibles ici après connexion au serveur.</div><section class="panel"><h3>Parcours prévu</h3><div class="item">Réservation <span>→</span></div><div class="item">Départ et photos <span>→</span></div><div class="item">Retour et PDF <span>→</span></div></section>`,
 stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra respecter les stocks réels et le délai de 45 minutes entre retour et nouveau départ.</div><section class="panel"><h3>Familles de matériel</h3><div class="item">Palmes et masques <span>À connecter</span></div><div class="item">Glacières et parasols <span>À connecter</span></div><div class="item">Caméras et packs <span>À connecter</span></div></section>`,
-plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>En test</span></div><div style="padding:12px 0"><p class="muted">Alertes souhaitées : nouvelles réservations payées, annulations et retours prévus. Les e-mails de réservation sont déjà configurés. Les alertes push automatiques ne sont pas encore connectées au serveur.</p><button type="button" onclick="window.maloeTestNotification()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700">Autoriser et tester les notifications Android</button><p id="maloe-notif-status" role="status" class="muted"></p></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
+plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>Activation</span></div><div style="padding:12px 0"><p class="muted">Alertes souhaitées : nouvelles réservations payées, annulations et retours prévus. Les e-mails de réservation sont déjà configurés. Active ton téléphone pour recevoir les notifications automatiques en arrière-plan.</p><button type="button" onclick="window.maloeSubscribePush()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700;margin-bottom:8px">Activer les alertes automatiques</button><button type="button" onclick="window.maloeTestNotification()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700">Autoriser et tester les notifications Android</button><p id="maloe-notif-status" role="status" class="muted"></p></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Aucune donnée client ni clé secrète n'est enregistrée dans cette démonstration.</p>`
 };
 async function maloeTestNotification(){
  const msg=document.getElementById('maloe-notif-status');
@@ -41,6 +41,31 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
 (function(){
  const panel=document.getElementById('auth-panel'),view=document.getElementById('view'),nav=document.querySelector('nav.nav'),status=document.getElementById('auth-status'),form=document.getElementById('auth-form');
  let client;
+ async function subscribeMaloePush(){
+  const el=document.getElementById('maloe-notif-status');
+  const say=t=>{if(el)el.textContent=t};
+  try{
+   if(!client)throw Error('Connecte-toi avant de continuer.');
+   const {data:user,error:authError}=await client.auth.getUser();
+   if(authError||!user.user)throw Error('Session expirée.');
+   const {data:allowed,error:permissionError}=await client.rpc('is_admin');
+   if(permissionError||allowed!==true)throw Error('Accès administrateur requis.');
+   if(!('PushManager' in window)||!('serviceWorker' in navigator))throw Error('Notifications push non prises en charge.');
+   if(await Notification.requestPermission()!=='granted')throw Error('Autorisation Android refusée.');
+   const registration=await navigator.serviceWorker.ready;
+   const key='BEIpS9MQXtopL62RYYE-gLnBBBh4kRTCfhaljbg-j2ZIX29lWPtPbTxtEkimfpfAHJZC1NHp4BK2fCJzxcyaGLc';
+   const b64=key.replace(/-/g,'+').replace(/_/g,'/');
+   const bytes=Uint8Array.from(atob(b64+'='.repeat((4-b64.length%4)%4)),c=>c.charCodeAt(0));
+   let sub=await registration.pushManager.getSubscription();
+   if(sub){const existing=new Uint8Array(sub.options.applicationServerKey||[]);if(existing.length!==bytes.length||existing.some((v,i)=>v!==bytes[i])){await sub.unsubscribe();sub=null}}
+   if(!sub)sub=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:bytes});
+   const json=sub.toJSON();
+   const {error}=await client.from('admin_push_subscriptions').upsert({user_id:user.user.id,endpoint:sub.endpoint,p256dh:json.keys.p256dh,auth_secret:json.keys.auth,updated_at:new Date().toISOString()},{onConflict:'endpoint'});
+   if(error)throw error;
+   say('Téléphone inscrit aux notifications automatiques. Tu peux fermer Maloé Gestion.');
+  }catch(e){say('Activation impossible : '+(e?.message||'erreur inconnue'))}
+ }
+ window.maloeSubscribePush=subscribeMaloePush;
  function lock(message=''){window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
  function unlock(){panel.hidden=true;view.hidden=false;nav.hidden=false;if(!document.getElementById('logout')){const b=document.createElement('button');b.id='logout';b.className='logout';b.textContent='Se déconnecter';view.prepend(b);b.addEventListener('click',async()=>{lock();try{await client.auth.signOut()}catch{lock('Déconnexion non confirmée. Réessaie.')}})}}
  async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();await loadDashboard()}
