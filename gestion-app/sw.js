@@ -6,3 +6,5 @@ if(event.request.mode==='navigate'||new URL(event.request.url).pathname.endsWith
 event.respondWith(fetch(event.request).catch(()=>caches.match(event.request)));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();const url=new URL('./index.html',self.registration.scope).href;event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async windows=>{for(const w of windows){if(w.url.startsWith(self.registration.scope)){await w.focus();return}}await self.clients.openWindow(url)}))});
+
+self.addEventListener('push',event=>{let data={};try{data=event.data?.json()||{}}catch{}event.waitUntil(self.registration.showNotification(data.title||'Maloé Gestion',{body:data.body||'Nouvelle alerte',icon:'../images/logo-hero.webp',badge:'../images/logo-hero.webp',tag:data.tag||'maloe-alert',data:{url:'./index.html'}}))});
