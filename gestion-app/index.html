@@ -111,7 +111,7 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  }
  function renderNewReservationForm(){
  const screen=document.getElementById('dashboard-screen');if(!screen||view.hidden)return;
- screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">Formulaire de préparation : l’enregistrement sécurisé et le blocage du stock ne sont pas encore activés. Aucune réservation ne sera créée depuis cet écran.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><p class="muted">Choisis une date, puis l’heure directement dans la liste.</p><label>Départ <input id="new-start-date" type="date" style="width:100%;padding:10px"></label><label>Heure de départ <select data-booking-time id="new-start-time" style="width:100%;padding:10px"></select></label><p class="muted" style="margin-bottom:5px">Durée rapide</p><div id="new-duration-shortcuts" style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" data-days="1">1 jour</button><button type="button" data-days="2">2 jours</button><button type="button" data-days="3">3 jours</button><button type="button" data-days="7">7 jours</button></div><label>Retour <input id="new-end-date" type="date" style="width:100%;padding:10px"></label><label>Heure de retour <select data-booking-time id="new-end-time" style="width:100%;padding:10px"></select></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><button type="button" id="new-check" class="logout">Vérifier les disponibilités</button><p id="new-check-result" role="status"></p><button type="button" id="new-create-booking" class="logout" disabled style="opacity:.55;cursor:not-allowed">Créer la réservation — bientôt disponible</button><p class="muted">Création désactivée tant que le contrôle sécurisé côté serveur et les statuts de paiement ne sont pas prêts. Aucune donnée n’est enregistrée.</p><label>Mode de paiement <select style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
+ screen.innerHTML='<h2>Nouvelle réservation</h2><div class="notice">MODE TEST : une réservation créée ici sera enregistrée dans Supabase et bloquera réellement le matériel. Utilise uniquement des données fictives pour les essais.</div><section class="panel"><h3>Client</h3><label>Prénom <input id="new-first" autocomplete="given-name" style="width:100%;padding:10px"></label><label>Nom <input id="new-last" autocomplete="family-name" style="width:100%;padding:10px"></label><label>Téléphone <input id="new-phone" type="tel" style="width:100%;padding:10px"></label><label>E-mail <input id="new-email" type="email" style="width:100%;padding:10px"></label></section><section class="panel"><h3>Dates et horaires</h3><p class="muted">Choisis une date, puis l’heure directement dans la liste.</p><label>Départ <input id="new-start-date" type="date" style="width:100%;padding:10px"></label><label>Heure de départ <select data-booking-time id="new-start-time" style="width:100%;padding:10px"></select></label><p class="muted" style="margin-bottom:5px">Durée rapide</p><div id="new-duration-shortcuts" style="display:flex;flex-wrap:wrap;gap:8px"><button type="button" data-days="1">1 jour</button><button type="button" data-days="2">2 jours</button><button type="button" data-days="3">3 jours</button><button type="button" data-days="7">7 jours</button></div><label>Retour <input id="new-end-date" type="date" style="width:100%;padding:10px"></label><label>Heure de retour <select data-booking-time id="new-end-time" style="width:100%;padding:10px"></select></label></section><section class="panel"><h3>Matériel et paiement</h3><p class="muted">Catalogue réel · prix indicatifs issus de la grille enregistrée. Le tarif final et les disponibilités devront être validés par le serveur.</p><div id="new-catalog">Chargement du catalogue…</div><p id="new-total"></p><button type="button" id="new-check" class="logout">Vérifier les disponibilités</button><p id="new-check-result" role="status"></p><button type="button" id="new-create-booking" class="logout">Créer une réservation TEST — paiement sur place</button><p id="new-create-result" role="status" class="muted">Cette action crée une réservation de test confirmée et bloque le matériel. Le paiement Stancer n’est pas encore activé ici.</p><label>Mode de paiement <select id="new-payment-mode" style="width:100%;padding:10px"><option>Paiement sur place — à encaisser</option><option>Lien de paiement Stancer — en attente</option></select></label></section><button id="new-reservation-back" class="logout">Retour aux locations</button>';
  document.getElementById('new-reservation-back').onclick=()=>{window.maloeNewReservationOpen=false;renderLocations()};
  const options=Array.from({length:96},(_,i)=>{const t=String(Math.floor(i/4)).padStart(2,'0')+':'+String((i%4)*15).padStart(2,'0');return '<option value="'+t+'">'+t+'</option>'}).join('');
  for(const select of screen.querySelectorAll('select[data-booking-time]'))select.innerHTML=options;
@@ -122,8 +122,37 @@ if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.se
  for(const input of screen.querySelectorAll('input[type=date],select[data-booking-time]'))input.addEventListener('change',()=>{const result=document.getElementById('new-check-result');if(result)result.textContent='';updateNewReservationPricing()});
 
  document.getElementById("new-check").onclick=checkNewAvailability;
+ document.getElementById("new-create-booking").onclick=createManualTestBooking;
+ document.getElementById("new-payment-mode").onchange=()=>{const onSite=document.getElementById("new-payment-mode").selectedIndex===0;const btn=document.getElementById("new-create-booking");btn.disabled=!onSite;btn.textContent=onSite?"Créer une réservation TEST — paiement sur place":"Lien Stancer — pas encore disponible"};
  loadNewReservationCatalog();
 
+ }
+ async function createManualTestBooking(){
+ const btn=document.getElementById('new-create-booking'),out=document.getElementById('new-create-result'),host=document.getElementById('new-catalog');
+ if(btn.disabled||document.getElementById('new-payment-mode').selectedIndex!==0)return;
+ try{
+ const fields=['new-first','new-last','new-phone','new-email','new-start-date','new-end-date','new-start-time','new-end-time'].map(id=>document.getElementById(id).value.trim());
+ if(fields.some(x=>!x))throw Error('Complète les coordonnées, les dates et les horaires.');
+ const [prenom,nom,telephone,email,dateRetrait,dateRetour,heureRetrait,heureRetour]=fields;
+ if(Date.parse(dateRetrait+'T'+heureRetrait+':00+04:00')>=Date.parse(dateRetour+'T'+heureRetour+':00+04:00'))throw Error('La date de retour doit être après le départ.');
+ const lines=[];
+ for(const input of host.querySelectorAll('input[data-product]')){
+ const qty=Number(input.value);if(!Number.isInteger(qty)||qty<0||qty>20)throw Error('Quantité invalide.');
+ if(!qty)continue;
+ const container=host.querySelector('[data-sizes-for="'+input.dataset.product+'"]');
+ for(let i=0;i<qty;i++){
+ const sizes={};for(const select of container.querySelectorAll('select[data-unit="'+i+'"]')){if(!select.value)throw Error('Choisis toutes les tailles.');sizes[select.dataset.family]=select.value}
+ lines.push({product_id:input.dataset.product,qty:1,sizes});
+ }
+ }
+ if(!lines.length)throw Error('Choisis au moins un article.');
+ if(!confirm('ATTENTION : créer cette réservation TEST bloquera immédiatement le stock réel aux dates choisies. Confirmer ?'))return;
+ btn.disabled=true;out.textContent='Création sécurisée en cours…';
+ const {data,error}=await client.rpc('admin_create_manual_reservation_test',{p_client:{prenom,nom,telephone,email},p_date_retrait:dateRetrait,p_date_retour:dateRetour,p_heure_retrait:heureRetrait,p_heure_retour:heureRetour,p_lines:lines});
+ if(error)throw error;
+ out.textContent='Réservation TEST créée et stock bloqué. Référence : '+data.reservation_id+' · montant '+data.total+' € · caution '+data.caution+' € · paiement à encaisser.';
+ btn.textContent='Réservation test créée';window.maloeNewReservationCreated=true;
+ }catch(e){out.textContent='Création impossible : '+e.message;if(!window.maloeNewReservationCreated)btn.disabled=false}
  }
  async function checkNewAvailability(){
  const out=document.getElementById('new-check-result'),host=document.getElementById('new-catalog');out.textContent='Vérification en cours…';
