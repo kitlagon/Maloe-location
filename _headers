@@ -25,3 +25,7 @@
 /ouvrir-maloe-gestion
   Cache-Control: no-store
   X-Robots-Tag: noindex
+
+/gestion-app/lancer
+  Cache-Control: no-store
+  X-Robots-Tag: noindex
