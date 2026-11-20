@@ -344,18 +344,53 @@ async function makePdf(which=stage,reservation=selected,record=records[which],de
  text('Retrait et retour : rue des Maldives, près du centre équestre, L’Ermitage-les-Bains.',M,y+3,8);
  y+=9;
 
- section('MATÉRIEL CONCERNÉ',12);
- for(const item of reservation.items||[]){
-  const name=wrap(item.produit?.nom||'Article',C-25,9,true);
-  const sizes=itemSizes(item.details).flatMap(size=>wrap(size,C-25,8));
-  const height=4*(name.length+sizes.length)+4;
-  ensure(height);
-  text(name,M+2,y+3,9,ink,true);
-  text('× '+(item.quantite||1),M+C-15,y+3,9,navy,true);
-  if(sizes.length)text(sizes,M+2,y+3+4*name.length,8,muted);
+ const items=reservation.items||[];
+ const photosByItem=new Map();
+ for(const photo of images){
+  const photos=photosByItem.get(photo.reservation_item_id)||[];
+  photos.push(photo);
+  photosByItem.set(photo.reservation_item_id,photos);
+ }
+ const rows=items.map(item=>({
+  title:item.produit?.nom||'Article',
+  quantity:item.quantite||1,
+  details:itemSizes(item.details),
+  photos:(photosByItem.get(item.id)||[]).slice(0,3)
+ }));
+ const ids=new Set(items.map(item=>item.id));
+ const unassigned=images.filter(photo=>!ids.has(photo.reservation_item_id));
+ for(let offset=0;offset<unassigned.length;offset+=3){
+  rows.push({title:'Photos sans article associé',details:[],photos:unassigned.slice(offset,offset+3)});
+ }
+ const detailWidth=64,gap=4,photoHeight=40;
+ const photoArea=C-detailWidth;
+ for(const [rowIndex,row] of rows.entries()){
+  const name=wrap(row.title,detailWidth-7,9,true);
+  const details=[...(row.quantity?['Quantité : '+row.quantity]:[]),...row.details]
+   .flatMap(value=>wrap(value,detailWidth-7,8));
+  const textHeight=4*(name.length+details.length);
+  const height=Math.max(textHeight,row.photos.length?photoHeight:0)+7;
+  if(rowIndex===0)section('MATÉRIEL CONCERNÉ',height);
+  else if(y+height>bottom)section('MATÉRIEL CONCERNÉ — SUITE',height);
+  text(name,M+2,y+5,9,ink,true);
+  if(details.length)text(details,M+2,y+5+4*name.length,8,muted);
+  const slotWidth=Math.min(48,(photoArea-(row.photos.length-1)*gap)/Math.max(1,row.photos.length));
+  for(const [column,photo] of row.photos.entries()){
+   const data=await asset(photo.url);
+   if(!data)throw new Error('Une photo enregistrée n’a pas pu être chargée pour le PDF.');
+   const {width,height}=pdf.getImageProperties(data);
+   const scale=Math.min(slotWidth/width,photoHeight/height);
+   const x=M+detailWidth+column*(slotWidth+gap);
+   pdf.addImage(data,undefined,x+(slotWidth-width*scale)/2,y+3+(photoHeight-height*scale)/2,width*scale,height*scale,undefined,'FAST');
+  }
   pdf.setDrawColor(...line);
   pdf.line(M,y+height-1,M+C,y+height-1);
   y+=height;
+ }
+ if(!rows.length){
+  section('MATÉRIEL CONCERNÉ',8);
+  text('Aucun article renseigné.',M+2,y+4,9,muted);
+  y+=8;
  }
  y+=3;
  const observations=(title,content)=>{
@@ -380,28 +415,6 @@ async function makePdf(which=stage,reservation=selected,record=records[which],de
   if(signature)pdf.addImage(signature,'PNG',x+3,y+7,sigWidth-6,19);
  }
  y+=32;
-
- if(images.length){
-  const gap=6;
-  const photoWidth=(C-2*gap)/3;
-  const photoHeight=46;
-  section('PHOTOS DU MATÉRIEL',photoHeight+4);
-  for(let offset=0;offset<images.length;offset+=3){
-   if(y+photoHeight>bottom) {
-    pdf.addPage();y=17;
-    section('PHOTOS DU MATÉRIEL — SUITE',photoHeight+4);
-   }
-   for(const [column,photo] of images.slice(offset,offset+3).entries()){
-    const data=await asset(photo.url);
-    if(!data)throw new Error('Une photo enregistrée n’a pas pu être chargée pour le PDF.');
-    const {width,height}=pdf.getImageProperties(data);
-    const scale=Math.min(photoWidth/width,photoHeight/height);
-    const x=M+column*(photoWidth+gap);
-    pdf.addImage(data,undefined,x+(photoWidth-width*scale)/2,y,width*scale,height*scale,undefined,'FAST');
-   }
-   y+=photoHeight+4;
-  }
- }
 
  const total=pdf.getNumberOfPages();
  for(let page=1;page<=total;page++){
