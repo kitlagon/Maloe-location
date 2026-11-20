@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a537a"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="../images/logo-hero.webp"><title>Maloé Gestion</title>
+<html lang="fr"><head><meta charset="utf-8"><base href="/gestion-app/"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a537a"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="../images/logo-hero.webp"><title>Maloé Gestion</title>
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color:#12334a;background:#f3f8fb}*{box-sizing:border-box}body{margin:0}header{background:#0a537a;color:white;padding:22px 18px 18px}header .top{display:flex;align-items:center;gap:12px;max-width:650px;margin:auto}header img{width:60px;height:60px;object-fit:contain}h1{font-size:22px;margin:0}header p{margin:4px 0 0;color:#d5edf7;font-size:13px}.demo{background:#fff0ca;color:#684b00;text-align:center;padding:10px;font-weight:650;font-size:13px}main{max-width:650px;margin:auto;padding:18px 16px 105px}h2{font-size:20px;margin:6px 0 16px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card,.panel{background:white;border:1px solid #e0eaf0;border-radius:16px;padding:17px;box-shadow:0 2px 10px #15334b08}.card small{display:block;color:#607b8a;font-size:12px;margin-top:9px}.card strong{font-size:27px}.panel{margin-top:16px}.panel h3{margin:0 0 14px;font-size:16px}.item{padding:13px 0;border-top:1px solid #e9eff3;display:flex;justify-content:space-between;gap:10px}.item:first-of-type{border-top:0}.item span{color:#557486;font-size:13px}.pill{border-radius:99px;padding:5px 9px;background:#e3f2fb;color:#07547b;font-size:12px;white-space:nowrap;align-self:center}.muted{color:#637d8c;font-size:14px;line-height:1.5}.nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #dce8ee;display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}.nav button{flex:1;max-width:130px;border:0;background:transparent;padding:12px 2px 10px;color:#5b7482;font-size:11px;cursor:pointer}.nav button[aria-current=page]{color:#07547b;font-weight:750;background:#e9f5fb}.nav b{display:block;font-size:22px;margin-bottom:3px}.notice{border-left:4px solid #0b6b9d;background:#e8f4fb;padding:12px;border-radius:8px;font-size:13px;line-height:1.5}button:focus-visible{outline:3px solid #f1b743;outline-offset:-3px}
 .auth{max-width:420px;margin:24px auto;background:#fff;padding:22px;border:1px solid #dce8ee;border-radius:16px}.auth label{display:block;font-weight:600;font-size:13px;margin:14px 0 5px}.auth input{width:100%;padding:12px;border:1px solid #b4c9d5;border-radius:8px;font:inherit}.auth button,.logout{background:#0a537a;color:white;border:0;border-radius:8px;padding:12px 16px;font:inherit;margin-top:15px;cursor:pointer}.logout{margin:0 0 15px}#auth-status{color:#a12727;font-size:13px}[hidden]{display:none!important}
@@ -50,7 +50,7 @@ async function maloeTestNotification(){
  try{
   const permission=await Notification.requestPermission();
   if(permission!=='granted'){say('Notifications non autorisées. Vérifie les paramètres Android de Maloé Gestion.');return}
-  const registration=await navigator.serviceWorker.ready;
+  const registration=await appNotificationRegistration();
   await registration.showNotification('Maloé Gestion — Notification de test',{body:'Les notifications sont autorisées sur cet appareil. Aucun client ni paiement réel.',icon:'../images/logo-hero.webp',badge:'../images/logo-hero.webp',tag:'maloe-notification-test',data:{url:'./index.html'}});
   say('Notification de test envoyée à Android. Les alertes automatiques nécessitent encore la connexion au serveur.');
  }catch(e){say('Test impossible : '+(e?.message||'erreur inconnue'))}
@@ -59,6 +59,13 @@ window.maloeTestNotification=maloeTestNotification;
 function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations();if(b.dataset.page==='stock'&&window.refreshMaloeStock)window.refreshMaloeStock()}));show('accueil');
 
+async function appNotificationRegistration(){
+ const appUrl=new URL(document.baseURI);
+ if(window.location.pathname.startsWith(appUrl.pathname))return navigator.serviceWorker.ready;
+ const registration=await navigator.serviceWorker.getRegistration(appUrl.href);
+ if(!registration?.active)throw new Error('Les notifications sont en cours d’initialisation. Réessaie dans quelques secondes.');
+ return registration;
+}
 async function checkAppVersion(){
  const current=document.getElementById('app-version').textContent.trim();
  try{
@@ -66,7 +73,7 @@ async function checkAppVersion(){
   if(!response.ok)return;
   const {version}=await response.json();
   if(typeof version!=='string'||!/^\d+(\.\d+)+$/.test(version)||version===current)return;
-  const url=new URL('./',window.location.href);
+  const url=new URL(window.location.href);
   url.searchParams.set('v',version);
   document.getElementById('app-update-link').href=url.href;
   document.getElementById('app-update').hidden=false;
@@ -97,7 +104,7 @@ if('serviceWorker' in navigator){
    if(permissionError||allowed!==true)throw Error('Accès administrateur requis.');
    if(!('PushManager' in window)||!('serviceWorker' in navigator))throw Error('Notifications push non prises en charge.');
    if(await Notification.requestPermission()!=='granted')throw Error('Autorisation Android refusée.');
-   const registration=await navigator.serviceWorker.ready;
+   const registration=await appNotificationRegistration();
    const key='BEIpS9MQXtopL62RYYE-gLnBBBh4kRTCfhaljbg-j2ZIX29lWPtPbTxtEkimfpfAHJZC1NHp4BK2fCJzxcyaGLc';
    const b64=key.replace(/-/g,'+').replace(/_/g,'/');
    const bytes=Uint8Array.from(atob(b64+'='.repeat((4-b64.length%4)%4)),c=>c.charCodeAt(0));
