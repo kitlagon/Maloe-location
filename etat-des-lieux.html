@@ -145,17 +145,16 @@ function renderDocumentLinks(containerId,docs){
   original.target='_blank';
   original.rel='noopener noreferrer';
   const label=doc.etape==='depart'?'de départ':'de retour';
-  original.textContent='Ouvrir le PDF '+label;
-  row.append(original);
+  original.textContent='Consulter le PDF archivé '+label;
   const record=records[doc.etape];
   if(record?.date_realisation){
    const reservation=selected,departure=records.depart;
    const download=document.createElement('button');
    download.type='button';
-   download.className='btn secondary';
+   download.className='btn primary';
    download.style.display='block';
-   download.style.marginTop='6px';
-   const caption='Télécharger la copie compacte '+label;
+   download.style.marginBottom='6px';
+   const caption='Télécharger le PDF '+label+' avec photos par article';
    download.textContent=caption;
    const status=document.createElement('span');
    status.setAttribute('role','status');
@@ -170,10 +169,12 @@ function renderDocumentLinks(containerId,docs){
      const url=URL.createObjectURL(pdf);
      const link=document.createElement('a');
      link.href=url;
-     link.download='etat-des-lieux-'+doc.etape+'-copie-compacte.pdf';
+     const reference=String(reservation.id||'').replace(/[^a-z0-9]/gi,'').slice(0,8);
+     link.download=['etat-des-lieux',doc.etape,'photos-par-article',reference].filter(Boolean).join('-')+'.pdf';
      document.body.append(link);
      link.click();
      link.remove();
+     status.textContent='Nom du fichier : '+link.download;
      setTimeout(()=>URL.revokeObjectURL(url),60000);
     }catch(error){
      status.textContent='Copie indisponible : '+error.message;
@@ -182,8 +183,9 @@ function renderDocumentLinks(containerId,docs){
      download.textContent=caption;
     }
    });
-   row.append(download,status);
+   row.append(download,status,document.createElement('br'));
   }
+  row.append(original);
   box.append(row);
  }
 }
