@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Location matériel de plage à l’Ermitage | Maloé Location</title>
 <meta name="description" content="Location de palmes, masques, tubas, parasols et glacières à l’Ermitage, Saint-Gilles-les-Bains, La Réunion. Réservation en ligne, retrait sur rendez-vous.">
+<link rel="canonical" href="https://maloe-location.re/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -92,7 +93,7 @@
         <p class="dates-hint" id="dates-hint"></p>
       </div>
         
-      <a class="maloe-booking-next" href="#catalogue">Découvrir les équipements →</a>
+      <a class="maloe-booking-next" id="equipment-link" href="#catalogue">Découvrir les équipements →</a>
     </div>
   </section>
   <section id="catalogue" style="background:var(--sand);">
@@ -314,6 +315,7 @@
 
     var root = document.getElementById("catalogue-groups");
     var html = "";
+    var bookingQuery = bookingParams().toString();
     for (var g = 0; g < catalogue.groups.length; g++){
       var group = catalogue.groups[g];
       html += '<div class="cat-group"><div class="cat-group-title">' + group.group +
@@ -330,12 +332,19 @@
           priceBlock = '<span class="from">pour ' + days + ' jour' + (days > 1 ? "s" : "") + '</span><span class="amount">' + total + ' €</span>' +
             '<div class="total-line">soit ' + unitPrice + ' € par jour</div>';
         }
-        html += '<div class="product-card" data-product="' + item.id + '">' +
+        var hasProductPage = typeof item.pageSlug === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.pageSlug);
+        var productLink = hasProductPage
+          ? '<a class="product-detail-link" href="/produits/' + item.pageSlug + '/' +
+            (bookingQuery ? '?' + bookingQuery.replace(/&/g, '&amp;') : '') + '" aria-label="Voir la fiche : ' +
+            item.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">Voir la fiche</a>'
+          : '';
+        html += '<div class="product-card" id="produit-' + item.id + '" data-product="' + item.id + '">' +
           ( ['cam360', 'pmt-cam', 'easy-cam'].indexOf(item.id) !== -1
             ? '<div class="product-image camera-coming-soon" role="img" aria-label="Nouveauté à venir !"><span>Nouveauté à venir !</span></div>'
             : '<img class="product-image" src="images/kits/' + item.id + '.jpg?v=' + (catalogue.photoVersion || 1) + '" alt="' + item.name + '" onerror="this.remove()">') +
           '<div class="product-name">' + item.name + '</div>' +
           '<p class="product-desc">' + item.desc + '</p>' +
+          productLink +
           '<div class="product-price">' + priceBlock + '</div>';
 
         var comingSoon = ["cam360", "pmt-cam", "easy-cam"].indexOf(item.id) !== -1;
@@ -487,9 +496,8 @@
     }
   }
 
-  function goToCart(){
+  function bookingParams(){
     var keys = Object.keys(cart).filter(function(key){ return ["cam360", "pmt-cam", "easy-cam"].indexOf(parseCartKey(key).productId) === -1; });
-    if (keys.length === 0) return;
     var lines = keys.map(function (key) {
       var parsed = parseCartKey(key);
       return { id: parsed.productId, sizes: parsed.sizes, qty: cart[key] };
@@ -497,11 +505,17 @@
     var retrait = document.getElementById("date-retrait").value;
     var retour = document.getElementById("date-retour").value;
     var params = new URLSearchParams();
-    params.set("cart", JSON.stringify(lines));
+    if (lines.length) params.set("cart", JSON.stringify(lines));
     if (retrait) params.set("retrait", retrait);
     if (retour) params.set("retour", retour);
     if (selectedSlotRetrait) params.set("slotRetrait", selectedSlotRetrait);
     if (selectedSlotRetour) params.set("slotRetour", selectedSlotRetour);
+    return params;
+  }
+
+  function goToCart(){
+    var params = bookingParams();
+    if (!params.has("cart")) return;
     window.location.href = "panier.html?" + params.toString();
   }
 
@@ -666,6 +680,13 @@
       var heroEl = document.getElementById("hero");
       // Identité graphique validée : ne pas remplacer les textes et la photo du bandeau.
       updateSelection();
+
+      var requestedProduct = pageParams.get("produit");
+      var productCard = requestedProduct && document.getElementById("produit-" + requestedProduct);
+      if (productCard) {
+        document.getElementById("equipment-link").href = "#" + productCard.id;
+        if (window.location.hash === "#" + productCard.id) productCard.scrollIntoView();
+      }
     })
     .catch(function () {
       document.getElementById("catalogue-groups").innerHTML = '<p style="color:var(--coral);">Impossible de charger les kits pour le moment.</p>';

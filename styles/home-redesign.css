@@ -319,3 +319,16 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 /* Cartes des nouveautés caméra : disposition identique sans sélection ni achat. */
 #catalogue .camera-coming-soon-note{margin-top:auto;min-height:38px;display:flex;align-items:center;justify-content:center;text-align:center;background:#edf5fb;border:1px solid #c9e1f2;border-radius:9px;color:#225d87;font-size:.72rem;font-weight:600;padding:8px;}
 #catalogue .product-card[data-product="cam360"] .product-price,#catalogue .product-card[data-product="pmt-cam"] .product-price,#catalogue .product-card[data-product="easy-cam"] .product-price{margin-top:0;}
+
+.product-detail-link {
+  align-self: flex-start;
+  color: #075b9b;
+  font-size: .75rem;
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
+.product-card:target {
+  outline: 2px solid #086db2;
+  outline-offset: 3px;
+}

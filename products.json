@@ -185,6 +185,7 @@
       "items": [
         {
           "id": "glaciere",
+          "pageSlug": "sac-a-dos-glaciere",
           "name": "Sac à dos glacière + pains de glace",
           "desc": "Rando, plage, pique-nique : le sac à dos glacière 20 L et ses 2 pains de glace qui garde tout au frais.",
           "prices": [
@@ -203,6 +204,7 @@
         },
         {
           "id": "parasol",
+          "pageSlug": "parasol-et-pied",
           "name": "Parasol + pied",
           "desc": "Soleil au rendez-vous ? Gardez la fraîcheur avec le parasol 2 places à protection UPF 50+ et son pied à vis.",
           "prices": [
@@ -227,6 +229,7 @@
       "items": [
         {
           "id": "pmt",
+          "pageSlug": "kit-snorkeling-palmes-masque-tuba",
           "name": "Kit PMT",
           "desc": "Masque, tuba, palmes : plongez à la découverte du lagon avec le kit de snorkeling.",
           "prices": [
@@ -250,6 +253,7 @@
         },
         {
           "id": "palme-easy",
+          "pageSlug": "palmes-et-masque-easybreath",
           "name": "Palmes + masque Easybreath",
           "desc": "Respirez, regardez, explorez : le masque Easybreath + palmes, pour plonger dans le lagon !",
           "prices": [
@@ -273,6 +277,7 @@
         },
         {
           "id": "masque-tuba",
+          "pageSlug": "masque-et-tuba",
           "name": "Masque + tuba",
           "desc": "Masque, tuba, et c'est partie pour la plongée !",
           "prices": [
@@ -291,6 +296,7 @@
         },
         {
           "id": "easybreath",
+          "pageSlug": "masque-easybreath",
           "name": "Masque Easybreath",
           "desc": "Respirez, regardez, explorez : le masque Easybreath, pour explorer le lagon !",
           "prices": [
@@ -309,6 +315,7 @@
         },
         {
           "id": "palmes",
+          "pageSlug": "palmes",
           "name": "Palmes seules",
           "desc": "Glissez dans l’eau sans effort et partez explorer le lagon !",
           "prices": [
@@ -333,6 +340,7 @@
       "items": [
         {
           "id": "cam360",
+          "pageSlug": "camera-360",
           "name": "Caméra 360° + accessoires aquatiques",
           "desc": "Perche, flotteur et carte mémoire fournis.",
           "prices": [
@@ -360,6 +368,7 @@
         },
         {
           "id": "pmt-cam",
+          "pageSlug": "kit-snorkeling-et-camera-360",
           "name": "Kit PMT + caméra",
           "desc": "Le kit snorkeling complet avec caméra embarquée.",
           "prices": [
@@ -397,6 +406,7 @@
         },
         {
           "id": "easy-cam",
+          "pageSlug": "palmes-easybreath-et-camera-360",
           "name": "Palmes + Easybreath + caméra",
           "desc": "Confort du masque intégral avec caméra 360°.",
           "prices": [
