@@ -1,3 +1,5 @@
 /ouvrir-maloe-gestion /gestion-app/ 200
 /gestion-app/index.html /gestion-app/lancer 302
 /gestion-app/lancer /gestion-app/ 200
+/maloe-gestion-mobile /maloe-gestion-mobile/ 302
+/maloe-gestion-mobile/ /gestion-app/ 200
