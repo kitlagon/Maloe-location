@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>État des lieux — Maloé Location</title>
+<script>
+if(window.parent===window)window.location.replace('/ouvrir-maloe-gestion');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -66,11 +69,6 @@ const params=new URLSearchParams(window.location.search);
 const embedded=window.parent!==window&&params.get('app')==='1';
 const reservationId=params.get('reservation_id');
 const openReturn=embedded&&params.get('etape')==='retour';
-if(!embedded&&reservationId){
- const back=document.querySelector('header .nav > a:last-child');
- back.href='/ouvrir-maloe-gestion';
- back.textContent='Ouvrir Maloé Gestion';
-}
 if(embedded)document.body.classList.add('edl-embedded');
 const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR'):'—';
 function itemSizes(details){
