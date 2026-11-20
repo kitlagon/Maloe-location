@@ -1,0 +1,17 @@
+/gestion-app
+  Cache-Control: no-store
+
+/gestion-app/
+  Cache-Control: no-store
+
+/gestion-app/index.html
+  Cache-Control: no-store
+
+/gestion-app/sw.js
+  Cache-Control: no-store
+
+/gestion-app/manifest.webmanifest
+  Cache-Control: no-store
+
+/gestion-app/version.json
+  Cache-Control: no-store

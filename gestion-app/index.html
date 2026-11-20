@@ -9,6 +9,8 @@ body:has(#edl-dialog[open]){overflow:hidden}
 .edl-toolbar{flex:none;padding:calc(8px + env(safe-area-inset-top)) 14px 8px;background:#0a537a}
 .edl-toolbar button{padding:8px 10px;border:0;border-radius:8px;font:inherit;background:white;color:#0a537a;cursor:pointer}
 #edl-frame{flex:1;min-height:0;width:100%;border:0}
+.update-notice{padding:10px 16px;text-align:center;background:#e8f4fb;font-size:14px}
+.update-notice a{font-weight:700;color:#0a537a}
 .location-edl{padding:12px;margin:8px 0 14px;border:1px solid #dce8ee;border-radius:12px;background:#f5f9fc}
 .location-edl h4{margin:0 0 8px;font-size:14px}
 .location-edl dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
@@ -18,8 +20,9 @@ body:has(#edl-dialog[open]){overflow:hidden}
 .location-edl dd[data-done]{color:#176048;font-weight:700}
 .location-edl .logout{margin:0;max-width:100%}
 </style></head><body>
-<header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Votre espace de gestion · Version 1</p></div></div></header>
+<header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Version <span id="app-version">1.1</span></p></div></div></header>
 <div class="demo">ESPACE DE GESTION — Maloé Location</div>
+<div class="update-notice" id="app-update" hidden role="status">Une mise à jour de Maloé Gestion est disponible. <a id="app-update-link">Ouvrir la nouvelle version</a></div>
 <section class="auth" id="auth-panel"><h2>Connexion administrateur</h2><p class="muted">Accès réservé au gestionnaire de Maloé Location.</p><form id="auth-form"><label for="auth-email">Adresse e-mail</label><input id="auth-email" type="email" autocomplete="username" required><label for="auth-password">Mot de passe</label><input id="auth-password" type="password" autocomplete="current-password" required><button type="submit">Se connecter</button></form><p id="auth-status" role="status"></p></section><main id="view" aria-live="polite" hidden><div id="dashboard-screen"></div></main>
 <nav class="nav" aria-label="Navigation de l'application" hidden>
 <button type="button" data-page="accueil" aria-current="page"><b>⌂</b>Accueil</button>
@@ -55,7 +58,30 @@ async function maloeTestNotification(){
 window.maloeTestNotification=maloeTestNotification;
 function show(page){if(!Object.hasOwn(screens,page))return;document.getElementById('dashboard-screen').innerHTML=screens[page];document.querySelectorAll('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});}
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.page);if(b.dataset.page==='accueil'&&window.refreshMaloeDashboard)window.refreshMaloeDashboard();if(b.dataset.page==='planning'&&window.refreshMaloePlanning)window.refreshMaloePlanning();if(b.dataset.page==='locations'&&window.refreshMaloeLocations)window.refreshMaloeLocations();if(b.dataset.page==='stock'&&window.refreshMaloeStock)window.refreshMaloeStock()}));show('accueil');
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+async function checkAppVersion(){
+ const current=document.getElementById('app-version').textContent.trim();
+ try{
+  const response=await fetch('./version.json',{cache:'no-store'});
+  if(!response.ok)return;
+  const {version}=await response.json();
+  if(typeof version!=='string'||!/^\d+(\.\d+)+$/.test(version)||version===current)return;
+  const url=new URL('./',window.location.href);
+  url.searchParams.set('v',version);
+  document.getElementById('app-update-link').href=url.href;
+  document.getElementById('app-update').hidden=false;
+ }catch{
+  // The update can be checked again when the app returns to the foreground.
+ }
+}
+window.addEventListener('pageshow',checkAppVersion);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible')checkAppVersion();
+});
+if('serviceWorker' in navigator){
+ window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).catch(()=>{}));
+}
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
  const panel=document.getElementById('auth-panel'),view=document.getElementById('view'),nav=document.querySelector('nav.nav'),status=document.getElementById('auth-status'),form=document.getElementById('auth-form');
