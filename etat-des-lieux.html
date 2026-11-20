@@ -22,6 +22,9 @@ label{display:block;font-size:13px;color:#52645e;margin:0 0 6px}input,select,tex
 .sig{width:100%;height:150px;border:1px dashed #8EACC9;border-radius:10px;touch-action:none;background:#FBFDFF;display:block}.sigrow{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.hidden{display:none!important}.status{font-size:13px;margin:10px 0;color:var(--deep);white-space:pre-wrap}.identity-preview{max-width:100%;max-height:220px;border-radius:10px;border:1px solid var(--line);margin-top:10px}.file-input-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.photo-button{display:inline-flex;align-items:center;gap:8px;margin-top:4px}.photo-queue-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);padding:8px;border-radius:9px;margin-top:8px}.photo-queue-item img{width:64px;height:64px;object-fit:cover;border-radius:7px}.photo-queue-item button{margin-left:auto}
 @media(max-width:560px){.grid{grid-template-columns:1fr}.hero h1{font-size:23px}.card{padding:15px}.steps{grid-template-columns:repeat(2,1fr)}.logo{font-size:17px}}
+.edl-embedded header,.edl-embedded .hero,.edl-embedded #login-card,.edl-embedded #reservation-picker{display:none!important}
+.edl-embedded main{margin:12px auto 0;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+.edl-embedded .steps{margin:8px 0}
 </style>
 <link rel="stylesheet" href="styles/maloe-theme.css">
 </head>
@@ -32,8 +35,9 @@ label{display:block;font-size:13px;color:#52645e;margin:0 0 6px}input,select,tex
 <div class="steps"><div class="step active" id="s1">1 · Réservation</div><div class="step" id="s2">2 · Départ</div><div class="step" id="s3">3 · Retour</div><div class="step" id="s4">4 · Documents</div></div>
 <section class="card" id="login-card"><h2>Accès gestionnaire</h2><p class="muted">Connexion réservée au compte administrateur autorisé pour les états des lieux.</p>
 <div class="field"><label for="email">Adresse e-mail</label><input id="email" type="email" autocomplete="username"></div><div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password"></div><button class="btn primary" id="login">Se connecter</button><p class="status" id="login-status"></p></section>
+<p id="embedded-status" class="status hidden" role="status"></p>
 <div id="app" class="hidden">
-<section class="card"><h2>Réservation</h2><div class="field"><label for="reservation">Choisir une réservation</label><select id="reservation"><option value="">Chargement…</option></select></div><div id="booking" class="notice hidden"></div></section>
+<section class="card"><h2>Réservation</h2><div class="field" id="reservation-picker"><label for="reservation">Choisir une réservation</label><select id="reservation"><option value="">Chargement…</option></select></div><div id="booking" class="notice hidden"></div></section>
 <section class="card hidden" id="stage-card"><h2 id="stage-title">État des lieux de départ</h2><div id="client" class="notice"></div><h3>Matériel réservé</h3><div class="items" id="items"></div>
 <div class="field"><label for="observations">Observations de cette étape</label><textarea id="observations" maxlength="5000" placeholder="État du matériel, défauts visibles, accessoires manquants…"></textarea></div>
 <div id="id-area" class="field"><div class="warn"><strong>Copie de la pièce d’identité :</strong> la photo sera filigranée avant envoi, conservée dans le stockage privé et programmée pour suppression 14 jours après la validation du retour. Ne la collectez que si cette collecte est justifiée et portée à la connaissance du client.</div>
@@ -42,7 +46,7 @@ label{display:block;font-size:13px;color:#52645e;margin:0 0 6px}input,select,tex
 <div class="field"><label>Photos du matériel (JPEG, PNG ou WEBP, 10 Mo max. par photo)</label><input id="photos" class="file-input-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple capture="environment"><label class="btn secondary photo-button" for="photos">📷 Ajouter des photos</label><div id="photo-preview"></div><p class="muted">Maximum 3 photos par article et par étape. Chaque photo enregistrée peut être supprimée et remplacée tant que l’étape n’est pas validée.</p></div>
 <div class="grid"><div><label>Signature du client</label><canvas class="sig" id="sig-client"></canvas><div class="sigrow"><span class="muted">À signer au doigt ou à la souris</span><button class="btn secondary" type="button" data-clear="sig-client">Effacer</button></div></div><div><label>Signature du loueur</label><canvas class="sig" id="sig-owner"></canvas><div class="sigrow"><span class="muted">À signer au doigt ou à la souris</span><button class="btn secondary" type="button" data-clear="sig-owner">Effacer</button></div></div></div>
 <button class="btn primary" id="validate">Valider et enregistrer le PDF de départ</button><p class="status" id="stage-status"></p></section>
-<section class="card hidden" id="return-card"><h2>Comparaison au retour</h2><p class="notice">Les photos et observations du départ sont rappelées ci-dessous. Ajoutez des photos de retour si l’état a changé ou si une différence est constatée.</p><div id="departure-observations" class="item"></div><div id="departure-photos"></div><div id="departure-documents" class="notice"></div><button class="btn primary" id="start-return">Passer à l’état des lieux de retour</button></section>
+<section class="card hidden" id="return-card"><h2>Comparaison au retour</h2><p class="notice">Les photos et observations du départ sont rappelées ci-dessous. Ajoutez des photos de retour si l’état a changé ou si une différence est constatée.</p><div id="departure-observations" class="item"></div><div id="departure-photos"></div><div id="departure-documents" class="notice"></div><button class="btn primary" id="start-return">Passer à l’état des lieux de retour</button><p class="status" id="return-status" role="status"></p></section>
 <section class="card hidden" id="done-card"><h2>Documents enregistrés</h2><p class="notice" id="done-message"></p><div id="done-links"></div></section>
 </div>
 </main>
@@ -55,13 +59,44 @@ const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let reservations=[],selected=null,stage='depart',photos=[],savedStagePhotos=[],departurePhotos=[],records={},pdfs={depart:false,retour:false},documents=[],identityInfo=null,identityBlob=null;
 let signatures={client:null,owner:null};
 const $=id=>document.getElementById(id);
+const params=new URLSearchParams(window.location.search);
+const embedded=window.parent!==window&&params.get('app')==='1';
+const reservationId=params.get('reservation_id');
+const openReturn=embedded&&params.get('etape')==='retour';
+if(embedded)document.body.classList.add('edl-embedded');
 const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR'):'—';
 function message(id,t){$(id).textContent=t}
 function setStep(n){['s1','s2','s3','s4'].forEach((id,i)=>$(id).classList.toggle('active',i<n))}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function functionCall(name,options={}){const {data:{session}}=await client.auth.getSession();if(!session?.access_token)throw new Error('Session expirée. Reconnecte-toi.');const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token,...(options.headers||{})};const r=await fetch(SUPABASE_URL+'/functions/v1/'+name,{...options,headers});const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.error||'Erreur du serveur ('+r.status+')');return body}
-$('login').addEventListener('click',async()=>{message('login-status','Connexion…');try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(data.user?.app_metadata?.edl_access!==true){await client.auth.signOut();throw new Error('Ce compte ne possède pas les droits EDL.')}$('login-card').classList.add('hidden');$('app').classList.remove('hidden');await loadReservations()}catch(e){message('login-status',e.message)}});
-async function loadReservations(){try{const data=await functionCall('edl-reservations');reservations=data.reservations||[];const sel=$('reservation');sel.innerHTML='<option value="">— Sélectionner —</option>'+reservations.map(r=>'<option value="'+safe(r.id)+'">'+safe((r.client?.prenom||'')+' '+(r.client?.nom||''))+' · '+date(r.date_retrait)+' · '+safe(r.statut)+'</option>').join('');if(!reservations.length)sel.innerHTML='<option value="">Aucune réservation disponible</option>';}catch(e){message('login-status','Chargement des réservations impossible : '+e.message)}}
+$('login').addEventListener('click',async()=>{message('login-status','Connexion…');try{const {data,error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;if(data.user?.app_metadata?.edl_access!==true){await client.auth.signOut();throw new Error('Ce compte ne possède pas les droits EDL.')}await loadReservations();$('login-card').classList.add('hidden');$('app').classList.remove('hidden')}catch(e){message('login-status',e.message)}});
+async function loadReservations(){
+ const data=await functionCall('edl-reservations');
+ reservations=data.reservations||[];
+ const select=$('reservation');
+ select.innerHTML=reservations.length
+  ? '<option value="">— Sélectionner —</option>'+reservations.map(r=>'<option value="'+safe(r.id)+'">'+safe((r.client?.prenom||'')+' '+(r.client?.nom||''))+' · '+date(r.date_retrait)+' · '+safe(r.statut)+'</option>').join('')
+  : '<option value="">Aucune réservation disponible</option>';
+}
+async function openEmbeddedReservation(){
+ const status=$('embedded-status');
+ status.classList.remove('hidden');
+ message('embedded-status','Chargement de la réservation…');
+ try{
+  const {data,error}=await client.auth.getUser();
+  if(error||!data.user)throw new Error('Session expirée. Reconnecte-toi dans Maloé Gestion.');
+  if(data.user.app_metadata?.edl_access!==true)throw new Error('Ce compte ne possède pas les droits pour les états des lieux.');
+  await loadReservations();
+  const select=$('reservation');
+  select.value=reservationId||'';
+  if(!select.value)throw new Error('Cette réservation est indisponible pour les états des lieux.');
+  status.classList.add('hidden');
+  $('app').classList.remove('hidden');
+  select.dispatchEvent(new Event('change'));
+ }catch(error){
+  message('embedded-status',error.message);
+ }
+}
 async function loadRecords(){const d=await functionCall('edl-records?reservation_id='+encodeURIComponent(selected.id));records={};(d.records||[]).forEach(r=>records[r.type]=r);pdfs=d.pdfs||{depart:false,retour:false}}
 async function loadPhotos(which){const d=await functionCall('edl-photos?reservation_id='+encodeURIComponent(selected.id)+'&etape='+which);return d.photos||[]}
 async function loadIdentity(){const d=await functionCall('edl-id-photo?reservation_id='+encodeURIComponent(selected.id));identityInfo=d.photo||null;renderIdentityStatus()}
@@ -70,8 +105,47 @@ function renderDocumentLinks(containerId,docs){const box=$(containerId);box.inne
 function renderIdentityStatus(){if(identityInfo){$('identity-status').textContent='Copie filigranée enregistrée dans le stockage privé. Suppression prévue 14 jours après le retour.';$('identity-upload').disabled=true;$('identity-input').disabled=true;$('identity-photo-button').classList.add('hidden');$('identity-delete').classList.remove('hidden');$('identity-preview').classList.add('hidden');$('identity-saved-preview').src=identityInfo.url;$('identity-saved-preview').classList.remove('hidden');}else{$('identity-status').textContent='Aucune copie enregistrée.';$('identity-upload').disabled=!identityBlob;$('identity-input').disabled=false;$('identity-photo-button').classList.remove('hidden');$('identity-delete').classList.add('hidden');$('identity-saved-preview').classList.add('hidden');}}
 $('reservation').addEventListener('change',async()=>{selected=reservations.find(r=>r.id===$('reservation').value)||null;records={};pdfs={depart:false,retour:false};identityInfo=null;photos=[];documents=[];identityBlob=null;$('identity-input').value='';$('identity-preview').classList.add('hidden');$('identity-saved-preview').classList.add('hidden');$('stage-card').classList.add('hidden');$('return-card').classList.add('hidden');$('done-card').classList.add('hidden');$('booking').classList.add('hidden');if(!selected)return;
 $('booking').classList.remove('hidden');$('booking').innerHTML='<strong>Retrait :</strong> '+date(selected.date_retrait)+' '+safe(selected.heure_retrait||'')+'<br><strong>Retour prévu :</strong> '+date(selected.date_retour)+' '+safe(selected.heure_retour||'');$('client').innerHTML='<strong>'+safe((selected.client?.prenom||'')+' '+(selected.client?.nom||''))+'</strong><br>'+safe(selected.client?.telephone)+' · '+safe(selected.client?.email);$('items').innerHTML=(selected.items||[]).map(i=>'<div class="item"><strong>'+safe(i.produit?.nom||'Article')+' × '+safe(i.quantite)+'</strong><span class="muted">'+safe(JSON.stringify(i.details||{}))+'</span></div>').join('')||'<p>Aucun article trouvé.</p>';$('photo-item').innerHTML='<option value="">— Choisir un article —</option>'+(selected.items||[]).map(i=>'<option value="'+safe(i.id)+'">'+safe(i.produit?.nom||'Article')+'</option>').join('');
-stage='depart';setStageUI();$('stage-card').classList.remove('hidden');message('stage-status','Chargement du dossier…');try{await Promise.all([loadRecords(),loadIdentity(),loadDocuments()]);savedStagePhotos=await loadPhotos('depart');renderPhotoQueue();renderDocumentLinks('departure-documents',documents.filter(d=>d.etape==='depart'));if(selected.retour_effectif_at){$('done-card').classList.remove('hidden');$('done-message').textContent='Les deux étapes sont enregistrées. Le retour a été clôturé et les fichiers privés seront supprimés automatiquement 14 jours après la clôture.';renderDocumentLinks('done-links',documents);setStep(4);return}if(records.depart){stage='depart';setStageUI(records.depart);$('stage-card').classList.remove('hidden');message('stage-status','Départ déjà signé et sauvegardé. Vérifie les informations puis relance la génération du PDF si nécessaire.');}else{stage='depart';setStageUI();$('stage-card').classList.remove('hidden');}requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));if(records.depart&&pdfs.depart){await showDeparturePhotos();renderDocumentLinks('departure-documents',documents.filter(d=>d.etape==='depart'));$('return-card').classList.remove('hidden');$('start-return').textContent='Continuer vers le retour';setStep(3)}else if(records.depart){message('stage-status','Le constat de départ est sauvegardé, mais son PDF reste à finaliser. Valide à nouveau pour terminer le document.');setStep(2)}else setStep(2);}catch(e){stage='depart';$('stage-card').classList.remove('hidden');setStageUI();message('stage-status','Le dossier est sélectionné, mais un élément n’a pas pu être chargé : '+e.message+' — le départ n’a pas été validé.');}});
-function setStageUI(savedRecord=null){savedStagePhotos=[];loadPhotos(stage).then(list=>{savedStagePhotos=list;renderPhotoQueue()}).catch(e=>message('stage-status','Chargement des photos impossible : '+e.message));$('stage-title').textContent=stage==='depart'?'État des lieux de départ':'État des lieux de retour';$('validate').textContent=stage==='depart'?'Valider et enregistrer le PDF de départ':'Valider le retour et clôturer la réservation';$('observations').value=savedRecord?.observations||'';photos=[];savedStagePhotos=[];$('photos').value='';$('photo-preview').innerHTML='';clearSignature('sig-client');clearSignature('sig-owner');if(savedRecord){restoreSignature('sig-client',savedRecord.signature_client,'client');restoreSignature('sig-owner',savedRecord.signature_loueur,'owner')}$('stage-status').textContent='';$('id-area').classList.toggle('hidden',stage!=='depart');setStep(stage==='depart'?2:3);renderIdentityStatus()}
+stage='depart';
+$('start-return').classList.remove('hidden');
+try{
+ await Promise.all([loadRecords(),loadIdentity(),loadDocuments()]);
+ const departureStagePhotos=await loadPhotos('depart');
+ renderDocumentLinks('departure-documents',documents.filter(d=>d.etape==='depart'));
+ if(selected.retour_effectif_at){
+  $('done-card').classList.remove('hidden');
+  $('done-message').textContent='Les deux étapes sont enregistrées. Le retour a été clôturé et les fichiers privés seront supprimés automatiquement 14 jours après la clôture.';
+  renderDocumentLinks('done-links',documents);
+  setStep(4);
+  return;
+ }
+ setStageUI(records.depart||null);
+ savedStagePhotos=departureStagePhotos;
+ renderPhotoQueue();
+ $('stage-card').classList.remove('hidden');
+ requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+ if(records.depart&&pdfs.depart){
+  $('return-card').classList.remove('hidden');
+  $('start-return').textContent='Continuer vers le retour';
+  setStep(3);
+  if(openReturn)await startReturn();
+  else await showDeparturePhotos();
+ }else if(records.depart){
+  message('stage-status','Le constat de départ est sauvegardé, mais son PDF reste à finaliser. Valide à nouveau pour terminer le document.');
+ }
+}catch(error){
+ if(embedded){
+  $('stage-card').classList.add('hidden');
+  $('embedded-status').classList.remove('hidden');
+  message('embedded-status','Impossible de charger le dossier. Reviens aux locations et réessaie. '+error.message);
+ }else{
+  stage='depart';
+  setStageUI();
+  $('stage-card').classList.remove('hidden');
+  message('stage-status','Le dossier est sélectionné, mais un élément n’a pas pu être chargé : '+error.message);
+ }
+}
+});
+function setStageUI(savedRecord=null){$('stage-title').textContent=stage==='depart'?'État des lieux de départ':'État des lieux de retour';$('validate').textContent=stage==='depart'?'Valider et enregistrer le PDF de départ':'Valider le retour et clôturer la réservation';$('observations').value=savedRecord?.observations||'';photos=[];savedStagePhotos=[];$('photos').value='';$('photo-preview').innerHTML='';clearSignature('sig-client');clearSignature('sig-owner');if(savedRecord){restoreSignature('sig-client',savedRecord.signature_client,'client');restoreSignature('sig-owner',savedRecord.signature_loueur,'owner')}$('stage-status').textContent='';$('id-area').classList.toggle('hidden',stage!=='depart');setStep(stage==='depart'?2:3);renderIdentityStatus()}
 function setupSignature(id,key){const c=$(id),ctx=c.getContext('2d');let drawing=false,ink=false;function resize(){const dpr=window.devicePixelRatio||1,r=c.getBoundingClientRect();const old=ink?c.toDataURL():null;c.width=r.width*dpr;c.height=150*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.lineWidth=2;ctx.lineCap='round';ctx.strokeStyle='#172b27';if(old){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,r.width,150);im.src=old}}resize();window.addEventListener('resize',resize);function point(e){const r=c.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}c.addEventListener('pointerdown',e=>{drawing=true;ink=true;c.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});c.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke()});c.addEventListener('pointerup',()=>{drawing=false;signatures[key]=ink?c.toDataURL('image/png'):null});c.addEventListener('pointercancel',()=>drawing=false);c.dataset.clear=key}
 function clearSignature(id){const c=$(id);if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);signatures[id==='sig-client'?'client':'owner']=null}
 function restoreSignature(id,data,key){if(!data)return;signatures[key]=data;const c=$(id),ctx=c.getContext('2d'),im=new Image();im.onload=()=>{ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(im,0,0,c.clientWidth,150)};im.src=data}
@@ -82,7 +156,31 @@ $('identity-upload').addEventListener('click',async()=>{if(!selected||!identityB
 $('photos').addEventListener('change',()=>{const itemId=$('photo-item').value;const files=Array.from($('photos').files||[]);if(!itemId){message('stage-status','Choisis d’abord l’article concerné.');$('photos').value='';return}if(files.some(f=>!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>10*1024*1024)){message('stage-status','Format refusé ou photo supérieure à 10 Mo.');$('photos').value='';return}const count=savedStagePhotos.filter(p=>p.reservation_item_id===itemId).length+photos.filter(p=>p.itemId===itemId).length;if(count+files.length>3){message('stage-status','Maximum 3 photos par article et par étape.');$('photos').value='';return}files.forEach(file=>photos.push({file,itemId}));$('photos').value='';renderPhotoQueue()});
 function renderPhotoQueue(){$('photo-preview').innerHTML='';savedStagePhotos.forEach((p)=>{const wrap=document.createElement('div');wrap.className='photo-queue-item';const img=document.createElement('img');img.src=p.url;const label=document.createElement('span');label.className='muted';label.textContent=((selected.items||[]).find(i=>i.id===p.reservation_item_id)?.produit?.nom||'Matériel')+' — photo enregistrée';wrap.append(img,label);if(!records[stage]){const remove=document.createElement('button');remove.type='button';remove.className='btn secondary';remove.textContent='Supprimer cette photo et la refaire';remove.addEventListener('click',async()=>{if(!confirm('Supprimer définitivement cette photo pour pouvoir en reprendre une ?'))return;remove.disabled=true;try{await functionCall('edl-photos?reservation_id='+encodeURIComponent(selected.id)+'&etape='+encodeURIComponent(stage)+'&photo_id='+encodeURIComponent(p.id),{method:'DELETE'});savedStagePhotos=await loadPhotos(stage);renderPhotoQueue();message('stage-status','Photo supprimée. Tu peux en ajouter une nouvelle.')}catch(e){message('stage-status','Suppression impossible : '+e.message);remove.disabled=false}});wrap.appendChild(remove)}$('photo-preview').appendChild(wrap)});photos.forEach((p,index)=>{const wrap=document.createElement('div');wrap.className='photo-queue-item';const img=document.createElement('img');img.src=URL.createObjectURL(p.file);const label=document.createElement('span');label.className='muted';label.textContent=(selected.items||[]).find(i=>i.id===p.itemId)?.produit?.nom||'Article';label.textContent+=' — '+p.file.name;const remove=document.createElement('button');remove.type='button';remove.className='btn secondary';remove.textContent='Retirer cette photo';remove.addEventListener('click',()=>{photos.splice(index,1);renderPhotoQueue()});wrap.append(img,label,remove);$('photo-preview').appendChild(wrap)})}
 async function showDeparturePhotos(){departurePhotos=await loadPhotos('depart');$('departure-photos').innerHTML=departurePhotos.map(p=>'<div class="item"><strong>'+safe((selected.items||[]).find(i=>i.id===p.reservation_item_id)?.produit?.nom||'Matériel')+'</strong><img src="'+p.url+'" style="max-width:100%;max-height:180px;border-radius:8px"><div class="muted">'+safe(p.file_name)+'</div></div>').join('')||'<p class="muted">Aucune photo de départ disponible.</p>';$('departure-observations').innerHTML='<strong>Observations au départ</strong><p>'+safe(records.depart?.observations||'Aucune observation.')+'</p>'}
-$('start-return').addEventListener('click',async()=>{try{if(!records.depart)await loadRecords();await showDeparturePhotos();stage='retour';$('stage-card').classList.remove('hidden');$('return-card').classList.remove('hidden');setStageUI(records.retour||null);requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')))}catch(e){message('stage-status','Impossible de charger les éléments du départ : '+e.message)}});
+async function startReturn(){
+ const button=$('start-return');
+ if(button.disabled)return;
+ button.disabled=true;
+ message('return-status','Chargement du retour…');
+ try{
+  if(!records.depart)await loadRecords();
+  if(!records.depart||!pdfs.depart)throw new Error('Le PDF de départ doit être enregistré.');
+  const [,returnPhotos]=await Promise.all([showDeparturePhotos(),loadPhotos('retour')]);
+  stage='retour';
+  $('stage-card').classList.remove('hidden');
+  $('return-card').classList.remove('hidden');
+  setStageUI(records.retour||null);
+  savedStagePhotos=returnPhotos;
+  renderPhotoQueue();
+  message('return-status','');
+  button.classList.add('hidden');
+  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
+ }catch(error){
+  message('return-status','Impossible d’ouvrir le retour : '+error.message);
+ }finally{
+  button.disabled=false;
+ }
+}
+$('start-return').addEventListener('click',startReturn);
 function fileData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function makePdf(){
  const {jsPDF}=window.jspdf,pdf=new jsPDF({unit:'mm',format:'a4'});
@@ -124,8 +222,16 @@ async function makePdf(){
  const total=pdf.getNumberOfPages();for(let p=1;p<=total;p++){pdf.setPage(p);pdf.setDrawColor(...line);pdf.line(M,282,W-M,282);add('Maloé Location • La Réunion • Document de suivi de location',M,288,7,muted,false,140);pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(...muted);pdf.text('Page '+p+' / '+total,W-M,288,{align:'right'})}
  return pdf.output('blob');
 }
-$('validate').addEventListener('click',async()=>{if(!selected)return;if(!signatures.client||!signatures.owner){message('stage-status','Les deux signatures sont obligatoires.');return}if(stage==='depart'&&!identityInfo){message('stage-status','Enregistre d’abord la copie filigranée de la pièce d’identité.');return}if(stage==='depart'&&!photos.length&&!records.depart){message('stage-status','Ajoute au moins une photo du matériel au départ.');return}if(stage==='retour'&&!records.depart){message('stage-status','L’état des lieux de départ est obligatoire avant le retour.');return}
+$('validate').addEventListener('click',async()=>{if(!selected)return;if(!signatures.client||!signatures.owner){message('stage-status','Les deux signatures sont obligatoires.');return}if(stage==='depart'&&!identityInfo){message('stage-status','Enregistre d’abord la copie filigranée de la pièce d’identité.');return}if(stage==='depart'&&!photos.length&&!savedStagePhotos.length&&!records.depart){message('stage-status','Ajoute au moins une photo du matériel au départ.');return}if(stage==='retour'&&!records.depart){message('stage-status','L’état des lieux de départ est obligatoire avant le retour.');return}
 $('validate').disabled=true;message('stage-status','Enregistrement des photos, observations, signatures et PDF…');try{if(!records[stage]){for(const p of photos){const form=new FormData();form.append('reservation_id',selected.id);form.append('etape',stage);form.append('reservation_item_id',p.itemId);form.append('file',p.file);await functionCall('edl-photos',{method:'POST',body:form})}}const saved=await functionCall('edl-records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reservation_id:selected.id,etape:stage,observations:$('observations').value.trim(),signature_client:signatures.client,signature_loueur:signatures.owner})});if(saved.already_saved){await loadRecords();const canonical=records[stage];if(!canonical)throw new Error('Le constat déjà enregistré est introuvable.');$('observations').value=canonical.observations||'';restoreSignature('sig-client',canonical.signature_client,'client');restoreSignature('sig-owner',canonical.signature_loueur,'owner')}else{records[stage]={observations:$('observations').value.trim(),signature_client:signatures.client,signature_loueur:signatures.owner}}const blob=await makePdf();const form=new FormData();form.append('reservation_id',selected.id);form.append('etape',stage);form.append('file',new File([blob],'etat-des-lieux-'+stage+'.pdf',{type:'application/pdf'}));await functionCall('edl-documents',{method:'POST',body:form});pdfs[stage]=true;photos=[];if(stage==='depart'){message('stage-status','Départ enregistré : observations, signatures, photos et PDF sauvegardés.');$('stage-card').classList.add('hidden');$('return-card').classList.remove('hidden');await showDeparturePhotos();await loadDocuments();renderDocumentLinks('departure-documents',documents.filter(d=>d.etape==='depart'));$('start-return').textContent='Passer à l’état des lieux de retour';setStep(3)}else{$('stage-card').classList.add('hidden');$('return-card').classList.add('hidden');$('done-card').classList.remove('hidden');$('done-message').textContent='Retour enregistré et réservation clôturée. Tous les fichiers du dossier, y compris la copie filigranée de la pièce d’identité, sont programmés pour suppression 14 jours après la validation du retour.';await loadDocuments();renderDocumentLinks('done-links',documents);setStep(4)}}catch(e){message('stage-status','Enregistrement interrompu : '+e.message+' — les éléments déjà envoyés restent enregistrés. Recharge le dossier avant de recommencer.')}finally{$('validate').disabled=false}});
+if(embedded){
+ window.maloeEdlCanClose=()=>{
+  if($('validate').disabled)return false;
+  const changed=selected&&!records[stage]&&(photos.length||signatures.client||signatures.owner||$('observations').value.trim());
+  return !changed||window.confirm('Fermer cet état des lieux et quitter les modifications non enregistrées ?');
+ };
+ openEmbeddedReservation();
+}
 })();
 </script>
 </body></html>
