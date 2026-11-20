@@ -68,11 +68,36 @@ const reservationId=params.get('reservation_id');
 const openReturn=embedded&&params.get('etape')==='retour';
 if(!embedded&&reservationId){
  const back=document.querySelector('header .nav > a:last-child');
- back.href='/gestion-app/?v=1.2';
+ back.href='/ouvrir-maloe-gestion';
  back.textContent='Ouvrir Maloé Gestion';
 }
 if(embedded)document.body.classList.add('edl-embedded');
 const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('fr-FR'):'—';
+function itemSizes(details){
+ const families=new Map();
+ const familyLabels={'palmes':'Palmes','easybreath':'Easybreath','masque-tuba':'Masque + tuba'};
+ const add=(family,size,quantity=0)=>{
+  if(typeof size!=='string'||!size.trim())return;
+  const sizes=families.get(family)||new Map();
+  const key=size.trim();
+  sizes.set(key,(sizes.get(key)||0)+quantity);
+  families.set(family,sizes);
+ };
+ if(Array.isArray(details?.allocations)){
+  for(const allocation of details.allocations){
+   const quantity=Number(allocation?.qty);
+   add(allocation?.famille_code||'',allocation?.taille,Number.isFinite(quantity)&&quantity>0?quantity:0);
+  }
+ }
+ for(const [family,size] of Object.entries(details?.sizes||{})){
+  if(!families.has(family))add(family,size);
+ }
+ return Array.from(families,([family,sizes])=>{
+  const prefix=families.size>1&&family?(familyLabels[family]||family.replaceAll('-',' '))+' · ':'';
+  const values=Array.from(sizes,([size,quantity])=>size+(sizes.size>1&&quantity>1?' (× '+quantity+')':''));
+  return prefix+(sizes.size>1?'Tailles ':'Taille ')+values.join(', ');
+ });
+}
 function message(id,t){$(id).textContent=t}
 function setStep(n){['s1','s2','s3','s4'].forEach((id,i)=>$(id).classList.toggle('active',i<n))}
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -125,7 +150,7 @@ function applyStageLock(){
 }
 $('reservation').addEventListener('change',async()=>{selected=reservations.find(r=>r.id===$('reservation').value)||null;records={};pdfs={depart:false,retour:false};identityInfo=null;photos=[];documents=[];identityBlob=null;$('identity-input').value='';$('identity-preview').classList.add('hidden');$('identity-saved-preview').classList.add('hidden');$('stage-card').classList.add('hidden');$('return-card').classList.add('hidden');$('done-card').classList.add('hidden');$('booking').classList.add('hidden');if(!selected)return;
 $('embedded-status').classList.add('hidden');
-$('booking').classList.remove('hidden');$('booking').innerHTML='<strong>Retrait :</strong> '+date(selected.date_retrait)+' '+safe(selected.heure_retrait||'')+'<br><strong>Retour prévu :</strong> '+date(selected.date_retour)+' '+safe(selected.heure_retour||'');$('client').innerHTML='<strong>'+safe((selected.client?.prenom||'')+' '+(selected.client?.nom||''))+'</strong><br>'+safe(selected.client?.telephone)+' · '+safe(selected.client?.email);$('items').innerHTML=(selected.items||[]).map(i=>'<div class="item"><strong>'+safe(i.produit?.nom||'Article')+' × '+safe(i.quantite)+'</strong><span class="muted">'+safe(JSON.stringify(i.details||{}))+'</span></div>').join('')||'<p>Aucun article trouvé.</p>';$('photo-item').innerHTML='<option value="">— Choisir un article —</option>'+(selected.items||[]).map(i=>'<option value="'+safe(i.id)+'">'+safe(i.produit?.nom||'Article')+'</option>').join('');
+$('booking').classList.remove('hidden');$('booking').innerHTML='<strong>Retrait :</strong> '+date(selected.date_retrait)+' '+safe(selected.heure_retrait||'')+'<br><strong>Retour prévu :</strong> '+date(selected.date_retour)+' '+safe(selected.heure_retour||'');$('client').innerHTML='<strong>'+safe((selected.client?.prenom||'')+' '+(selected.client?.nom||''))+'</strong><br>'+safe(selected.client?.telephone)+' · '+safe(selected.client?.email);$('items').innerHTML=(selected.items||[]).map(i=>'<div class="item"><strong>'+safe(i.produit?.nom||'Article')+' × '+safe(i.quantite)+'</strong>'+itemSizes(i.details).map(line=>'<div class="muted">'+safe(line)+'</div>').join('')+'</div>').join('')||'<p>Aucun article trouvé.</p>';$('photo-item').innerHTML='<option value="">— Choisir un article —</option>'+(selected.items||[]).map(i=>'<option value="'+safe(i.id)+'">'+safe(i.produit?.nom||'Article')+'</option>').join('');
 stage='depart';
 $('reservation').disabled=true;
 $('start-return').classList.remove('hidden');
