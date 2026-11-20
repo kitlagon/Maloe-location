@@ -15,3 +15,9 @@
 
 /gestion-app/version.json
   Cache-Control: no-store
+
+/etat-des-lieux
+  Cache-Control: no-store
+
+/etat-des-lieux.html
+  Cache-Control: no-store
