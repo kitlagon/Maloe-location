@@ -1,4 +1,4 @@
-const CACHE='maloe-gestion-v2-edl';const ASSETS=['./manifest.webmanifest','../images/logo-hero.webp'];
+const CACHE='maloe-gestion-v3-suivi-edl';const ASSETS=['./manifest.webmanifest','../images/logo-hero.webp'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('maloe-gestion-')&&key!==CACHE).map(key=>caches.delete(key)))));self.clients.claim()});
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
