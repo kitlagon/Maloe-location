@@ -69,9 +69,11 @@
   .sticky-save-inner span{color:white;font-size:0.86rem;max-width:32rem;}
 
   .photo-preview{display:block;width:min(100%,360px);aspect-ratio:1920/750;object-fit:cover;border-radius:8px;}
-  .item-photo-row{display:flex;gap:12px;align-items:center;margin-top:10px;}
+  .item-photo-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:10px;}
   .item-photo-row img{width:70px;height:50px;object-fit:contain;border-radius:6px;background:var(--sand);flex:none;}
   .item-photo-note{font-size:0.82rem;color:var(--ink-soft);}
+  .item-photo-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;}
+  .item-photo-form input{max-width:100%;}
 
   .promo-row, .closed-row{display:grid;grid-template-columns:1fr 90px 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:10px;}
   .promo-row input, .closed-row input{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;}
@@ -190,6 +192,23 @@
   async function githubAdminRequest(path, method, content, sha){
     if (!window.maloeAdminRequest) throw new Error("Connexion administrateur non initialisée.");
     return window.maloeAdminRequest({path:path,method:method||"GET",content:content||"",sha:sha||""});
+  }
+
+  async function productPhotoAsJpeg(file){
+    var image = await createImageBitmap(file);
+    try {
+      var canvas = document.createElement("canvas");
+      var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+      canvas.width = Math.max(1, Math.round(image.width * scale));
+      canvas.height = Math.max(1, Math.round(image.height * scale));
+      var context = canvas.getContext("2d", { alpha: false });
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/jpeg", 0.9);
+    } finally {
+      image.close();
+    }
   }
 
   function componentLabel(comp, item){
@@ -790,7 +809,7 @@
     renderSlotsEditor();
     renderStockEditor();
     var root = document.getElementById("editor");
-    var html = "";
+    var html = '<div class="panel"><h2>Photos des produits</h2><p class="help">Choisissez une image puis enregistrez-la sur la ligne du produit.</p></div>';
     catalogue.groups.forEach(function (group, gi) {
       html += '<div class="panel group-block" data-gi="' + gi + '">';
       html += '<div class="group-title-row">' +
@@ -802,7 +821,7 @@
         var comingSoon = ["cam360", "pmt-cam", "easy-cam"].includes(item.id);
         var photo = comingSoon
           ? '<span class="item-photo-note">Nouveauté à venir !</span>'
-          : '<img src="/images/kits/' + encodeURIComponent(item.id) + '.jpg?v=' +
+          : '<img class="item-photo-preview" src="/images/kits/' + encodeURIComponent(item.id) + '.jpg?v=' +
             encodeURIComponent(catalogue.photoVersion || 1) + '" alt="" loading="lazy">';
         var compLabels = (item.components || []).map(function (req) {
           var comp = catalogue.components.filter(function (c) { return c.id === req.id; })[0];
@@ -822,6 +841,11 @@
             photo +
             '<strong style="font-size:0.82rem;">' + String(item.name || item.id || "Produit").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
           '</div>' +
+          '<form class="item-photo-form" data-product-photo="' + encodeURIComponent(item.id) + '">' +
+            '<label class="item-photo-note">Choisir une photo <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>' +
+            '<button class="btn btn-secondary btn-small" type="submit">Enregistrer la photo</button>' +
+            '<span class="item-photo-note" role="status"></span>' +
+          '</form>' +
           '<div class="item-actions"><button type="button" class="btn btn-secondary btn-small" data-remove-item="' + gi + ':' + ii + '">Supprimer ce produit</button></div>' +
           '</div>';
       });
@@ -851,6 +875,51 @@
       });
     });
   }
+
+  document.getElementById("editor").addEventListener("submit", async function (event) {
+    var form = event.target.closest(".item-photo-form");
+    if (!form) return;
+    event.preventDefault();
+    var saveButton = document.getElementById("save-btn");
+    if (saveButton.disabled) return;
+    var input = form.elements.namedItem("photo");
+    var file = input.files[0];
+    if (!file) return;
+
+    var buttons = document.querySelectorAll("#save-btn, #sb-save, .item-photo-form button");
+    buttons.forEach(function (button) { button.disabled = true; });
+    var status = form.querySelector('[role="status"]');
+    status.textContent = "Enregistrement de la photo…";
+    var imageSaved = false;
+    try {
+      var id = form.dataset.productPhoto;
+      var image = await productPhotoAsJpeg(file);
+      var response = await githubAdminRequest("images/kits/" + id + ".jpg", "PUT", image.split(",")[1]);
+      if (!response?.content?.sha) throw new Error("Enregistrement de la photo non confirmé.");
+      imageSaved = true;
+
+      var nextVersion = Math.max(Date.now(), (Number(catalogue.photoVersion) || 0) + 1);
+      var updatedCatalogue = { ...catalogue, photoVersion: nextVersion };
+      var publication = await githubAdminRequest(
+        FILE_PATH, "PUT", b64EncodeUnicode(JSON.stringify(updatedCatalogue, null, 2)), currentSha,
+      );
+      if (!publication?.content?.sha) throw new Error("Publication non confirmée.");
+      currentSha = publication.content.sha;
+      catalogue.photoVersion = nextVersion;
+
+      var preview = form.closest(".item-block").querySelector(".item-photo-preview");
+      if (preview) preview.src = image;
+      form.reset();
+      status.textContent = preview
+        ? "Photo enregistrée · mise en ligne en cours"
+        : "Photo enregistrée · le site affiche « Nouveauté à venir ! »";
+    } catch (error) {
+      status.textContent = (imageSaved ? "Photo enregistrée, actualisation du catalogue incomplète. " : "") +
+        "Erreur : " + error.message;
+    } finally {
+      buttons.forEach(function (button) { button.disabled = false; });
+    }
+  });
 
   document.getElementById("editor").addEventListener("click", function (e) {
     var addBtn = e.target.closest("[data-add-item]");
