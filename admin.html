@@ -68,14 +68,10 @@
   }
   .sticky-save-inner span{color:white;font-size:0.86rem;max-width:32rem;}
 
-  .photo-row{display:flex;gap:16px;align-items:flex-start;}
-  .photo-preview{width:140px;height:90px;object-fit:cover;border-radius:8px;background:var(--sand);flex:none;}
-  .photo-controls{flex:1;}
-  .photo-controls input[type="file"]{font-size:0.82rem;margin-bottom:8px;}
-  .photo-status{font-size:0.78rem;color:var(--ink-soft);margin-left:10px;}
+  .photo-preview{display:block;width:min(100%,360px);aspect-ratio:1920/750;object-fit:cover;border-radius:8px;}
   .item-photo-row{display:flex;gap:12px;align-items:center;margin-top:10px;}
-  .item-photo-row img{width:70px;height:50px;object-fit:cover;border-radius:6px;background:var(--sand);flex:none;}
-  .item-photo-row input[type="file"]{font-size:0.76rem;flex:1;}
+  .item-photo-row img{width:70px;height:50px;object-fit:contain;border-radius:6px;background:var(--sand);flex:none;}
+  .item-photo-note{font-size:0.82rem;color:var(--ink-soft);}
 
   .promo-row, .closed-row{display:grid;grid-template-columns:1fr 90px 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:10px;}
   .promo-row input, .closed-row input{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:0.86rem;}
@@ -138,13 +134,13 @@
 
 <div class="wrap">
   <h1>Gestion des produits</h1>
-  <p class="subtitle">Photos, tarifs, codes promo et jours fermés — sans toucher au code. Les changements sont publiés directement sur le site.</p>
+  <p class="subtitle">Gérez les tarifs, les cautions, les codes promo et les jours fermés.</p>
 
 
 
   <div class="panel" id="supabase-admin"><h2>Produits et stocks — Supabase</h2><p class="help">Connectez-vous une seule fois avec votre compte administrateur. Les tarifs, stocks, photos et réglages sont ensuite accessibles avec cette connexion.</p><div id="sb-login"><div class="field"><label>Adresse e-mail administrateur</label><input id="sb-email" type="email"></div><div class="field"><label>Mot de passe</label><input id="sb-password" type="password"></div><button class="btn btn-primary" id="sb-login-btn">Se connecter</button></div><div id="sb-catalogue" style="display:none"><h3>Catalogue produits</h3><div id="sb-products"></div><h3>Stocks matériels</h3><div id="sb-materials"></div><button class="btn btn-primary" id="sb-save">Enregistrer les modifications</button><button class="btn btn-secondary" id="sb-logout">Se déconnecter</button></div><p class="status" id="sb-status"></p></div><div id="hero-text-editor"></div>
   <div class="panel"><h2>Planning des locations</h2><p class="help">Consulter les réservations par équipement, les disponibilités, les retraits et les retours dans un planning séparé.</p><a class="btn btn-secondary" href="planning.html">Ouvrir le planning →</a></div>
-  <div id="hero-photo-editor"></div>
+  <div id="hero-photo-preview"></div>
   <div id="promo-editor"></div>
   <div id="closed-editor"></div>
   <div id="slots-editor"></div>
@@ -160,9 +156,6 @@
 </div>
 
 <script>
-  var REPO_OWNER = "kitlagon";
-  var REPO_NAME = "Maloe-location";
-  var REPO_BRANCH = "main";
   var FILE_PATH = "products.json";
 
   var currentSha = null;
@@ -199,29 +192,6 @@
     return window.maloeAdminRequest({path:path,method:method||"GET",content:content||"",sha:sha||""});
   }
 
-  function rawImgUrl(path){
-    return "https://raw.githubusercontent.com/" + REPO_OWNER + "/" + REPO_NAME + "/" + REPO_BRANCH + "/" + path + "?v=" + (catalogue.photoVersion || 1);
-  }
-
-  function uploadImage(path, file){
-    return new Promise(function(resolve,reject){
-      var reader=new FileReader();
-      reader.onload=function(){
-        var base64=reader.result.split(",")[1];
-        githubAdminRequest(path,"PUT",base64,"").then(resolve).catch(reject);
-      };
-      reader.onerror=reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function saveCatalogue(onSuccess, onError){
-    var content=b64EncodeUnicode(JSON.stringify(catalogue,null,2));
-    githubAdminRequest(FILE_PATH,"PUT",content,currentSha)
-      .then(function(data){currentSha=data.content.sha;if(onSuccess)onSuccess();})
-      .catch(function(err){if(onError)onError(err);});
-  }
-
   function componentLabel(comp, item){
     var req = (item.components || []).filter(function (c) { return c.id === comp.id; })[0];
     return req ? comp.name + (req.needsSize ? " (tailles)" : "") : null;
@@ -235,37 +205,11 @@
       '</div>';
   }
 
-  function renderHeroPhotoEditor(){
-    var root = document.getElementById("hero-photo-editor");
-    root.innerHTML = '<div class="panel"><h2>Photo de fond (bandeau du haut)</h2>' +
-      '<div class="photo-row">' +
-        '<img class="photo-preview" id="hero-preview" src="' + rawImgUrl("images/hero.jpg") + '" onerror="this.style.opacity=0.3">' +
-        '<div class="photo-controls">' +
-          '<input type="file" accept="image/*" id="hero-file">' +
-          '<button type="button" class="btn btn-secondary btn-small" id="hero-upload-btn">Enregistrer cette photo</button>' +
-          '<span class="photo-status" id="hero-status"></span>' +
-        '</div>' +
-      '</div></div>';
-
-    document.getElementById("hero-upload-btn").addEventListener("click", function () {
-      var fileInput = document.getElementById("hero-file");
-      var statusEl = document.getElementById("hero-status");
-      if (!fileInput.files[0]){ statusEl.textContent = "Choisissez une photo d'abord."; return; }
-      statusEl.textContent = "Envoi en cours...";
-      readEditorIntoCatalogue();
-      uploadImage("images/hero.jpg", fileInput.files[0])
-        .then(function () {
-          catalogue.photoVersion = (catalogue.photoVersion || 1) + 1;
-          saveCatalogue(
-            function () {
-              statusEl.textContent = "Photo mise à jour ✓";
-              document.getElementById("hero-preview").src = rawImgUrl("images/hero.jpg");
-            },
-            function (err) { statusEl.textContent = "Échec : " + err.message; }
-          );
-        })
-        .catch(function (err) { statusEl.textContent = "Échec de l'envoi : " + err.message; });
-    });
+  function renderHeroPhotoPreview(){
+    var root = document.getElementById("hero-photo-preview");
+    root.innerHTML = '<div class="panel"><h2>Photo du bandeau d’accueil</h2>' +
+      '<img class="photo-preview" src="/images/ermitage.jpg.webp" alt="Plage de l’Ermitage">' +
+      '</div>';
   }
 
   function renderPromoEditor(){
@@ -840,7 +784,7 @@
 
   function renderEditor(){
     renderHeroTextEditor();
-    renderHeroPhotoEditor();
+    renderHeroPhotoPreview();
     renderPromoEditor();
     renderClosedEditor();
     renderSlotsEditor();
@@ -855,6 +799,11 @@
         '</div>';
 
       group.items.forEach(function (item, ii) {
+        var comingSoon = ["cam360", "pmt-cam", "easy-cam"].includes(item.id);
+        var photo = comingSoon
+          ? '<span class="item-photo-note">Nouveauté à venir !</span>'
+          : '<img src="/images/kits/' + encodeURIComponent(item.id) + '.jpg?v=' +
+            encodeURIComponent(catalogue.photoVersion || 1) + '" alt="" loading="lazy">';
         var compLabels = (item.components || []).map(function (req) {
           var comp = catalogue.components.filter(function (c) { return c.id === req.id; })[0];
           return comp ? comp.name + (req.needsSize ? " (à tailles)" : "") : req.id;
@@ -870,14 +819,9 @@
             '<div class="field"><label>Caution (€)</label><input type="number" step="1" class="item-caution" value="' + item.caution + '"></div>' +
           '</div>' +
           '<div class="item-photo-row">' +
-            '<div style="min-width:125px;display:flex;flex-direction:column;gap:5px;">' +
-              '<strong style="font-size:0.82rem;">' + String(item.name || item.id || "Produit").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
-              '<img src="' + rawImgUrl("images/kits/" + item.id + ".jpg") + '" alt="Photo de ' + String(item.name || item.id || "Produit").replace(/"/g, "&quot;") + '" onerror="this.style.display=\'none\'">' +
-            '</div>' +
-            '<input type="file" accept="image/*" class="item-photo-file" data-photo-id="' + item.id + '">' +
-            '<button type="button" class="btn btn-secondary btn-small item-photo-upload" data-photo-id="' + item.id + '">Enregistrer</button>' +
+            photo +
+            '<strong style="font-size:0.82rem;">' + String(item.name || item.id || "Produit").replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</strong>' +
           '</div>' +
-          '<div class="photo-status item-photo-status" data-photo-id="' + item.id + '"></div>' +
           '<div class="item-actions"><button type="button" class="btn btn-secondary btn-small" data-remove-item="' + gi + ':' + ii + '">Supprimer ce produit</button></div>' +
           '</div>';
       });
@@ -932,24 +876,6 @@
       }
     }
 
-    var photoBtn = e.target.closest(".item-photo-upload");
-    if (photoBtn){
-      var pid = photoBtn.getAttribute("data-photo-id");
-      var fileInput = document.querySelector('.item-photo-file[data-photo-id="' + pid + '"]');
-      var statusEl = document.querySelector('.item-photo-status[data-photo-id="' + pid + '"]');
-      if (!fileInput.files[0]){ statusEl.textContent = "Choisissez une photo d'abord."; return; }
-      statusEl.textContent = "Envoi en cours...";
-      readEditorIntoCatalogue();
-      uploadImage("images/kits/" + pid + ".jpg", fileInput.files[0])
-        .then(function () {
-          catalogue.photoVersion = (catalogue.photoVersion || 1) + 1;
-          saveCatalogue(
-            function () { renderEditor(); },
-            function (err) { statusEl.textContent = "Échec : " + err.message; }
-          );
-        })
-        .catch(function (err) { statusEl.textContent = "Échec de l'envoi : " + err.message; });
-    }
   });
 
 </script>
