@@ -465,7 +465,7 @@
         }
         var deliveryHtml = '<section class="contact-panel delivery-panel" aria-labelledby="delivery-title">' +
           '<h3 id="delivery-title">Vous préférez être livré ?</h3>' +
-          '<p>Livraison dès 10 € pour un panier de location d’au moins 30 €. Nous confirmons le créneau et le tarif avant le paiement.</p>' +
+          '<p>Dès 10 €, livraison et récupération du matériel incluses. Les deux se font sur rendez-vous, pour un panier de location d’au moins 30 €. Nous confirmons le tarif et les deux créneaux avant le paiement.</p>' +
           deliveryAction +
           '</section>';
 
@@ -501,12 +501,12 @@
           var deliveryBody = [
             "Bonjour,",
             "",
-            "Je souhaite un devis pour la livraison du matériel suivant :",
+            "Je souhaite un devis pour la livraison et la récupération du matériel suivant :",
             ...deliveryItems,
             "",
-            "Début souhaité : " + formatDate(retrait) + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
-            "Retour souhaité : " + formatDate(retour) + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
-            "Adresse de livraison (rue et commune) : ",
+            "Livraison souhaitée : " + formatDate(retrait) + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
+            "Récupération souhaitée : " + formatDate(retour) + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
+            "Adresse de livraison et de récupération (rue et commune) : ",
             "Merci."
           ].join("\r\n");
           deliveryLink.href = "mailto:contact@maloe-location.re?subject=" +
