@@ -321,11 +321,18 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 #catalogue .product-card[data-product="cam360"] .product-price,#catalogue .product-card[data-product="pmt-cam"] .product-price,#catalogue .product-card[data-product="easy-cam"] .product-price{margin-top:0;}
 
 .product-detail-link {
-  align-self: flex-start;
-  color: #075b9b;
-  font-size: .75rem;
-  font-weight: 600;
-  text-underline-offset: 2px;
+  border-radius: 9px;
+  text-decoration: none;
+}
+
+.product-detail-link img {
+  display: block;
+}
+
+.product-detail-link:hover,
+.product-detail-link:focus-visible {
+  outline: 2px solid #086db2;
+  outline-offset: 1px;
 }
 
 .product-card:target {

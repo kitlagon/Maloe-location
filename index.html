@@ -332,22 +332,23 @@
           priceBlock = '<span class="from">pour ' + days + ' jour' + (days > 1 ? "s" : "") + '</span><span class="amount">' + total + ' €</span>' +
             '<div class="total-line">soit ' + unitPrice + ' € par jour</div>';
         }
+        var comingSoon = ["cam360", "pmt-cam", "easy-cam"].indexOf(item.id) !== -1;
+        var productName = item.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        var productImage = comingSoon
+          ? '<div class="product-image camera-coming-soon" role="img" aria-label="Nouveauté à venir !"><span>Nouveauté à venir !</span></div>'
+          : '<img class="product-image" src="images/kits/' + item.id + '.jpg?v=' + (catalogue.photoVersion || 1) + '" alt="' + productName + '">';
         var hasProductPage = typeof item.pageSlug === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.pageSlug);
-        var productLink = hasProductPage
+        var productVisual = hasProductPage
           ? '<a class="product-detail-link" href="/produits/' + item.pageSlug + '/' +
             (bookingQuery ? '?' + bookingQuery.replace(/&/g, '&amp;') : '') + '" aria-label="Voir la fiche : ' +
-            item.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">Voir la fiche</a>'
-          : '';
+            productName + '">' + productImage + '</a>'
+          : productImage;
         html += '<div class="product-card" id="produit-' + item.id + '" data-product="' + item.id + '">' +
-          ( ['cam360', 'pmt-cam', 'easy-cam'].indexOf(item.id) !== -1
-            ? '<div class="product-image camera-coming-soon" role="img" aria-label="Nouveauté à venir !"><span>Nouveauté à venir !</span></div>'
-            : '<img class="product-image" src="images/kits/' + item.id + '.jpg?v=' + (catalogue.photoVersion || 1) + '" alt="' + item.name + '" onerror="this.remove()">') +
+          productVisual +
           '<div class="product-name">' + item.name + '</div>' +
           '<p class="product-desc">' + item.desc + '</p>' +
-          productLink +
           '<div class="product-price">' + priceBlock + '</div>';
 
-        var comingSoon = ["cam360", "pmt-cam", "easy-cam"].indexOf(item.id) !== -1;
         var sizedComponents = (item.components || []).filter(function (c) { return c.needsSize; });
         if (comingSoon) {
           html += '<div class="camera-coming-soon-note">Disponible prochainement à la location</div>';
