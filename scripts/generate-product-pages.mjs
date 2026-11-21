@@ -80,7 +80,12 @@ for (const group of catalogue.groups) {
     const related = group.items.filter((other) => other !== item && other.pageSlug);
     const reservation = comingSoon
       ? '<a class="product-detail-button" data-home-link href="/#catalogue">Voir le catalogue</a>'
-      : `<a class="product-detail-button" data-home-link data-booking-link href="/?produit=${item.id}#dates">Choisir mes dates</a>`;
+      : `<form data-product-order hidden>
+            <div class="product-detail-options" data-product-options></div>
+            <button class="product-detail-button" type="submit">Ajouter au panier</button>
+            <p class="product-detail-order-status" data-order-status role="status"></p>
+          </form>
+          <a class="product-detail-button" data-home-link data-booking-link href="/?produit=${item.id}#dates">Choisir mes dates</a>`;
     const media = comingSoon
       ? '<div class="product-detail-coming-soon">Nouveauté à venir !</div>'
       : `<img data-product-photo src="/images/kits/${item.id}.jpg" alt="${escape(item.name)}">`;
@@ -99,7 +104,7 @@ for (const group of catalogue.groups) {
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="/styles/home-redesign.css">
   <link rel="stylesheet" href="/styles/product-detail.css">
-  <script src="/produits/product-detail.js" defer></script>
+  <script type="module" src="/produits/product-detail.js"></script>
 </head>
 <body data-product="${item.id}">
   <a class="skip-link" href="#main">Aller au contenu</a>
@@ -134,8 +139,7 @@ for (const group of catalogue.groups) {
           <h2>Matériel inclus</h2>
           <ul>
             ${included.map((entry) => `<li>${escape(entry)}</li>`).join('\n            ')}
-          </ul>
-          <ul data-product-sizes hidden></ul>
+          </ul>${comingSoon ? '\n          <ul data-product-sizes hidden></ul>' : ''}
         </section>
         <section class="product-detail-pickup">
           <h2>Retrait à l’Ermitage-les-Bains</h2>

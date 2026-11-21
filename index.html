@@ -149,7 +149,13 @@
   </div>
 </footer>
 
-<script>
+<script type="module">
+  import {
+    computeComponentUsage as countComponentUsage,
+    componentRemaining as remainingStock,
+    findBlockingComponent,
+  } from './catalogue-stock.mjs';
+
   var catalogue = { components: [], groups: [] };
   var cart = {}; // clé = cartKey(productId, sizes) -> qty
 
@@ -172,39 +178,19 @@
   }
 
   function computeComponentUsage(){
-    var usage = {};
-    Object.keys(cart).forEach(function (key) {
+    var lines = Object.keys(cart).map(function (key) {
       var parsed = parseCartKey(key);
-      var item = findProduct(parsed.productId);
-      if (!item) return;
-      var qty = cart[key];
-      (item.components || []).forEach(function (req) {
-        var size = req.needsSize ? parsed.sizes[req.id] : null;
-        var ukey = req.id + "|" + (size || "");
-        usage[ukey] = (usage[ukey] || 0) + qty * (req.qty || 1);
-      });
+      return { id: parsed.productId, sizes: parsed.sizes, qty: cart[key] };
     });
-    return usage;
+    return countComponentUsage(lines, findProduct);
   }
 
   function componentRemaining(componentId, size, usage){
-    var comp = findComponent(componentId);
-    if (!comp) return Infinity;
-    var stock = comp.sizes ? (comp.stock ? comp.stock[size] : null) : comp.stock;
-    if (stock == null) return Infinity;
-    var used = usage[componentId + "|" + (size || "")] || 0;
-    return stock - used;
+    return remainingStock(findComponent(componentId), size, usage);
   }
 
   function canAdd(item, sizes, delta, usage){
-    var blocking = null;
-    (item.components || []).forEach(function (req) {
-      if (blocking) return;
-      var size = req.needsSize ? sizes[req.id] : null;
-      var remaining = componentRemaining(req.id, size, usage);
-      if (remaining < delta * (req.qty || 1)) blocking = { componentId: req.id, size: size };
-    });
-    return blocking;
+    return findBlockingComponent(item, sizes, delta, usage, findComponent);
   }
 
   function componentLabel(componentId, size){

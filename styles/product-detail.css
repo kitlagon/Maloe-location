@@ -109,8 +109,55 @@
   text-decoration: none;
 }
 
-.product-detail-button:hover {
+.product-detail-button:not(:disabled):hover {
   background: var(--lagoon-deep);
+}
+
+button.product-detail-button {
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.product-detail-button:disabled {
+  background: #dbe5ed;
+  color: #425c70;
+  cursor: not-allowed;
+}
+
+.product-detail-options:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+  gap: 8px 12px;
+  margin: 12px 0;
+}
+
+.product-detail-options label {
+  font-weight: 600;
+}
+
+.product-detail-options select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+}
+
+.product-detail-booking .product-detail-order-status:not(:empty) {
+  margin: 8px 0;
+}
+
+[data-product-order]:not([hidden]) + [data-booking-link] {
+  background: transparent;
+  color: #075b9b;
+  text-decoration: underline;
+  padding-inline: 0;
 }
 
 .product-detail-included ul {
