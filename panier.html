@@ -104,6 +104,9 @@
   .btn-primary{background:var(--lagoon-deep)}
   .btn-primary:disabled{opacity:.55;cursor:not-allowed}
   .payment-info{font-size:.86rem;color:var(--ink-soft);background:var(--sand-light);padding:13px 15px;border-radius:10px;margin:12px 0}
+  .delivery-panel{background:var(--sand-light)}
+  .delivery-panel p{margin:0 0 12px}
+  .delivery-panel p:last-child{margin-bottom:0}
   @media(max-width:600px){
     .wrap{padding:0 16px}
     main{padding:26px 0 48px}
@@ -387,6 +390,7 @@
         }
 
         var itemsHtml = "";
+        var deliveryItems = [];
         var total = 0;
         var totalCaution = 0;
 
@@ -401,6 +405,7 @@
           totalCaution += item.caution * qty;
 
           var sizeText = (line.sizes && Object.keys(line.sizes).length) ? " · " + Object.values(line.sizes).join(" · ") : "";
+          deliveryItems.push(qty + " × " + item.name + sizeText);
           var metaText = tierIndex === null
             ? "Quantité : " + qty + sizeText + " · dès " + unit + " €/jour (choisissez vos dates pour le tarif exact)"
             : "Quantité : " + qty + sizeText + " · " + unit + " €/jour × " + days + " jour" + (days > 1 ? "s" : "");
@@ -445,17 +450,30 @@
           '</div>';
 
         var slotsHtml = '<div class="contact-panel">' +
-          '<h3>Créneaux horaires</h3>' +
+          '<h3>Retrait à l’Ermitage · Créneaux horaires</h3>' +
           '<p class="form-note">Retrait et retour sur rendez-vous rue des Maldives, à proximité du centre équestre, à l’Ermitage-les-Bains. Le point de rendez-vous précis vous sera communiqué après réservation.</p>' +
           '<div class="field"><label>Créneau de retrait</label>' + slotDisplayHtml(retrait, "retrait") + '</div>' +
           '<div class="field" style="margin-bottom:0;"><label>Créneau de retour</label>' + slotDisplayHtml(retour, "retour") + '</div>' +
           '<p class="form-note" style="margin-top:10px;"><a href="index.html#dates" id="edit-dates-link">Modifier les dates ou créneaux</a></p>' +
           '</div>';
 
+        var deliveryAction = '<p>Choisissez vos dates pour vérifier le montant de votre location.</p>';
+        if (Number.isFinite(days) && days > 0){
+          deliveryAction = finalTotal >= 30
+            ? '<a class="btn btn-primary" id="delivery-request">Demander un devis de livraison par e-mail</a>'
+            : '<p>Le montant de votre location est inférieur au minimum de 30 € pour la livraison.</p>';
+        }
+        var deliveryHtml = '<section class="contact-panel delivery-panel" aria-labelledby="delivery-title">' +
+          '<h3 id="delivery-title">Vous préférez être livré ?</h3>' +
+          '<p>Livraison dès 15 € pour un panier de location d’au moins 30 €. Nous confirmons le créneau et le tarif avant le paiement.</p>' +
+          deliveryAction +
+          '</section>';
+
         content.innerHTML =
           '<h1>Votre panier</h1>' +
           '<p class="subtitle">Vérifiez votre matériel, vos dates et le montant de votre location avant de passer au paiement.</p>' +
           datesSummary +
+          deliveryHtml +
           slotsHtml +
           itemsHtml +
           '<div class="cart-total"><span>Sous-total' + (tierIndex === null ? ' (estimation)' : '') + '</span><span>' + subtotal + ' €</span></div>' +
@@ -467,7 +485,7 @@
             promoBlockHtml +
           '</div>' +
           '<div class="contact-panel">' +
-            '<h3>Vos coordonnées</h3>' +
+            '<h3>Vos coordonnées pour un retrait à l’Ermitage</h3>' +
             '<div class="field"><label for="client-nom">Nom et prénom *</label><input type="text" id="client-nom" placeholder="Votre nom et prénom" autocomplete="name" required></div>' +
             '<div class="field"><label for="client-email">Adresse e-mail *</label><input type="email" id="client-email" placeholder="vous@exemple.com" autocomplete="email" required></div>' +
             '<div class="field"><label for="client-phone">Téléphone *</label><input type="tel" id="client-phone" placeholder="Votre numéro de téléphone" autocomplete="tel" required></div>' +
@@ -477,6 +495,24 @@
             '<button class="btn btn-primary send-btn" id="send-btn" type="button" disabled>Paiement en ligne bientôt disponible</button>' +
             '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
+
+        var deliveryLink = document.getElementById("delivery-request");
+        if (deliveryLink){
+          var deliveryBody = [
+            "Bonjour,",
+            "",
+            "Je souhaite un devis pour la livraison du matériel suivant :",
+            ...deliveryItems,
+            "",
+            "Début souhaité : " + formatDate(retrait) + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
+            "Retour souhaité : " + formatDate(retour) + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
+            "Adresse de livraison (rue et commune) : ",
+            "Merci."
+          ].join("\r\n");
+          deliveryLink.href = "mailto:contact@maloe-location.re?subject=" +
+            encodeURIComponent("Demande de devis de livraison — Maloé Location") +
+            "&body=" + encodeURIComponent(deliveryBody);
+        }
 
         turnstileToken = "";
         turnstileWidgetId = null;
