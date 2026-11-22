@@ -24,7 +24,7 @@ body:has(#edl-dialog[open]){overflow:hidden}
 .location-edl dd[data-done]{color:#176048;font-weight:700}
 .location-edl .logout{margin:0;max-width:100%}
 </style></head><body>
-<header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Version <span id="app-version">1.9</span></p></div></div></header>
+<header><div class="top"><img src="../images/logo-hero.webp" alt=""><div><h1>Maloé Gestion</h1><p>Version <span id="app-version">1.10</span></p></div></div></header>
 <div class="demo">ESPACE DE GESTION — Maloé Location</div>
 <div class="update-notice" id="app-update" hidden role="status">Une mise à jour de Maloé Gestion est disponible. <a id="app-update-link">Ouvrir la nouvelle version</a></div>
 <section class="auth" id="auth-panel"><h2>Connexion administrateur</h2><p class="muted">Accès réservé au gestionnaire de Maloé Location.</p><form id="auth-form"><label for="auth-email">Adresse e-mail</label><input id="auth-email" type="email" autocomplete="username" required><label for="auth-password">Mot de passe</label><input id="auth-password" type="password" autocomplete="current-password" required><button type="submit">Se connecter</button></form><p id="auth-status" role="status"></p></section><main id="view" aria-live="polite" hidden><div id="dashboard-screen"></div></main>
@@ -45,7 +45,7 @@ accueil:`<h2>Tableau de bord</h2><div class="cards"><div class="card"><strong>3<
 planning:`<h2>Planning</h2><div class="notice">Le calendrier sera relié aux réservations Supabase après validation de la connexion sécurisée.</div><section class="panel"><h3>Exemples d'opérations</h3><div class="item"><b>09:00 · PMT</b><span>Départ fictif</span></div><div class="item"><b>17:00 · Parasol</b><span>Retour fictif</span></div></section>`,
 locations:`<h2>Locations</h2><div class="notice">Les réservations, paiements, états des lieux et documents seront accessibles ici après connexion au serveur.</div><section class="panel"><h3>Parcours prévu</h3><div class="item">Réservation <span>→</span></div><div class="item">Départ et photos <span>→</span></div><div class="item">Retour et PDF <span>→</span></div></section>`,
 stock:`<h2>Stock et matériel</h2><div class="notice">La disponibilité devra respecter les stocks réels et le délai de 45 minutes entre retour et nouveau départ.</div><section class="panel"><h3>Familles de matériel</h3><div class="item">Palmes et masques <span>À connecter</span></div><div class="item">Glacières et parasols <span>À connecter</span></div><div class="item">Caméras et packs <span>À connecter</span></div></section>`,
-plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>Activation</span></div><div style="padding:12px 0"><p class="muted">Alertes souhaitées : nouvelles réservations payées, annulations et retours prévus. Les e-mails de réservation sont déjà configurés. Active ton téléphone pour recevoir les notifications automatiques en arrière-plan.</p><button type="button" onclick="window.maloeSubscribePush()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700;margin-bottom:8px">Activer les alertes automatiques</button><button type="button" onclick="window.maloeTestNotification()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700">Autoriser et tester les notifications Android</button><p id="maloe-notif-status" role="status" class="muted"></p></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Accès réservé à l'administration de Maloé Location.</p>`
+plus:`<h2>Autres fonctions</h2><section class="panel"><h3>Fonctions à développer</h3><div class="item">Statistiques <span>À venir</span></div><div class="item">Factures <span>À venir</span></div><div class="item">Notifications <span>Activation</span></div><div style="padding:12px 0"><p class="muted">Alertes souhaitées : demandes de livraison, nouvelles réservations payées, annulations et retours prévus. Les e-mails de réservation sont déjà configurés. Active ton téléphone pour recevoir les notifications automatiques en arrière-plan.</p><button type="button" onclick="window.maloeSubscribePush()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700;margin-bottom:8px">Activer les alertes automatiques</button><button type="button" onclick="window.maloeTestNotification()" style="padding:12px;border:0;border-radius:10px;background:#0a537a;color:white;font-weight:700">Autoriser et tester les notifications Android</button><p id="maloe-notif-status" role="status" class="muted"></p></div><div class="item">Paramètres administrateur <span>À venir</span></div></section><p class="muted">Accès réservé à l'administration de Maloé Location.</p>`
 };
 async function maloeTestNotification(){
  const msg=document.getElementById('maloe-notif-status');
@@ -151,7 +151,7 @@ if('serviceWorker' in navigator){
 
  function lock(message=''){closeEdl();window.maloePlanningTicket=(window.maloePlanningTicket||0)+1;window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;view.hidden=true;nav.hidden=true;panel.hidden=false;document.getElementById('auth-password').value='';status.textContent=message;}
  function unlock(){panel.hidden=true;view.hidden=false;nav.hidden=false;if(!document.getElementById('logout')){const b=document.createElement('button');b.id='logout';b.className='logout';b.textContent='Se déconnecter';view.prepend(b);b.addEventListener('click',async()=>{lock();try{await client.auth.signOut()}catch{lock('Déconnexion non confirmée. Réessaie.')}})}}
- async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();await loadDashboard()}
+ async function verify(){const {data,error}=await client.auth.getUser();if(error||!data.user){lock();return}const {data:allowed,error:permissionError}=await client.rpc('is_admin');if(permissionError||allowed!==true){lock('Ce compte ne possède pas les droits administrateur.');return}unlock();if(new URLSearchParams(location.search).get('vue')==='livraisons'){show('locations');await loadDeliveryRequests()}else await loadDashboard()}
 
  async function loadDashboard(){
   const ticket=window.maloeDashboardTicket=(window.maloeDashboardTicket||0)+1;
@@ -383,16 +383,62 @@ if('serviceWorker' in navigator){
    '<div><dt>Retour</dt><dd>'+appointment(reservation.date_retour,reservation.heure_retour)+'</dd><dd'+(returnDone?' data-done':'')+'>'+returnStatus+'</dd></div>'+
    '</dl><button type="button" class="logout" data-edl-reservation="'+escLocation(reservation.id)+'" data-edl-stage="'+stage+'">'+action+'</button></section>';
  }
+ async function loadDeliveryRequests(){
+  const screen=document.getElementById('dashboard-screen');
+  if(view.hidden)return;
+  screen.innerHTML='<h2>Demandes de livraison</h2><p class="muted">Chargement…</p>';
+  const loading=screen.lastElementChild;
+  const {data,error}=await client.from('delivery_requests')
+   .select('id,created_at,customer_name,email,phone,address,notes,delivery_date,pickup_date,delivery_time,pickup_time,items,rental_total,handled_at')
+   .order('handled_at',{ascending:true,nullsFirst:true}).order('created_at',{ascending:false}).limit(100);
+  if(view.hidden||!screen.contains(loading))return;
+  const cards=(data||[]).map(request=>{
+   const appointmentText=(date,time)=>escLocation(frenchBookingDate(date)+(time?' à '+time.slice(0,5):''));
+   const items=request.items.map(item=>{
+    const sizes=Object.values(item.sizes||{}).join(' · ');
+    return '<li>'+escLocation(item.qty+' × '+item.name+(sizes?' · '+sizes:''))+'</li>';
+   }).join('');
+   const total=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(request.rental_total);
+   return '<section class="panel"><h3>'+escLocation(request.customer_name)+'</h3>'+
+    '<p class="muted">'+(request.handled_at?'Traitée':'À traiter')+' · Reçue le '+escLocation(new Intl.DateTimeFormat('fr-FR',{dateStyle:'short',timeStyle:'short',timeZone:'Indian/Reunion'}).format(new Date(request.created_at)))+'</p>'+
+    '<p><b>Livraison souhaitée</b> '+appointmentText(request.delivery_date,request.delivery_time)+'<br>'+
+    '<b>Récupération souhaitée</b> '+appointmentText(request.pickup_date,request.pickup_time)+'</p>'+
+    '<p><b>Adresse</b> '+escLocation(request.address)+'</p><ul>'+items+'</ul>'+
+    '<p>Location estimée à '+escLocation(total)+' · Livraison sur devis.</p>'+
+    (request.notes?'<p>'+escLocation(request.notes)+'</p>':'')+
+    '<p><a href="mailto:'+encodeURIComponent(request.email)+'">'+escLocation(request.email)+'</a> · <a href="tel:'+encodeURIComponent(request.phone)+'">'+escLocation(request.phone)+'</a></p>'+
+    (request.handled_at?'':'<button type="button" class="logout" data-handle-delivery="'+escLocation(request.id)+'">Marquer comme traitée</button>')+'</section>';
+  }).join('');
+  screen.innerHTML='<h2>Demandes de livraison</h2><div><button type="button" class="logout" id="delivery-back">Retour aux locations</button> '+
+   '<button type="button" class="logout" id="delivery-refresh">Actualiser</button></div><p id="delivery-app-status" role="status" class="muted"></p>'+
+   (error?'<p>Impossible de charger les demandes. Réessaie.</p>':cards||'<p>Aucune demande de livraison.</p>');
+  document.getElementById('delivery-back').onclick=()=>{const url=new URL(location.href);url.searchParams.delete('vue');history.replaceState(null,'',url);loadLocations()};
+  document.getElementById('delivery-refresh').onclick=loadDeliveryRequests;
+  const status=document.getElementById('delivery-app-status');
+  screen.querySelectorAll('[data-handle-delivery]').forEach(button=>button.onclick=async()=>{
+   button.disabled=true;
+   const {error}=await client.from('delivery_requests').update({handled_at:new Date().toISOString()})
+    .eq('id',button.dataset.handleDelivery).is('handled_at',null);
+   if(!screen.contains(button)||view.hidden)return;
+   if(error){status.textContent='La demande n’a pas pu être mise à jour.';button.disabled=false;return}
+   loadDeliveryRequests();
+  });
+ }
+ if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',event=>{
+  if(event.data?.view==='livraisons'&&!view.hidden&&!edlDialog.open){show('locations');loadDeliveryRequests()}
+ });
+
  function renderLocations(){
   const screen=document.getElementById('dashboard-screen');
   if(view.hidden||!document.querySelector('[data-page="locations"][aria-current="page"]'))return;
   const selected=locationsData.filter(r=>locationsFilter==='toutes'||(locationsFilter==='actives'&&!/annul|cancel|refus|expir/.test((r.statut||'').toLowerCase())&&locationStatus(r)!=='Expirée')||(locationsFilter==='tests'&&r.mode_test));
   const rows=(locationsFilter==='tests'?selected:selected.filter(r=>!r.mode_test)).slice(0,100);
   if(window.maloeNewReservationOpen){renderNewReservationForm();return}
-  screen.innerHTML='<h2>Locations</h2><button type="button" id="location-create" class="logout" style="display:block;width:100%;margin:0 0 16px">+ Nouvelle réservation</button><p class="muted">Les 100 dernières réservations affichables · lecture seule</p><div class="panel"><label for="location-filter"><b>Afficher</b></label> <select id="location-filter" style="padding:10px;max-width:100%;border:1px solid #b4c9d5;border-radius:8px"><option value="actives">Réservations actives</option><option value="toutes">Toutes (hors tests)</option><option value="tests">Réservations de test</option></select></div>'+(rows.length?rows.map(r=>{const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>String(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');const euro=Number.isFinite(Number(r.total))?new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(r.total)):'Montant non renseigné';return '<section class="panel"><h3>'+escLocation(name)+'</h3><p class="muted">'+escLocation(frenchBookingDate(r.date_retrait))+' → '+escLocation(frenchBookingDate(r.date_retour))+'</p><p>'+escLocation(gear||'Matériel non renseigné')+'</p><div class="item"><b>'+escLocation(locationStatus(r))+'</b><span>'+escLocation(euro)+'</span></div>'+renderEdlProgress(r)+'<details><summary>Voir les détails</summary><p>Départ : '+appointment(r.date_retrait,r.heure_retrait)+'</p><p>Retour : '+appointment(r.date_retour,r.heure_retour)+'</p><p>Paiement : '+escLocation(r.paiement_confirme_at?'Confirmé':'Non confirmé')+'</p><p>Référence : '+escLocation(r.id)+'</p>'+(r.mode_test&&r.statut==='confirmee'&&!r.stancer_payment_intent_id?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="logout" data-test-action="encaisser" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at?'disabled':'')+'>Marquer encaissée (TEST)</button><button type="button" class="logout" data-test-action="annuler" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at||r.retour_effectif_at?'disabled':'')+'>Annuler (TEST)</button></div>':'')+'</details></section>'}).join(''):'<div class="panel"><p class="muted">Aucune réservation pour ce filtre.</p></div>')+'<button id="location-refresh" class="logout">Actualiser</button>';
+  screen.innerHTML='<h2>Locations</h2><button type="button" id="location-create" class="logout" style="display:block;width:100%;margin:0 0 16px">+ Nouvelle réservation</button><button type="button" class="logout" id="delivery-app-open">Demandes de livraison</button><p class="muted">Les 100 dernières réservations affichables · lecture seule</p><div class="panel"><label for="location-filter"><b>Afficher</b></label> <select id="location-filter" style="padding:10px;max-width:100%;border:1px solid #b4c9d5;border-radius:8px"><option value="actives">Réservations actives</option><option value="toutes">Toutes (hors tests)</option><option value="tests">Réservations de test</option></select></div>'+(rows.length?rows.map(r=>{const cl=Array.isArray(r.client)?r.client[0]:r.client;const name=[cl?.prenom,cl?.nom].filter(Boolean).join(' ')||'Client non renseigné';const gear=(r.reservation_items||[]).map(i=>String(i.quantite||1)+' × '+(Array.isArray(i.produit)?i.produit[0]?.nom:i.produit?.nom||'Matériel')).join(', ');const euro=Number.isFinite(Number(r.total))?new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(r.total)):'Montant non renseigné';return '<section class="panel"><h3>'+escLocation(name)+'</h3><p class="muted">'+escLocation(frenchBookingDate(r.date_retrait))+' → '+escLocation(frenchBookingDate(r.date_retour))+'</p><p>'+escLocation(gear||'Matériel non renseigné')+'</p><div class="item"><b>'+escLocation(locationStatus(r))+'</b><span>'+escLocation(euro)+'</span></div>'+renderEdlProgress(r)+'<details><summary>Voir les détails</summary><p>Départ : '+appointment(r.date_retrait,r.heure_retrait)+'</p><p>Retour : '+appointment(r.date_retour,r.heure_retour)+'</p><p>Paiement : '+escLocation(r.paiement_confirme_at?'Confirmé':'Non confirmé')+'</p><p>Référence : '+escLocation(r.id)+'</p>'+(r.mode_test&&r.statut==='confirmee'&&!r.stancer_payment_intent_id?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="logout" data-test-action="encaisser" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at?'disabled':'')+'>Marquer encaissée (TEST)</button><button type="button" class="logout" data-test-action="annuler" data-reservation="'+escLocation(r.id)+'" '+(r.paiement_confirme_at||r.retour_effectif_at?'disabled':'')+'>Annuler (TEST)</button></div>':'')+'</details></section>'}).join(''):'<div class="panel"><p class="muted">Aucune réservation pour ce filtre.</p></div>')+'<button id="location-refresh" class="logout">Actualiser</button>';
   for(const button of screen.querySelectorAll('[data-edl-reservation]')){
    button.addEventListener('click',()=>openEdl(button.dataset.edlReservation,button.dataset.edlStage));
   }
+  document.getElementById('delivery-app-open').onclick=loadDeliveryRequests;
   document.getElementById('location-create').onclick=()=>{window.maloeNewReservationOpen=true;renderNewReservationForm()};
   for(const btn of screen.querySelectorAll('[data-test-action]'))btn.onclick=async()=>{const action=btn.dataset.testAction,id=btn.dataset.reservation;if(!confirm(action==='annuler'?'Annuler cette réservation TEST et libérer le stock ?':'Marquer cette réservation TEST comme encaissée ?'))return;btn.disabled=true;try{const {error}=await client.rpc('admin_manage_test_reservation',{p_reservation_id:id,p_action:action});if(error)throw error;await loadLocations()}catch(e){alert('Action refusée : '+e.message);btn.disabled=false}};
   document.getElementById('location-filter').value=locationsFilter;

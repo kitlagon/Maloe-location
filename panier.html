@@ -110,8 +110,11 @@
   .delivery-panel summary{list-style:none}
   .delivery-panel summary::-webkit-details-marker{display:none}
   .delivery-request-body{margin-top:16px}
-  .delivery-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
   .delivery-status{margin-top:10px}
+  .delivery-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .delivery-form .field{margin:0}
+  .delivery-form-full{grid-column:1/-1}
+  @media(max-width:600px){.delivery-form{grid-template-columns:1fr}}
   @media(max-width:600px){
     .wrap{padding:0 16px}
     main{padding:26px 0 48px}
@@ -382,7 +385,84 @@
         return { promo: match };
       }
 
+      var deliveryWidget = null;
+      var deliveryRequestId = null;
+      var deliverySent = false;
+
+      function setupDeliveryForm(){
+        var details = document.getElementById("delivery-details");
+        if (!details) return;
+        var form = document.getElementById("delivery-form");
+        var status = document.getElementById("delivery-status");
+        function renderDeliveryChallenge(){
+          if (!details.open || deliveryWidget !== null || !window.turnstile || deliverySent) return;
+          deliveryWidget = window.turnstile.render("#delivery-turnstile", {
+            sitekey: "0x4AAAAAAFwoHDEYsq911gz7",
+            action: "delivery_request",
+            theme: "light",
+            "error-callback": function () {
+              status.textContent = "La vérification anti-robot est indisponible. Actualisez la page pour réessayer.";
+            }
+          });
+        }
+        details.addEventListener("toggle", renderDeliveryChallenge);
+        if (!window.turnstile){
+          document.querySelector('script[src*="challenges.cloudflare.com"]').addEventListener("load", function () {
+            if (details.isConnected) renderDeliveryChallenge();
+          }, { once: true });
+        }
+
+        var submit = form.querySelector("button[type=submit]");
+        form.addEventListener("submit", async function (event) {
+          event.preventDefault();
+          if (submit.disabled || deliverySent) return;
+          var token = deliveryWidget === null ? "" : window.turnstile.getResponse(deliveryWidget);
+          if (!token){
+            status.textContent = deliveryWidget === null
+              ? "La vérification anti-robot est indisponible. Refermez puis rouvrez la demande, ou actualisez la page."
+              : "Effectuez ou attendez la vérification anti-robot.";
+            return;
+          }
+
+          submit.disabled = true;
+          status.textContent = "Envoi de votre demande…";
+          deliveryRequestId = deliveryRequestId || crypto.randomUUID();
+          try {
+            var response = await supabaseClient.functions.invoke("create-delivery-request", {
+              body: {
+                ...Object.fromEntries(new FormData(form)),
+                id: deliveryRequestId, retrait: retrait, retour: retour,
+                slotRetrait: selectedRetraitSlot, slotRetour: selectedRetourSlot,
+                lines: lines, promoCode: appliedPromo?.code.toUpperCase(), turnstileToken: token
+              }
+            });
+            if (!response.data?.ok || response.error){
+              var failure = await response.error?.context?.json?.().catch(function () { return null; });
+              status.textContent = failure?.error || "L’envoi a échoué. Réessayez dans un instant.";
+              return;
+            }
+            deliverySent = true;
+            form.remove();
+            status.textContent = "Votre demande a été envoyée. Maloé Location vous contactera pour confirmer les rendez-vous et le tarif avant le paiement.";
+          } catch (error) {
+            status.textContent = "L’envoi a échoué. Réessayez dans un instant.";
+          } finally {
+            if (form.isConnected && deliveryWidget !== null) window.turnstile.reset(deliveryWidget);
+            submit.disabled = false;
+          }
+        });
+
+        if (deliverySent){
+          form.remove();
+          status.textContent = "Votre demande a déjà été envoyée.";
+        }
+      }
+
       function render(){
+        if (deliveryWidget !== null){
+          window.turnstile.remove(deliveryWidget);
+          deliveryWidget = null;
+        }
         var days = computeDays();
         var tierIndex = getTierIndex(days);
         var content = document.getElementById("content");
@@ -395,7 +475,6 @@
         }
 
         var itemsHtml = "";
-        var deliveryItems = [];
         var total = 0;
         var totalCaution = 0;
 
@@ -410,7 +489,6 @@
           totalCaution += item.caution * qty;
 
           var sizeText = (line.sizes && Object.keys(line.sizes).length) ? " · " + Object.values(line.sizes).join(" · ") : "";
-          deliveryItems.push(qty + " × " + item.name + sizeText);
           var metaText = tierIndex === null
             ? "Quantité : " + qty + sizeText + " · dès " + unit + " €/jour (choisissez vos dates pour le tarif exact)"
             : "Quantité : " + qty + sizeText + " · " + unit + " €/jour × " + days + " jour" + (days > 1 ? "s" : "");
@@ -465,17 +543,18 @@
         var deliveryAction = '<p>Choisissez vos dates pour vérifier le montant de votre location.</p>';
         if (Number.isFinite(days) && days > 0){
           deliveryAction = finalTotal >= 30
-            ? '<details>' +
+            ? '<details id="delivery-details">' +
               '<summary class="btn btn-primary">Demander un devis de livraison</summary>' +
-              '<div class="delivery-request-body">' +
-                '<p>Complétez votre adresse dans le message, puis envoyez-le à <strong>contact@maloe-location.re</strong>.</p>' +
-                '<div class="field"><label for="delivery-message">Votre message</label><textarea id="delivery-message" rows="9"></textarea></div>' +
-                '<div class="delivery-actions">' +
-                  '<button type="button" class="btn btn-primary" id="delivery-copy">Copier le message</button>' +
-                  '<a id="delivery-email">Ouvrir ma messagerie</a>' +
-                '</div>' +
-                '<div class="form-note delivery-status" id="delivery-status" role="status"></div>' +
-              '</div>' +
+              '<form id="delivery-form" class="delivery-request-body delivery-form">' +
+                '<div class="field"><label for="delivery-name">Nom et prénom</label><input id="delivery-name" name="name" autocomplete="name" minlength="2" maxlength="120" required></div>' +
+                '<div class="field"><label for="delivery-email">E-mail</label><input type="email" id="delivery-email" name="email" autocomplete="email" maxlength="254" required></div>' +
+                '<div class="field"><label for="delivery-phone">Téléphone</label><input type="tel" id="delivery-phone" name="phone" autocomplete="tel" minlength="6" maxlength="25" required></div>' +
+                '<div class="field delivery-form-full"><label for="delivery-address">Adresse de livraison et de récupération (rue et commune)</label><textarea id="delivery-address" name="address" autocomplete="street-address" rows="2" minlength="5" maxlength="300" required></textarea></div>' +
+                '<div class="field delivery-form-full"><label for="delivery-notes">Précisions (facultatif)</label><textarea id="delivery-notes" name="notes" rows="2" maxlength="500"></textarea></div>' +
+                '<div id="delivery-turnstile" class="delivery-form-full"></div>' +
+                '<div class="delivery-form-full"><button class="btn btn-primary" type="submit">Envoyer ma demande</button></div>' +
+              '</form>' +
+              '<div class="form-note delivery-status" id="delivery-status" role="status"></div>' +
             '</details>'
             : '<p>Le montant de votre location est inférieur au minimum de 30 € pour la livraison.</p>';
         }
@@ -512,39 +591,7 @@
             '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
 
-        var deliveryMessage = document.getElementById("delivery-message");
-        if (deliveryMessage){
-          deliveryMessage.value = [
-            "Bonjour,",
-            "",
-            "Je souhaite un devis pour la livraison et la récupération du matériel suivant :",
-            ...deliveryItems,
-            "",
-            "Livraison souhaitée : " + formatDate(retrait) + (selectedRetraitSlot ? " à " + selectedRetraitSlot : ""),
-            "Récupération souhaitée : " + formatDate(retour) + (selectedRetourSlot ? " à " + selectedRetourSlot : ""),
-            "Adresse de livraison et de récupération (rue et commune) : ",
-            "Merci."
-          ].join("\r\n");
-          var deliveryEmail = document.getElementById("delivery-email");
-          var deliveryStatus = document.getElementById("delivery-status");
-          function updateDeliveryEmail(){
-            deliveryEmail.href = "mailto:contact@maloe-location.re?subject=" +
-              encodeURIComponent("Demande de devis de livraison — Maloé Location") +
-              "&body=" + encodeURIComponent(deliveryMessage.value);
-          }
-          updateDeliveryEmail();
-          deliveryMessage.addEventListener("input", updateDeliveryEmail);
-          document.getElementById("delivery-copy").addEventListener("click", async function () {
-            try {
-              await navigator.clipboard.writeText(deliveryMessage.value);
-              deliveryStatus.textContent = "Message copié. Collez-le dans votre messagerie.";
-            } catch (error) {
-              deliveryMessage.focus();
-              deliveryMessage.select();
-              deliveryStatus.textContent = "Message sélectionné. Copiez-le, puis collez-le dans votre messagerie.";
-            }
-          });
-        }
+        setupDeliveryForm();
 
         turnstileToken = "";
         turnstileWidgetId = null;
