@@ -424,3 +424,10 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 .eve-pickup-offer span{font-size:.78rem;color:#4d6e81;}
 @media(min-width:761px){.booking-layout-left>.eve-pickup-offer{grid-column:2;grid-row:3;margin-top:-8px;}}
 @media(max-width:760px){.booking-layout-left>.eve-pickup-offer{grid-column:1;grid-row:auto;margin-top:0;}}
+
+/* Aligner l'avantage retrait immédiatement sous la carte famille. */
+.booking-layout-left>.family-offers-column{min-width:0;display:flex;flex-direction:column;gap:14px;}
+.booking-layout-left .family-offers-column>.family-feature{margin:0;}
+.booking-layout-left .family-offers-column>.eve-pickup-offer{margin:0;}
+@media(min-width:761px){.booking-layout-left>.family-offers-column{grid-column:2;grid-row:2;align-self:start;}}
+@media(max-width:760px){.booking-layout-left>.family-offers-column{grid-column:1;grid-row:auto;}}
