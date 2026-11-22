@@ -147,7 +147,8 @@
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
-<script>
+<script type="module">
+  import { packLinePrice, packQuantities, packRentalDays } from './supabase/functions/_shared/family-pack.mjs';
   var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var catalogue = [];
 
@@ -216,9 +217,6 @@
     return 2;
   }
 
-  function computeLineTotal(id, qty, unit, mult){
-    return Math.round(unit * mult * qty * 100) / 100;
-  }
 
   function flattenCatalogue(groups){
     var flat = [];
@@ -280,6 +278,7 @@
       }
 
       var params = new URLSearchParams(window.location.search);
+      var familyPack = params.get("familyPack") === "1";
       var retrait = params.get("retrait") || "";
       var retour = params.get("retour") || "";
       var incomingSlotRetrait = params.get("slotRetrait") || "";
@@ -295,15 +294,11 @@
         });
       } catch (e) { lines = []; }
 
-      function idTotalQty(id){
-        var t = 0;
-        lines.forEach(function (l) { if (l.id === id) t += l.qty; });
-        return t;
-      }
 
       function saveCartAndReload(){
         var newParams = new URLSearchParams();
         if (lines.length) newParams.set("cart", JSON.stringify(lines));
+        if (familyPack) newParams.set("familyPack", "1");
         if (retrait) newParams.set("retrait", retrait);
         if (retour) newParams.set("retour", retour);
         if (selectedRetraitSlot) newParams.set("slotRetrait", selectedRetraitSlot);
@@ -433,7 +428,7 @@
                 ...Object.fromEntries(new FormData(form)),
                 id: deliveryRequestId, retrait: retrait, retour: retour,
                 slotRetrait: selectedRetraitSlot, slotRetour: selectedRetourSlot,
-                lines: lines, promoCode: appliedPromo?.code.toUpperCase(), turnstileToken: token
+                lines: lines, familyPack: familyPack, promoCode: appliedPromo?.code.toUpperCase(), turnstileToken: token
               }
             });
             if (!response.data?.ok || response.error){
@@ -464,6 +459,9 @@
           deliveryWidget = null;
         }
         var days = computeDays();
+        const packQty = packQuantities(lines, familyPack);
+        const packDays = days === null ? 1 : packRentalDays(retrait, retour, selectedRetraitSlot);
+        if (days !== null && packQty.some(Boolean)) days = packDays;
         var tierIndex = getTierIndex(days);
         var content = document.getElementById("content");
 
@@ -483,8 +481,7 @@
           var qty = line.qty;
           var unit = tierIndex === null ? item.prices[2] : (item.pricesTotal ? (item.pricesTotal[Math.min(days,7)-1] + Math.max(0,days-7)*(item.id === 'cam360' ? 14 : 15)) / days : item.prices[tierIndex]);
           var mult = tierIndex === null ? 1 : days;
-          var itemLineTotal = computeLineTotal(line.id, idTotalQty(line.id), unit, mult) * (qty / idTotalQty(line.id));
-          itemLineTotal = Math.round(itemLineTotal * 100) / 100;
+          var itemLineTotal = packLinePrice(line.id, qty, packQty[idx], packDays, unit * mult);
           total += itemLineTotal;
           totalCaution += item.caution * qty;
 
@@ -492,6 +489,9 @@
           var metaText = tierIndex === null
             ? "Quantité : " + qty + sizeText + " · dès " + unit + " €/jour (choisissez vos dates pour le tarif exact)"
             : "Quantité : " + qty + sizeText + " · " + unit + " €/jour × " + days + " jour" + (days > 1 ? "s" : "");
+
+          if (packQty[idx]) metaText = "Quantité : " + qty + sizeText
+            + " · Pack Famille −10 %" + (packQty[idx] < qty ? " sur 1 article" : "");
 
           var imagePath = 'images/kits/' + item.id + '.jpg?v=' + (data.photoVersion || 1);
           itemsHtml += '<div class="cart-item">' +
@@ -604,6 +604,7 @@
             e.preventDefault();
             var params = new URLSearchParams();
             params.set("cart", JSON.stringify(lines));
+            if (familyPack) params.set("familyPack", "1");
             if (retrait) params.set("retrait", retrait);
             if (retour) params.set("retour", retour);
             if (selectedRetraitSlot) params.set("slotRetrait", selectedRetraitSlot);
@@ -678,6 +679,7 @@
                   slotRetrait: selectedRetraitSlot,
                   slotRetour: selectedRetourSlot,
                   lines: lines,
+                  familyPack: familyPack,
                   client: { nom: nom, email: email, telephone: telephone },
                   turnstileToken: turnstileToken
                 }

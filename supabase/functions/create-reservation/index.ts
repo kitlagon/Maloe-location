@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { packQuantities, packRentalDays, packUnitPrice } from "../_shared/family-pack.mjs";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://maloe-location.re",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -99,7 +101,9 @@ Deno.serve(async (req) => {
     }
 
     const mappedLines = [];
-    for (const line of lines) {
+    const packQty = packQuantities(lines, input.familyPack);
+    const packDays = packRentalDays(retrait, retour, slotRetrait);
+    for (const [index, line] of lines.entries()) {
       const productId = productIds[String(line?.id ?? "")];
       const qty = Number(line?.qty);
       if (!productId || !Number.isInteger(qty) || qty < 1 || qty > 20) {
@@ -117,7 +121,14 @@ Deno.serve(async (req) => {
         }
         sizes[family] = size;
       }
-      mappedLines.push({ product_id: productId, qty, sizes });
+      const discounted = packQty[index];
+      if (discounted) {
+        mappedLines.push({
+          product_id: productId, qty: discounted, sizes,
+          family_pack_price: packUnitPrice(line.id, packDays),
+        });
+      }
+      if (qty > discounted) mappedLines.push({ product_id: productId, qty: qty - discounted, sizes });
     }
 
     // Vérification obligatoire du jeton Turnstile côté serveur.

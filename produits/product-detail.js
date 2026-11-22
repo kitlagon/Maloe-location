@@ -1,7 +1,7 @@
 import { computeComponentUsage, componentRemaining, findBlockingComponent } from '../catalogue-stock.mjs';
 
 const productPageParams = new URLSearchParams(window.location.search);
-const bookingKeys = ['retrait', 'retour', 'slotRetrait', 'slotRetour', 'cart'];
+const bookingKeys = ['retrait', 'retour', 'slotRetrait', 'slotRetour', 'cart', 'familyPack'];
 const hasSelectedDates = Boolean(productPageParams.get('retrait') && productPageParams.get('retour'));
 const productId = document.body.dataset.product;
 const bookingLink = document.querySelector('[data-booking-link]');

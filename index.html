@@ -93,6 +93,20 @@
         <p class="dates-hint" id="dates-hint"></p>
       </div>
         
+      <article class="family-feature" aria-labelledby="family-feature-title">
+        <div class="family-feature-photos" aria-hidden="true">
+          <img src="/images/kits/parasol.jpg" alt="">
+          <img src="/images/kits/glaciere.jpg" alt="">
+          <img src="/images/kits/pmt.jpg" alt="">
+        </div>
+        <div>
+          <h2 id="family-feature-title">Pack Famille Plage &amp; Lagon</h2>
+          <p>Un parasol, une glacière et 2 kits snorkeling au choix.</p>
+          <p><strong data-family-price>38,70 € pour 1 jour</strong></p>
+          <p>−10 % aussi sur tous les kits snorkeling ajoutés au pack, selon les stocks et les tailles disponibles.</p>
+          <button type="button" class="btn btn-primary" data-choose-family>Choisir mes kits</button>
+        </div>
+      </article>
       <a class="maloe-booking-next" id="equipment-link" href="#catalogue">Découvrir les équipements →</a>
     </div>
   </section>
@@ -151,12 +165,48 @@
   </div>
 </footer>
 
+<dialog id="family-pack" class="family-dialog" aria-labelledby="family-dialog-title">
+  <form id="family-form">
+    <div class="family-dialog-heading">
+      <h2 id="family-dialog-title">Pack Famille Plage &amp; Lagon</h2>
+      <button type="button" id="family-close" aria-label="Fermer">×</button>
+    </div>
+    <p>Un parasol avec pied, une glacière avec pains de glace et 2 kits snorkeling. Choisissez un kit et ses tailles pour chaque personne.</p>
+    <div id="family-kits"></div>
+    <button type="button" class="btn btn-secondary" id="family-add-kit">Ajouter un kit supplémentaire</button>
+    <p><strong id="family-configuration-price"></strong></p>
+    <p id="family-status" role="status"></p>
+    <button type="submit" class="btn btn-primary" id="family-submit">Ajouter le pack au panier</button>
+    <button type="button" class="btn btn-secondary" id="family-dates" hidden>Choisir mes dates</button>
+  </form>
+</dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.js"></script>
 <script type="module">
   import {
     computeComponentUsage as countComponentUsage,
     componentRemaining as remainingStock,
     findBlockingComponent,
   } from './catalogue-stock.mjs';
+
+  import {
+    familyKitIds, packLinePrice, packQuantities, packRentalDays, packStartingPrice,
+  } from './supabase/functions/_shared/family-pack.mjs';
+
+  var familyPack = new URLSearchParams(location.search).get("familyPack") === "1";
+  const currency = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+
+  function familyDays() {
+    const start = document.getElementById("date-retrait").value;
+    const end = document.getElementById("date-retour").value;
+    const slot = document.getElementById("slot-retrait").value;
+    return start && end ? packRentalDays(start, end, slot) : 1;
+  }
+
+  function familyPriceText(kits = 2) {
+    const days = familyDays();
+    return currency.format(packStartingPrice(days, kits)) + " pour " + days + (days === 1 ? " jour" : " jours");
+  }
 
   var catalogue = { components: [], groups: [] };
   var cart = {}; // clé = cartKey(productId, sizes) -> qty
@@ -299,6 +349,7 @@
     var days = getDays();
     var tierIndex = getTierIndex(days);
     updateDatesHint(days);
+    document.querySelector('[data-family-price]').textContent = familyPriceText();
     var usage = computeComponentUsage();
 
     var root = document.getElementById("catalogue-groups");
@@ -308,6 +359,15 @@
       var group = catalogue.groups[g];
       html += '<div class="cat-group"><div class="cat-group-title">' + group.group +
         ' <span style="font-family:\'Work Sans\',sans-serif;font-size:0.78rem;color:var(--ink-soft);font-weight:400;">— ' + group.note + '</span></div><div class="product-grid">';
+      if (group.items.some(item => item.id === "parasol")) {
+        html += '<article class="product-card family-catalogue-card">' +
+          '<img class="product-image" src="/images/kits/parasol.jpg" alt="">' +
+          '<h3 class="product-name">Pack Famille Plage &amp; Lagon</h3>' +
+          '<p class="product-desc">Parasol, glacière et 2 kits snorkeling au choix.</p>' +
+          '<strong>' + familyPriceText() + '</strong>' +
+          '<p>−10 % aussi sur tous les kits ajoutés au pack.</p>' +
+          '<button type="button" class="btn btn-primary" data-choose-family>Choisir mes kits</button></article>';
+      }
       for (var i = 0; i < group.items.length; i++){
         var item = group.items[i];
         var totalQtyForItem = productTotalQty(item.id);
@@ -454,6 +514,8 @@
     var total = 0;
     var count = 0;
     var keys = Object.keys(cart);
+    const packQty = packQuantities(keys.map(key => ({ id: parseCartKey(key).productId, qty: cart[key] })), familyPack);
+    const packDays = familyDays();
     for (var k = 0; k < keys.length; k++){
       var parsed = parseCartKey(keys[k]);
       var item = findProduct(parsed.productId);
@@ -463,7 +525,7 @@
       var unit = tierIndex === null ? (item.pricesTotal ? item.pricesTotal[0] : item.prices[2]) :
         (item.pricesTotal ? (item.pricesTotal[Math.min(days,7)-1] + Math.max(0,days-7)*(item.id === 'cam360' ? 14 : 15)) / days : item.prices[tierIndex]);
       var mult = tierIndex === null ? 1 : days;
-      total += Math.round(unit * mult * qty * 100) / 100;
+      total += packLinePrice(item.id, qty, packQty[k], packDays, unit * mult);
     }
     return { count: count, total: Math.round(total * 100) / 100, hasDays: tierIndex !== null };
   }
@@ -495,12 +557,170 @@
     var retour = document.getElementById("date-retour").value;
     var params = new URLSearchParams();
     if (lines.length) params.set("cart", JSON.stringify(lines));
+    if (familyPack) params.set("familyPack", "1");
     if (retrait) params.set("retrait", retrait);
     if (retour) params.set("retour", retour);
     if (selectedSlotRetrait) params.set("slotRetrait", selectedSlotRetrait);
     if (selectedSlotRetour) params.set("slotRetour", selectedSlotRetour);
     return params;
   }
+
+  const familyDialog = document.getElementById('family-pack');
+  const familyForm = document.getElementById('family-form');
+  const familyKits = document.getElementById('family-kits');
+  const familyStatus = document.getElementById('family-status');
+  const familySubmit = document.getElementById('family-submit');
+  const familyDates = document.getElementById('family-dates');
+  const addKitButton = document.getElementById('family-add-kit');
+  let familyStock = null;
+  let familyRequest = 0;
+
+  function updateFamilyConfigurationPrice() {
+    document.getElementById('family-configuration-price').textContent =
+      familyPriceText(familyKits.childElementCount);
+  }
+
+  function appendFamilyKit(removable) {
+    const fields = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    legend.textContent = removable ? 'Kit supplémentaire' : 'Kit ' + (familyKits.childElementCount + 1);
+    const kind = document.createElement('select');
+    kind.setAttribute('aria-label', 'Formule – ' + legend.textContent);
+    kind.append(new Option('Palmes + masque et tuba', 'pmt'), new Option('Palmes + Easybreath', 'palme-easy'));
+    const sizeFields = document.createElement('div');
+    sizeFields.className = 'family-size-fields';
+    function updateSizes() {
+      sizeFields.replaceChildren();
+      const product = findProduct(kind.value);
+      for (const requirement of product.components.filter(component => component.needsSize)) {
+        const component = findComponent(requirement.id);
+        const label = document.createElement('label');
+        label.append(component.name);
+        const select = document.createElement('select');
+        select.dataset.component = requirement.id;
+        select.required = true;
+        select.append(new Option('Choisir une taille', ''));
+        for (const size of component.sizes) select.append(new Option(size, size));
+        label.append(select);
+        sizeFields.append(label);
+      }
+    }
+    kind.dataset.kit = '';
+    kind.addEventListener('change', updateSizes);
+    fields.append(legend, kind, sizeFields);
+    if (removable) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn-secondary';
+      remove.textContent = 'Retirer ce kit';
+      remove.addEventListener('click', () => {
+        fields.remove();
+        updateFamilyConfigurationPrice();
+      });
+      fields.append(remove);
+    }
+    familyKits.append(fields);
+    updateSizes();
+    updateFamilyConfigurationPrice();
+  }
+
+  async function openFamilyPack() {
+    if (!findProduct(familyKitIds[0]) || familyDialog.open) return;
+    const params = bookingParams();
+    const lines = JSON.parse(params.get('cart') || '[]');
+    if (packQuantities(lines, familyPack).some(Boolean)) {
+      goToCart();
+      return;
+    }
+    familyStock = null;
+    familyKits.replaceChildren();
+    appendFamilyKit(false);
+    appendFamilyKit(false);
+    familySubmit.disabled = true;
+    addKitButton.disabled = true;
+    const needsDates = !['retrait', 'retour', 'slotRetrait', 'slotRetour'].every(key => params.has(key));
+    familyDates.hidden = !needsDates;
+    familyStatus.textContent = needsDates
+      ? 'Choisissez vos dates et créneaux pour vérifier les tailles disponibles.'
+      : 'Vérification du stock…';
+    familyDialog.showModal();
+    const request = ++familyRequest;
+    if (needsDates) return;
+    try {
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data, error } = await client.rpc('family_pack_stock', {
+        p_start: params.get('retrait') + 'T' + params.get('slotRetrait'),
+        p_end: params.get('retour') + 'T' + params.get('slotRetour'),
+      });
+      if (request !== familyRequest || !familyDialog.open) return;
+      if (error || !data?.length) throw new Error('Stock indisponible');
+      familyStock = new Map(data.map(row => [row.family + '|' + (row.size || ''), row.available]));
+      const used = computeComponentUsage();
+      for (const field of familyKits.querySelectorAll('fieldset')) {
+        updateFamilySizes(field, used);
+      }
+      familyStatus.textContent = '';
+      familySubmit.disabled = false;
+      addKitButton.disabled = false;
+    } catch {
+      if (request !== familyRequest || !familyDialog.open) return;
+      familyStatus.textContent = 'Le stock est momentanément inaccessible. Réessayez dans un instant.';
+    }
+  }
+
+  function updateFamilySizes(field, usage = computeComponentUsage()) {
+    if (!familyStock) return;
+    for (const select of field.querySelectorAll('[data-component]')) {
+      for (const option of Array.from(select.options).slice(1)) {
+        const key = select.dataset.component + '|' + option.value;
+        option.disabled = (familyStock.get(key) || 0) <= (usage[key] || 0);
+      }
+    }
+  }
+
+  familyKits.addEventListener('change', event => updateFamilySizes(event.target.closest('fieldset')));
+  addKitButton.addEventListener('click', () => {
+    appendFamilyKit(true);
+    updateFamilySizes(familyKits.lastElementChild);
+    familyKits.lastElementChild.querySelector('select').focus();
+  });
+  document.getElementById('family-close').addEventListener('click', () => familyDialog.close());
+  familyDates.addEventListener('click', () => {
+    familyDialog.close();
+    document.getElementById('dates').scrollIntoView();
+    document.getElementById('cal-next').focus({ preventScroll: true });
+  });
+  document.addEventListener('click', event => {
+    if (event.target.closest('[data-choose-family]')) openFamilyPack();
+  });
+  familyForm.addEventListener('submit', event => {
+    event.preventDefault();
+    if (!familyStock) return;
+    const lines = [
+      { id: 'parasol', sizes: {}, qty: 1 },
+      { id: 'glaciere', sizes: {}, qty: 1 },
+    ];
+    for (const field of familyKits.querySelectorAll('fieldset')) {
+      const sizes = Object.fromEntries(Array.from(field.querySelectorAll('[data-component]'),
+        select => [select.dataset.component, select.value]));
+      lines.push({ id: field.querySelector('[data-kit]').value, sizes, qty: 1 });
+    }
+    const requested = countComponentUsage(lines, findProduct);
+    const used = computeComponentUsage();
+    for (const [key, qty] of Object.entries(requested)) {
+      if (qty + (used[key] || 0) > (familyStock.get(key) || 0)) {
+        const [family, size] = key.split('|');
+        familyStatus.textContent = 'Stock insuffisant pour ' + componentLabel(family, size) + '.';
+        return;
+      }
+    }
+    for (const { id, sizes, qty } of lines) {
+      const key = cartKey(id, sizes);
+      cart[key] = (cart[key] || 0) + qty;
+    }
+    familyPack = true;
+    goToCart();
+  });
 
   function goToCart(){
     var params = bookingParams();

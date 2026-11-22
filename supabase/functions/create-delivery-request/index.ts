@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { packLinePrice, packQuantities, packRentalDays } from "../_shared/family-pack.mjs";
+
 const origin = "https://maloe-location.re";
 const cors = {
   "Access-Control-Allow-Origin": origin,
@@ -59,7 +61,7 @@ Deno.serve(async req => {
         (gap === 0 && deliveryTime && pickupTime && pickupTime <= deliveryTime)) {
       return reply({ error: "Choisissez des dates et horaires de location valides." }, 400);
     }
-    const days = gap === 1 && deliveryTime && deliveryTime >= "17:00" && pickupTime && pickupTime <= "18:00"
+    const regularDays = gap === 1 && deliveryTime && deliveryTime >= "17:00" && pickupTime && pickupTime <= "18:00"
       ? 1 : gap + 1;
 
     const token = clean(input.turnstileToken, 2048);
@@ -83,7 +85,10 @@ Deno.serve(async req => {
     const products = new Map(catalogue.groups.flatMap(group => group.items).map(item => [item.id, item]));
     const items = [];
     let totalCents = 0;
-    for (const line of input.lines) {
+    const packQty = packQuantities(input.lines, input.familyPack);
+    const packDays = packRentalDays(input.retrait, input.retour, deliveryTime ?? "");
+    const days = packQty.some(Boolean) ? packDays : regularDays;
+    for (const [index, line] of input.lines.entries()) {
       const product = products.get(line?.id);
       const qty = line?.qty;
       const sizes = line?.sizes ?? {};
@@ -98,7 +103,7 @@ Deno.serve(async req => {
         ? product.pricesTotal[Math.min(days, 7) - 1] + Math.max(0, days - 7) * (product.id === "cam360" ? 14 : 15)
         : dailyRate * days;
       if (!Number.isFinite(price) || price < 0) throw new Error("Invalid catalogue price");
-      totalCents += Math.round(price * qty * 100);
+      totalCents += Math.round(packLinePrice(product.id, qty, packQty[index], packDays, price) * 100);
       items.push({ name: product.name, qty, sizes });
     }
 
