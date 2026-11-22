@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { pickupAllowed } from "../_shared/pickup-deadline.mjs";
 import { packQuantities, packRentalDays, packUnitPrice } from "../_shared/family-pack.mjs";
 
 const corsHeaders = {
@@ -78,6 +79,9 @@ Deno.serve(async (req) => {
     }
     if (!validTime(slotRetrait) || !validTime(slotRetour)) {
       return json({ error: "Créneaux horaires invalides." }, 400);
+    }
+    if (!pickupAllowed(retrait, slotRetrait)) {
+      return json({ error: "Délai de préparation insuffisant : choisissez un retrait plus tardif." }, 400);
     }
     if (retrait === retour && slotRetour <= slotRetrait) {
       return json({ error: "L'heure de retour doit être après l'heure de retrait." }, 400);
