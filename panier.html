@@ -107,6 +107,11 @@
   .delivery-panel{background:var(--sand-light)}
   .delivery-panel p{margin:0 0 12px}
   .delivery-panel p:last-child{margin-bottom:0}
+  .delivery-panel summary{list-style:none}
+  .delivery-panel summary::-webkit-details-marker{display:none}
+  .delivery-request-body{margin-top:16px}
+  .delivery-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+  .delivery-status{margin-top:10px}
   @media(max-width:600px){
     .wrap{padding:0 16px}
     main{padding:26px 0 48px}
@@ -460,7 +465,18 @@
         var deliveryAction = '<p>Choisissez vos dates pour vérifier le montant de votre location.</p>';
         if (Number.isFinite(days) && days > 0){
           deliveryAction = finalTotal >= 30
-            ? '<a class="btn btn-primary" id="delivery-request">Demander un devis de livraison par e-mail</a>'
+            ? '<details>' +
+              '<summary class="btn btn-primary">Demander un devis de livraison</summary>' +
+              '<div class="delivery-request-body">' +
+                '<p>Complétez votre adresse dans le message, puis envoyez-le à <strong>contact@maloe-location.re</strong>.</p>' +
+                '<div class="field"><label for="delivery-message">Votre message</label><textarea id="delivery-message" rows="9"></textarea></div>' +
+                '<div class="delivery-actions">' +
+                  '<button type="button" class="btn btn-primary" id="delivery-copy">Copier le message</button>' +
+                  '<a id="delivery-email">Ouvrir ma messagerie</a>' +
+                '</div>' +
+                '<div class="form-note delivery-status" id="delivery-status" role="status"></div>' +
+              '</div>' +
+            '</details>'
             : '<p>Le montant de votre location est inférieur au minimum de 30 € pour la livraison.</p>';
         }
         var deliveryHtml = '<section class="contact-panel delivery-panel" aria-labelledby="delivery-title">' +
@@ -496,9 +512,9 @@
             '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
 
-        var deliveryLink = document.getElementById("delivery-request");
-        if (deliveryLink){
-          var deliveryBody = [
+        var deliveryMessage = document.getElementById("delivery-message");
+        if (deliveryMessage){
+          deliveryMessage.value = [
             "Bonjour,",
             "",
             "Je souhaite un devis pour la livraison et la récupération du matériel suivant :",
@@ -509,9 +525,25 @@
             "Adresse de livraison et de récupération (rue et commune) : ",
             "Merci."
           ].join("\r\n");
-          deliveryLink.href = "mailto:contact@maloe-location.re?subject=" +
-            encodeURIComponent("Demande de devis de livraison — Maloé Location") +
-            "&body=" + encodeURIComponent(deliveryBody);
+          var deliveryEmail = document.getElementById("delivery-email");
+          var deliveryStatus = document.getElementById("delivery-status");
+          function updateDeliveryEmail(){
+            deliveryEmail.href = "mailto:contact@maloe-location.re?subject=" +
+              encodeURIComponent("Demande de devis de livraison — Maloé Location") +
+              "&body=" + encodeURIComponent(deliveryMessage.value);
+          }
+          updateDeliveryEmail();
+          deliveryMessage.addEventListener("input", updateDeliveryEmail);
+          document.getElementById("delivery-copy").addEventListener("click", async function () {
+            try {
+              await navigator.clipboard.writeText(deliveryMessage.value);
+              deliveryStatus.textContent = "Message copié. Collez-le dans votre messagerie.";
+            } catch (error) {
+              deliveryMessage.focus();
+              deliveryMessage.select();
+              deliveryStatus.textContent = "Message sélectionné. Copiez-le, puis collez-le dans votre messagerie.";
+            }
+          });
         }
 
         turnstileToken = "";
