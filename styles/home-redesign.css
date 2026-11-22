@@ -402,13 +402,18 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 .family-dialog button:disabled { opacity: .55; cursor: not-allowed; }
 
 
-/* Réservation : supprimer la colonne vide sur ordinateur et centrer le calendrier + pack famille. */
+/* Étape 1 : calendrier à gauche, offre famille à droite sur ordinateur. */
 @media (min-width:761px){
-  .booking-layout.booking-layout-left{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:860px;margin-inline:auto;}
-  .booking-layout-left .booking-heading{width:100%;text-align:center;margin-bottom:0;}
-  .booking-layout-left .maloe-booking{width:100%;max-width:520px;min-width:0;}
-  .booking-layout-left .calendar-widget{max-width:340px;}
-  .booking-layout-left .cal-day{height:36px;}
-  .booking-layout-left .family-feature{margin:16px 18px;padding:18px;}
-  .booking-layout-left .family-feature-photos img{height:84px;object-fit:contain;background:#fff;}
+ .booking-layout.booking-layout-left{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px 28px;align-items:start;max-width:1100px;margin-inline:auto;}
+ .booking-layout-left .booking-heading{grid-column:1/-1;grid-row:1;text-align:left;margin-bottom:0;width:100%;}
+ .booking-layout-left .maloe-booking{grid-column:1;grid-row:2;max-width:none;width:100%;min-width:0;}
+ .booking-layout-left>.family-feature{grid-column:2;grid-row:2;margin:0;padding:22px;min-width:0;align-self:start;}
+ .booking-layout-left .calendar-widget{max-width:340px;}
+ .booking-layout-left .cal-day{height:36px;}
+ .booking-layout-left>.family-feature .family-feature-photos img{height:125px;object-fit:contain;background:white;}
+ .booking-layout-left>.family-feature h2{font-size:1.35rem;margin-bottom:12px;}
+ .booking-layout-left>.family-feature p{font-size:.95rem;line-height:1.6;margin:10px 0;}
+}
+@media (max-width:760px){
+ .booking-layout-left>.family-feature{grid-column:1;grid-row:auto;margin:12px 0;padding:14px;}
 }
