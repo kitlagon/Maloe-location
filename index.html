@@ -305,13 +305,13 @@
   function isSlotTaken(date, time){
     return (catalogue.takenSlots || []).some(function (t) { return t.date === date && t.time === time; });
   }
-  function availableSlotsFor(date, afterTime){
+  function availableSlotsFor(date, afterTime, isPickup = false){
     if (!date) return [];
     var slots = generateSlotsForDate(catalogue.timeSlots || {}, date).filter(function (t) { return !isSlotTaken(date, t); });
     if (afterTime) slots = slots.filter(function (t) { return t > afterTime; });
     // Ne jamais proposer un retrait avant le délai de préparation.
     // Le filtre ne s’applique pas aux créneaux de retour.
-    if (!afterTime) slots = slots.filter(function (t) { return pickupAllowed(date, t); });
+    if (isPickup) slots = slots.filter(function (t) { return pickupAllowed(date, t); });
     return slots;
   }
 
@@ -806,7 +806,7 @@
     var slotRetraitEl = document.getElementById("slot-retrait");
     var slotRetourEl = document.getElementById("slot-retour");
 
-    var retraitSlots = availableSlotsFor(selRetrait);
+    var retraitSlots = availableSlotsFor(selRetrait, null, true);
     if (retraitSlots.indexOf(selectedSlotRetrait) === -1) selectedSlotRetrait = retraitSlots[0] || "";
     slotRetraitEl.innerHTML = retraitSlots.length
       ? retraitSlots.map(function (t) { return '<option value="' + t + '"' + (t === selectedSlotRetrait ? " selected" : "") + '>' + t + '</option>'; }).join("")
