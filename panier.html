@@ -148,6 +148,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.js"></script>
 <script type="module">
+  import { pickupAllowed } from './supabase/functions/_shared/pickup-deadline.mjs';
   import { packLinePrice, packQuantities, packRentalDays } from './supabase/functions/_shared/family-pack.mjs';
   var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var catalogue = [];
@@ -274,6 +275,7 @@
         if (!date) return [];
         var slots = generateSlotsForDate(timeSlots, date).filter(function (t) { return !isSlotTaken(date, t); });
         if (afterTime) slots = slots.filter(function (t) { return t > afterTime; });
+        if (!afterTime) slots = slots.filter(function (t) { return pickupAllowed(date, t); });
         return slots;
       }
 
@@ -655,6 +657,10 @@
             }
             if (!retrait || !retour || !selectedRetraitSlot || !selectedRetourSlot || !computeDays()) {
               if (statusEl) statusEl.textContent = "Vérifiez vos dates et vos créneaux de retrait et de retour.";
+              return;
+            }
+            if (!pickupAllowed(retrait, selectedRetraitSlot)) {
+              if (statusEl) statusEl.textContent = "Ce retrait est trop proche pour préparer votre matériel. Choisissez un créneau plus tardif.";
               return;
             }
             var nom = (document.getElementById("client-nom").value || "").trim();
