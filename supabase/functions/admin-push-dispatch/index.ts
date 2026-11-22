@@ -1,5 +1,7 @@
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { sendDeliveryEmail } from "./delivery-email.ts";
+
 const reply=(v:unknown,s=200)=>Response.json(v,{status:s});
 Deno.serve(async req=>{
  if(req.method!=="POST")return reply({error:"Method"},405);
@@ -68,5 +70,30 @@ Deno.serve(async req=>{
   if((subs||[]).length===0||errors.length){await db.from("admin_push_events").update({attempts:event.attempts+1,last_error:errors.join("; ")||"No subscribed devices"}).eq("id",event.id)}
   else await db.from("admin_push_events").update({sent_at:new Date().toISOString(),attempts:event.attempts+1,last_error:null}).eq("id",event.id);
  }
- return reply({ok:true,events:(events||[]).length,subscriptions:(subs||[]).length,sent,failed});
+
+ const {data:deliveryEmails,error:deliveryEmailError}=await db.from("delivery_requests")
+  .select("id,customer_name,email,phone,address,notes,delivery_date,pickup_date,delivery_time,pickup_time,items,rental_total,email_attempts")
+  .is("email_sent_at",null).lt("email_attempts",5).lte("email_next_attempt_at",now.toISOString())
+  .order("email_next_attempt_at").limit(3);
+ if(deliveryEmailError)return reply({error:"Delivery email queue query"},500);
+ let deliveryEmailsSent=0;
+ for(const request of deliveryEmails||[]){
+  const retryAt=new Date(Date.now()+5*60_000).toISOString();
+  const {data:claim,error:claimError}=await db.from("delivery_requests")
+   .update({email_attempts:request.email_attempts+1,email_next_attempt_at:retryAt})
+   .eq("id",request.id).eq("email_attempts",request.email_attempts)
+   .is("email_sent_at",null).select("id").maybeSingle();
+  if(claimError){console.error("Delivery email claim failed",claimError.code);continue}
+  if(!claim)continue;
+  try{
+   await sendDeliveryEmail(request);
+   const {error:recordError}=await db.from("delivery_requests")
+    .update({email_sent_at:new Date().toISOString(),email_next_attempt_at:null}).eq("id",request.id);
+   if(recordError)console.error("Delivery email status update failed",recordError.code);
+   else deliveryEmailsSent++;
+  }catch(error){
+   console.error("Delivery email failed",error instanceof Error?error.message:"SMTP error");
+  }
+ }
+ return reply({ok:true,events:(events||[]).length,subscriptions:(subs||[]).length,sent,failed,deliveryEmailsSent});
 });
