@@ -400,3 +400,15 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
   cursor: pointer;
 }
 .family-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+
+
+/* Réservation : supprimer la colonne vide sur ordinateur et centrer le calendrier + pack famille. */
+@media (min-width:761px){
+  .booking-layout.booking-layout-left{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:860px;margin-inline:auto;}
+  .booking-layout-left .booking-heading{width:100%;text-align:center;margin-bottom:0;}
+  .booking-layout-left .maloe-booking{width:100%;max-width:520px;min-width:0;}
+  .booking-layout-left .calendar-widget{max-width:340px;}
+  .booking-layout-left .cal-day{height:36px;}
+  .booking-layout-left .family-feature{margin:16px 18px;padding:18px;}
+  .booking-layout-left .family-feature-photos img{height:84px;object-fit:contain;background:#fff;}
+}
