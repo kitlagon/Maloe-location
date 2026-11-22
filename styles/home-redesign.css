@@ -417,3 +417,10 @@ header{background:#fff;border-bottom:1px solid var(--line)}.nav{min-height:86px;
 @media (max-width:760px){
  .booking-layout-left>.family-feature{grid-column:1;grid-row:auto;margin:12px 0;padding:14px;}
 }
+
+/* Avantage retrait la veille, sous le pack famille. */
+.eve-pickup-offer{border:1px solid #b8dbea;border-radius:12px;background:#f0f9fd;padding:14px 18px;display:flex;flex-direction:column;gap:4px;color:#10466c;}
+.eve-pickup-offer strong{font-size:.92rem;line-height:1.45;}
+.eve-pickup-offer span{font-size:.78rem;color:#4d6e81;}
+@media(min-width:761px){.booking-layout-left>.eve-pickup-offer{grid-column:2;grid-row:3;margin-top:-8px;}}
+@media(max-width:760px){.booking-layout-left>.eve-pickup-offer{grid-column:1;grid-row:auto;margin-top:0;}}
