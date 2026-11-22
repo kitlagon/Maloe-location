@@ -29,6 +29,8 @@ export async function sendDeliveryEmail(request: DeliveryRequest) {
 
   const reference = request.id.slice(0, 8).toUpperCase();
   const subject = "Nouvelle demande de livraison — " + reference;
+  const rentalPrice = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" })
+    .format(Number(request.rental_total));
   const body = [
     "Nouvelle demande de livraison Maloé Location",
     "",
@@ -45,11 +47,28 @@ export async function sendDeliveryEmail(request: DeliveryRequest) {
       const sizes = Object.values(item.sizes ?? {}).join(" · ");
       return "- " + item.qty + " × " + item.name + (sizes ? " · " + sizes : "");
     }),
-    "Location estimée : " + Number(request.rental_total).toFixed(2).replace(".", ",") + " €",
+    "Location estimée : " + rentalPrice,
     request.notes ? "Précisions : " + request.notes : "",
     "",
-    "Répondez au client pour lui proposer vos créneaux et les frais de livraison.",
     "Maloé Gestion : https://maloe-location.re/maloe-gestion-mobile/?vue=livraisons",
+    "",
+    "RÉPONSE À COPIER DANS ROUNDCUBE",
+    "Cliquez sur Répondre, remplacez le texte cité par le bloc ci-dessous, puis complétez les montants et vérifiez les créneaux.",
+    "",
+    "Bonjour " + request.customer_name.replace(/\s+/g, " ").trim() + ",",
+    "",
+    "Merci pour votre demande. Je vous propose les rendez-vous suivants à l’adresse indiquée :",
+    "- Livraison : " + appointment(request.delivery_date, request.delivery_time) + (request.delivery_time ? "" : " à [heure à préciser]"),
+    "- Récupération : " + appointment(request.pickup_date, request.pickup_time) + (request.pickup_time ? "" : " à [heure à préciser]"),
+    "",
+    "Location du matériel : " + rentalPrice,
+    "Livraison et récupération : [frais] €",
+    "Total à régler : [total] €",
+    "",
+    "Ces deux créneaux vous conviennent-ils ? Dès votre confirmation, je vous transmettrai le lien de paiement.",
+    "",
+    "Bonne journée,",
+    "Mathias — Maloé Location",
   ].join("\n");
   const message = [
     "From: =?UTF-8?B?" + encode("Maloé Location") + "?= <" + from + ">",
