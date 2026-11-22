@@ -2,22 +2,104 @@
   "photoVersion": 2,
   "heroTitle": "Le lagon vous attend, pas besoin de tout apporter",
   "heroSubtitle": "Glacière, parasol, kit snorkeling ou caméra 360° étanche : choisissez vos dates et votre matériel, récupérez-le sur un créneau fixe près de la plage.",
-  "promoCodes": [
+  "promoCodes": [],
+  "closedDates": [
     {
-      "code": "TEST",
-      "discount": 1,
-      "from": "",
-      "to": ""
+      "date": "2026-12-19",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-27",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-20",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-26",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-21",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-22",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-23",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-24",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-25",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-29",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-28",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-30",
+      "reason": "vacances"
+    },
+    {
+      "date": "2026-12-31",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-01",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-02",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-03",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-09",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-08",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-07",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-06",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-05",
+      "reason": "vacances"
+    },
+    {
+      "date": "2027-01-04",
+      "reason": "vacances"
     }
   ],
-  "closedDates": [],
   "timeSlots": {
     "interval": 15,
     "byDay": {
       "lundi": [
         {
           "start": "07:30",
-          "end": "08:00"
+          "end": "08:15"
         },
         {
           "start": "12:45",
@@ -31,7 +113,7 @@
       "mardi": [
         {
           "start": "07:30",
-          "end": "08:00"
+          "end": "08:15"
         },
         {
           "start": "12:45",
@@ -45,7 +127,7 @@
       "mercredi": [
         {
           "start": "07:30",
-          "end": "08:00"
+          "end": "08:15"
         },
         {
           "start": "12:45",
@@ -59,7 +141,7 @@
       "jeudi": [
         {
           "start": "07:30",
-          "end": "08:00"
+          "end": "08:15"
         },
         {
           "start": "12:45",
@@ -73,7 +155,7 @@
       "vendredi": [
         {
           "start": "07:30",
-          "end": "08:00"
+          "end": "08:15"
         },
         {
           "start": "12:45",
@@ -86,8 +168,8 @@
       ],
       "samedi": [
         {
-          "start": "07:30",
-          "end": "08:00"
+          "start": "08:00",
+          "end": "09:30"
         },
         {
           "start": "12:45",
@@ -100,12 +182,8 @@
       ],
       "dimanche": [
         {
-          "start": "07:30",
-          "end": "08:00"
-        },
-        {
-          "start": "12:45",
-          "end": "13:30"
+          "start": "08:00",
+          "end": "09:00"
         },
         {
           "start": "17:00",
@@ -193,7 +271,7 @@
             5.5,
             4
           ],
-          "caution": 50,
+          "caution": 15,
           "components": [
             {
               "id": "glaciere-mat",
@@ -212,7 +290,7 @@
             4.5,
             3
           ],
-          "caution": 30,
+          "caution": 15,
           "components": [
             {
               "id": "parasol-mat",
@@ -237,7 +315,7 @@
             13,
             10
           ],
-          "caution": 80,
+          "caution": 40,
           "components": [
             {
               "id": "palmes",
@@ -261,7 +339,7 @@
             13,
             10
           ],
-          "caution": 80,
+          "caution": 40,
           "components": [
             {
               "id": "palmes",
@@ -285,7 +363,7 @@
             8,
             6
           ],
-          "caution": 40,
+          "caution": 20,
           "components": [
             {
               "id": "masque-tuba",
@@ -304,7 +382,7 @@
             8,
             6
           ],
-          "caution": 40,
+          "caution": 20,
           "components": [
             {
               "id": "easybreath",
@@ -323,7 +401,7 @@
             7,
             5
           ],
-          "caution": 40,
+          "caution": 20,
           "components": [
             {
               "id": "palmes",
@@ -348,7 +426,7 @@
             34,
             30
           ],
-          "caution": 450,
+          "caution": 350,
           "components": [
             {
               "id": "camera",
@@ -376,7 +454,7 @@
             43,
             35
           ],
-          "caution": 500,
+          "caution": 400,
           "components": [
             {
               "id": "palmes",
@@ -414,7 +492,7 @@
             43,
             35
           ],
-          "caution": 500,
+          "caution": 400,
           "components": [
             {
               "id": "palmes",
