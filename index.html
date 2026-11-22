@@ -104,7 +104,7 @@
         <div>
           <h2 id="family-feature-title">Pack Famille Plage &amp; Lagon</h2>
           <p>Un parasol, une glacière et 2 kits snorkeling au choix.</p>
-          <p><strong data-family-price>38,70 € pour 1 jour</strong></p>
+          <p><strong data-family-price>38,70 € pour 1 jour</strong></p>\n          <div class="family-price-breakdown" data-family-breakdown aria-label="Détail du tarif du pack">Parasol : 5 € · Glacière : 6 € · 2 kits snorkeling : 32 €<br>Prix séparés : 43 € · Remise pack −10 % : −4,30 €</div>
           <p>−10 % aussi sur tous les kits snorkeling ajoutés au pack, selon les stocks et les tailles disponibles.</p>
           <button type="button" class="btn btn-primary" data-choose-family>Choisir mes kits</button>
         </div>
@@ -190,7 +190,7 @@
   } from './catalogue-stock.mjs';
 
   import {
-    familyKitIds, packLinePrice, packQuantities, packRentalDays, packStartingPrice,
+    familyKitIds, packLinePrice, packQuantities, packRentalDays, packStartingPrice, packUnitPrice,
   } from './supabase/functions/_shared/family-pack.mjs';
 
   var familyPack = new URLSearchParams(location.search).get("familyPack") === "1";
@@ -207,6 +207,17 @@
     const days = familyDays();
     return currency.format(packStartingPrice(days, kits)) + " pour " + days + (days === 1 ? " jour" : " jours");
   }
+
+  function updateFamilyBreakdown(){
+    const days=familyDays();
+    const unit=id=>packUnitPrice(id,days)/0.9;
+    const parasol=unit('parasol'),cooler=unit('glaciere'),kits=2*unit('pmt');
+    const subtotal=parasol+cooler+kits;
+    const el=document.querySelector('[data-family-breakdown]');
+    if(el)el.innerHTML='Parasol : '+currency.format(parasol)+' · Glacière : '+currency.format(cooler)+'<br>2 kits snorkeling : '+currency.format(kits)+'<br>Prix séparés : '+currency.format(subtotal)+' · Remise pack −10 % : −'+currency.format(subtotal*0.1);
+  }
+  document.addEventListener('change',event=>{if(['date-retrait','date-retour','slot-retrait','slot-retour'].includes(event.target?.id))updateFamilyBreakdown()});
+  updateFamilyBreakdown();
 
   var catalogue = { components: [], groups: [] };
   var cart = {}; // clé = cartKey(productId, sizes) -> qty
