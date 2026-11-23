@@ -104,6 +104,9 @@
   .btn-primary{background:var(--lagoon-deep)}
   .btn-primary:disabled{opacity:.55;cursor:not-allowed}
   .payment-info{font-size:.86rem;color:var(--ink-soft);background:var(--sand-light);padding:13px 15px;border-radius:10px;margin:12px 0}
+  .payment-terms{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;font-size:.9rem;line-height:1.5;margin:14px 0}
+  .payment-terms input{margin:.2em 0 0;inline-size:1.1em;block-size:1.1em;accent-color:var(--lagoon-deep)}
+  .payment-terms label{cursor:pointer}
   .delivery-panel{background:var(--sand-light)}
   .delivery-panel p{margin:0 0 12px}
   .delivery-panel p:last-child{margin-bottom:0}
@@ -589,6 +592,11 @@
             '<div class="field" style="margin-bottom:0;"><label for="client-message">Message (optionnel)</label><textarea id="client-message" rows="3" placeholder="Une précision concernant votre réservation..."></textarea></div>' +
             '<div class="field"><label>Vérification anti-robot</label><div id="turnstile-container"></div><p class="form-note" id="turnstile-status">Veuillez effectuer la vérification anti-robot.</p></div>' +
             '<div class="payment-info">Après la mise en service du paiement sécurisé Stancer, vous pourrez régler votre location par carte bancaire. Votre réservation sera confirmée automatiquement après validation effective du paiement.</div>' +
+            '<p class="form-note" id="payment-terms-info">Réservation à date et créneau déterminés. Le droit de rétractation ne s’applique pas (article L221-28, 12° du Code de la consommation). Les conditions d’annulation figurent à l’article 6 des <a href="/cgv" target="_blank" rel="noopener">CGV</a>.</p>' +
+            '<div class="payment-terms">' +
+              '<input type="checkbox" id="accept-rental-terms" required aria-describedby="payment-terms-info">' +
+              '<label for="accept-rental-terms">Je reconnais que ma réservation porte sur une prestation de loisirs à date et créneau déterminés, et que je ne bénéficie pas d’un droit de rétractation (art. L221-28, 12° du Code de la consommation). J’ai pris connaissance des conditions d’annulation (article 6) et j’accepte les CGV.</label>' +
+            '</div>' +
             '<button class="btn btn-primary send-btn" id="send-btn" type="button" disabled>Paiement en ligne bientôt disponible</button>' +
             '<p class="form-note">Aucun paiement ni aucune réservation ne sont effectués pour le moment. La caution sera réglée au retrait du matériel.</p>' +
           '</div>';
@@ -645,10 +653,17 @@
 
         // Création de la réservation puis ouverture du paiement sécurisé Stancer.
         var sendBtn = document.getElementById("send-btn");
-        if (sendBtn) {
-          sendBtn.disabled = false;
+        var termsCheckbox = document.getElementById("accept-rental-terms");
+        if (sendBtn && termsCheckbox) {
+          var paymentPending = false;
+          function updatePaymentButton() {
+            sendBtn.disabled = paymentPending || !termsCheckbox.checked;
+          }
+          updatePaymentButton();
           sendBtn.textContent = "Payer ma réservation par carte";
+          termsCheckbox.addEventListener("change", updatePaymentButton);
           sendBtn.addEventListener("click", async function () {
+            if (paymentPending || !termsCheckbox.checked) return;
             var statusEl = document.getElementById("reservation-status");
             if (statusEl) statusEl.textContent = "";
             if (appliedPromo) {
@@ -675,7 +690,9 @@
               return;
             }
 
-            sendBtn.disabled = true;
+            paymentPending = true;
+            termsCheckbox.disabled = true;
+            updatePaymentButton();
             sendBtn.textContent = "Préparation du paiement...";
             try {
               var response = await supabaseClient.functions.invoke("create-reservation", {
@@ -704,7 +721,12 @@
               var reservationId = result.reservation.reservation_id;
               sendBtn.textContent = "Ouverture de la page de paiement...";
               var paymentResponse = await supabaseClient.functions.invoke("stancer-payment", {
-                body: { action: "create", reservation_id: reservationId, expected_amount_cents: Math.round(total * 100) }
+                body: {
+                  action: "create",
+                  reservation_id: reservationId,
+                  expected_amount_cents: Math.round(total * 100),
+                  terms_accepted: termsCheckbox.checked
+                }
               });
               if (paymentResponse.error || !paymentResponse.data || paymentResponse.data.success !== true ||
                   typeof paymentResponse.data.payment_url !== "string" ||
@@ -728,7 +750,9 @@
               if (window.turnstile && turnstileWidgetId !== null) {
                 window.turnstile.reset(turnstileWidgetId);
               }
-              sendBtn.disabled = false;
+              paymentPending = false;
+              termsCheckbox.disabled = false;
+              updatePaymentButton();
               sendBtn.textContent = "Payer ma réservation par carte";
             }
           });
