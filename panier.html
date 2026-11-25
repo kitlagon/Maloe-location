@@ -353,10 +353,9 @@
         var diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return null;
 
-        // Règle spéciale : retrait après 17 h, retour le lendemain jusqu'à 18 h inclus = 1 jour.
-        if (diffDays === 1 && retraitSlot && retourSlot &&
-            toMinutes(retraitSlot) >= 17 * 60 && toMinutes(retourSlot) <= 18 * 60) {
-          return 1;
+        // Retrait la veille à partir de 17h30 : première journée offerte.
+        if (diffDays >= 1 && retraitSlot && toMinutes(retraitSlot) >= 17 * 60 + 30) {
+          return diffDays;
         }
         // Même décompte que le catalogue : jours calendaires inclusifs,
         // sauf exception du retrait tardif ci-dessus.
